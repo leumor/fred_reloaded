@@ -4,8 +4,38 @@
 package hyphanet.support.logger;
 
 /**
+ * A null implementation of the Logger interface that discards all log messages.
+ * This class implements the Null Object pattern for the logging system,
+ * providing a no-op logger that can be used when logging is disabled or
+ * not required.
+ * <p>
+ * Key characteristics:
+ * <ul>
+ * <li>Discards all log messages without processing
+ * <li>Always returns false for shouldLog checks
+ * <li>Returns LogLevel.NONE as threshold
+ * <li>Ignores all configuration attempts
+ * <li>Thread-safe by design (no state to protect)
+ * </ul>
+ * <p>
+ * Common use cases:
+ * <ul>
+ * <li>Default logger before initialization
+ * <li>Placeholder when logging is disabled
+ * <li>Testing scenarios where logging is irrelevant
+ * </ul>
+ * <p>
+ * Performance considerations:
+ * <ul>
+ * <li>Zero overhead for logging operations
+ * <li>No memory allocation for log messages
+ * <li>No I/O operations performed
+ * </ul>
+ *
  * @author Iakin
- * A LoggerHook implementation that just passes any supplied log messages on to /dev/null
+ * @see Logger
+ * @see LoggerHook
+ * @see LogLevel#NONE
  */
 public class VoidLogger extends Logger {
 

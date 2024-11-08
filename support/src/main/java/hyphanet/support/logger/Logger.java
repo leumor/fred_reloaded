@@ -793,18 +793,42 @@ public abstract class Logger {
     public abstract void instanceUnregisterLogThresholdCallback(LogThresholdCallback ltc);
 
     /**
-     * Inner class that provides OS-specific thread information on Linux systems.
-     * This class provides access to process IDs and parent process IDs through
-     * /proc/self/stat parsing.
+     * Provides OS-specific thread and process information for Linux systems.
+     * This utility class offers methods to access process IDs (PID) and parent
+     * process IDs (PPID) by parsing the /proc filesystem.
+     * <p>
+     * System Requirements:
+     * <ul>
+     * <li> Only works on Linux systems
+     * <li> Requires procfs to be mounted and accessible
+     * <li> Needs read permissions for /proc/self/stat
+     * </ul>
+     *
+     * @see #getPID(Object)
+     * @see #getPPID(Object)
+     * @see #logPID(Object)
+     * @see #logPPID(Object)
      */
     public final static class OSThread {
 
         /**
-         * Gets the current thread's process ID.
-         * Only works on Linux systems with procfs mounted.
+         * Gets the current thread's process ID (PID) on Linux systems.
+         * This method provides access to the process ID by parsing /proc/self/stat,
+         * avoiding the need for JNI calls.
          *
-         * @param o The object requesting the PID (used for logging)
-         * @return The process ID or -1 if unavailable
+         * @param o The object requesting the PID, used for logging context if
+         *          errors occur during PID retrieval. May be null, though this
+         *          will limit error reporting capabilities.
+         * @return The process ID of the current thread, or -1 if:
+         * <ul>
+         * <li> PID retrieval is disabled
+         * <li> Running on non-Linux system
+         * <li> procfs is not mounted
+         * <li> Insufficient permissions
+         * <li> Parse error occurs
+         * </ul>
+         * @see #getPIDFromProcSelfStat(Object)
+         * @see #logPID(Object)
          */
         public synchronized static int getPID(Object o) {
             if (!getPIDEnabled) {
@@ -816,13 +840,6 @@ public abstract class Logger {
         /**
          * Gets the parent process ID (PPID) of the current thread on Linux systems.
          * This method provides access to the parent process ID by parsing /proc/self/stat.
-         * <p>
-         * System Requirements:
-         * <ul>
-         * <li> Only works on Linux systems
-         * <li> Requires procfs to be mounted
-         * <li> Needs read access to /proc/self/stat
-         * </ul>
          *
          * @param o The object requesting the PPID, used for logging context if
          *          errors occur during PPID retrieval. May be null, though this
@@ -846,11 +863,27 @@ public abstract class Logger {
         }
 
         /**
-         * Gets a specific field from /proc/self/stat.
+         * Retrieves a specific field from the /proc/self/stat file on Linux systems.
+         * This method parses the process status information file to extract individual fields.
+         * <p>
+         * The /proc/self/stat file contains space-separated values with process information:
+         * - Field 0: Process ID (PID)
+         * - Field 3: Parent Process ID (PPID)
+         * - And other process statistics
          *
-         * @param fieldNumber The field index to retrieve (0-based)
-         * @param o           The object requesting the field (used for logging)
-         * @return The field value or null if unavailable
+         * @param fieldNumber The zero-based index of the field to retrieve from /proc/self/stat
+         * @param o           The object requesting the field value, used for logging context if
+         *                    errors occur during retrieval. May be null, though this will limit
+         *                    error reporting capabilities.
+         * @return The requested field value as a String, or null if:
+         * <ul>
+         * <li> procfs is not enabled/available
+         * <li> /proc/self/stat cannot be read
+         * <li> File parsing fails
+         * <li> Requested field is not available
+         * </ul>
+         * @see #getPID(Object)
+         * @see #getPPID(Object)
          */
         public synchronized static String getFieldFromProcSelfStat(int fieldNumber, Object o) {
 
@@ -890,10 +923,22 @@ public abstract class Logger {
         }
 
         /**
-         * Get the thread's process ID using the /proc/self/stat method or
-         * return -1 if it's unavailable for some reason.  This is an ugly
-         * hack required by Java to get the OS process ID of a thread on
-         * Linux without using JNI.
+         * Retrieves the process ID (PID) from /proc/self/stat on Linux systems.
+         * This method provides a JNI-free way to access the process ID by parsing
+         * the first field of the proc filesystem entry.
+         *
+         * @param o The object requesting the PID, used for logging context if
+         *          errors occur during PID retrieval. May be null, though this
+         *          will limit error reporting capabilities.
+         * @return The process ID as an integer, or -1 if:
+         * <ul>
+         * <li> PID retrieval is disabled
+         * <li> procfs is not enabled/available
+         * <li> /proc/self/stat cannot be read
+         * <li> PID field cannot be parsed as an integer
+         * </ul>
+         * @see #getPID(Object)
+         * @see #getFieldFromProcSelfStat(int, Object)
          */
         public synchronized static int getPIDFromProcSelfStat(Object o) {
             int pid = -1;
@@ -917,10 +962,22 @@ public abstract class Logger {
         }
 
         /**
-         * Get the thread's parent process ID using the /proc/self/stat
-         * method or return -1 if it's unavailable for some reason.  This
-         * is ugly hack required by Java to get the OS parent process ID of
-         * a thread on Linux without using JNI.
+         * Retrieves the parent process ID (PPID) from /proc/self/stat on Linux systems.
+         * This method provides a JNI-free way to access the parent process ID by parsing
+         * field index 3 of the proc filesystem entry.
+         *
+         * @param o The object requesting the PPID, used for logging context if
+         *          errors occur during PPID retrieval. May be null, though this
+         *          will limit error reporting capabilities.
+         * @return The parent process ID as an integer, or -1 if:
+         * <ul>
+         * <li> PPID retrieval is disabled
+         * <li> procfs is not enabled/available
+         * <li> /proc/self/stat cannot be read
+         * <li> PPID field cannot be parsed as an integer
+         * </ul>
+         * @see #getPPID(Object)
+         * @see #getFieldFromProcSelfStat(int, Object)
          */
         public synchronized static int getPPIDFromProcSelfStat(Object o) {
             int ppid = -1;
@@ -944,10 +1001,22 @@ public abstract class Logger {
         }
 
         /**
-         * Logs the current thread's process ID with additional context information.
+         * Logs the current thread's process ID (PID) with additional context information.
+         * This method combines PID retrieval with immediate logging of the result.
          *
-         * @param o The object requesting the logging (used for context)
-         * @return The process ID that was logged, or -1 if unavailable
+         * @param o The object requesting the logging, used for context in log messages.
+         *          May be null, though this will limit the context information in
+         *          the log output.
+         * @return The process ID that was logged, or -1 if:
+         * <ul>
+         * <li>PID logging is disabled
+         * <li>Running on non-Linux system
+         * <li>procfs is not mounted
+         * <li>Insufficient permissions
+         * <li>Parse error occurs
+         * </ul>
+         * @see #getPID(Object)
+         * @see #logPPID(Object)
          */
         public synchronized static int logPID(Object o) {
             if (!getPIDEnabled) {
@@ -970,7 +1039,22 @@ public abstract class Logger {
         }
 
         /**
-         * Log the thread's process ID or return -1 if it's unavailable for some reason
+         * Logs the current thread's parent process ID (PPID) with additional context information.
+         * This method combines PPID retrieval with immediate logging of the result.
+         *
+         * @param o The object requesting the logging, used for context in log messages.
+         *          May be null, though this will limit the context information in
+         *          the log output.
+         * @return The parent process ID that was logged, or -1 if:
+         * <ul>
+         * <li>PPID logging is disabled
+         * <li>Running on non-Linux system
+         * <li>procfs is not mounted
+         * <li>Insufficient permissions
+         * <li>Parse error occurs
+         * </ul>
+         * @see #getPPID(Object)
+         * @see #logPID(Object)
          */
         public synchronized static int logPPID(Object o) {
             if (!getPPIDEnabled) {
