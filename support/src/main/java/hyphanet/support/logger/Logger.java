@@ -717,9 +717,24 @@ public abstract class Logger {
     public abstract LogLevel getThresholdNew();
 
     /**
-     * Changes the priority threshold.
+     * Sets the global logging threshold level for this logger.
+     * Messages with priority levels lower than this threshold will not be logged.
      *
-     * @param thresh The new threshhold
+     * <p><b>Example usage:</b></p>
+     * <pre>
+     * {@code
+     * logger.setThreshold(LogLevel.DEBUG);  // Enable debug logging
+     * logger.setThreshold(LogLevel.ERROR);  // Only log errors
+     * logger.setThreshold(LogLevel.NONE);   // Disable all logging
+     * }
+     * </pre>
+     *
+     * @param thresh The new threshold level to set. Must be one of the {@link LogLevel}
+     *               enum values. Using {@link LogLevel#NONE} will effectively disable
+     *               all logging.
+     * @see LogLevel
+     * @see #getThresholdNew()
+     * @see #setDetailedThresholds(String)
      */
     public abstract void setThreshold(LogLevel thresh);
 
