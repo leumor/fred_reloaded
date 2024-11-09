@@ -5,6 +5,8 @@
 plugins {
     // Apply the java Plugin to add support for Java.
     id("java")
+    // Checker Framework pluggable type-checking
+    id("org.checkerframework")
 }
 
 repositories {
@@ -14,7 +16,7 @@ repositories {
 
 dependencies {
     // Use JUnit Jupiter for testing.
-    testImplementation("org.junit.jupiter:junit-jupiter:5.11.3")
+    testImplementation("org.junit.jupiter:junit-jupiter:latest.release")
 
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
