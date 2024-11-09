@@ -1,7 +1,6 @@
 package hyphanet.support.logger;
 
 import hyphanet.support.logger.Logger.LogLevel;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
@@ -63,7 +62,7 @@ public class OutputStreamLogger extends OutputStream {
      * @param length The number of bytes to write
      */
     @Override
-    public void write(byte @NonNull [] buf, int offset, int length) {
+    public void write(byte[] buf, int offset, int length) {
         try {
             // FIXME use Charset/CharsetDecoder
             Logger.logStatic(this, prefix + new String(buf, offset, length, charset), prio);
@@ -79,7 +78,7 @@ public class OutputStreamLogger extends OutputStream {
      * @param buf The buffer containing the bytes to write
      */
     @Override
-    public void write(byte @NonNull [] buf) {
+    public void write(byte[] buf) {
         write(buf, 0, buf.length);
     }
 
