@@ -11,7 +11,3 @@ repositories {
     // Use the plugin portal to apply community plugins in convention plugins.
     gradlePluginPortal()
 }
-
-dependencies {
-    implementation("org.checkerframework:checkerframework-gradle-plugin:latest.release")
-}
