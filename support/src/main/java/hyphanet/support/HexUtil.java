@@ -185,8 +185,7 @@ public class HexUtil {
                 int idx = i * 8 + j;
                 boolean val = idx <= size - 1 && ba.get(idx);
                 s |= (short) (val ? (1 << j) : 0);
-                if (logDEBUG) {
-                    assert sb != null : "@AssumeAssertion(nullness)";
+                if (sb != null) {
                     sb.append(val ? '1' : '0');
                 }
             }
@@ -195,7 +194,7 @@ public class HexUtil {
             }
             b[i] = (byte) s;
         }
-        if (logDEBUG) {
+        if (sb != null) {
             Logger.debug(HexUtil.class,
                          String.format("bytes: %d returned from bitsToBytes(%s,%d): %s for %s",
                                        bytesAlloc, ba, size, bytesToHex(b), sb));

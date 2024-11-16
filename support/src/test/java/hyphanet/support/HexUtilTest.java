@@ -44,7 +44,7 @@ public class HexUtilTest {
             methodByteArray[0] = (byte) i;
 			/* Integer.toHexString works with int so it doesn't return always a two digit hex. 
 			   For this reason we need the next "switch case". */
-            expectedResult = (i <= 15 ? "0" + (Integer.toHexString(i)) : (Integer.toHexString(i)));
+            expectedResult = i <= 15 ? "0" + Integer.toHexString(i) : Integer.toHexString(i);
             assertEquals(expectedResult, HexUtil.bytesToHex(methodByteArray));
         }
     }
@@ -61,7 +61,7 @@ public class HexUtilTest {
             expectedByteArray[0] = (byte) i;
 			/* Integer.toHexString works with int so it doesn't return always a two digit hex. 
 			   For this reason we need the next "switch case". */
-            methodHexString = (i <= 15 ? "0" + (Integer.toHexString(i)) : (Integer.toHexString(i)));
+            methodHexString = i <= 15 ? "0" + Integer.toHexString(i) : Integer.toHexString(i);
             assertArrayEquals(expectedByteArray, HexUtil.hexToBytes(methodHexString));
         }
     }
@@ -78,7 +78,7 @@ public class HexUtilTest {
             expectedByteArray[0] = (byte) i;
 			/* Integer.toHexString works with int so it doesn't return always a two digit hex. 
 			   For this reason we need the next "switch case". */
-            methodHexString = (i <= 15 ? "0" + (Integer.toHexString(i)) : (Integer.toHexString(i)));
+            methodHexString = i <= 15 ? "0" + Integer.toHexString(i) : Integer.toHexString(i);
             assertArrayEquals(expectedByteArray, HexUtil.hexToBytes(methodHexString, 0));
         }
     }
@@ -96,7 +96,7 @@ public class HexUtilTest {
             expectedByteArray[0] = (byte) i;
 			/* Integer.toHexString works with int so it doesn't return always a two digit hex. 
 			   For this reason we need the next "switch case". */
-            methodHexString = (i <= 15 ? "0" + (Integer.toHexString(i)) : (Integer.toHexString(i)));
+            methodHexString = i <= 15 ? "0" + Integer.toHexString(i) : Integer.toHexString(i);
             HexUtil.hexToBytes(methodHexString, outputArray, 0);
             assertArrayEquals(expectedByteArray, outputArray);
         }
@@ -127,7 +127,7 @@ public class HexUtilTest {
         //border case
         assertEquals(HexUtil.countBytesForBits(0), 0);
         for (int expectedBytesCount = 1; expectedBytesCount < 256; expectedBytesCount++) {
-            for (int bits = (expectedBytesCount - 1) * 8 + 1; bits <= (expectedBytesCount) * 8; bits++) {
+            for (int bits = (expectedBytesCount - 1) * 8 + 1; bits <= expectedBytesCount * 8; bits++) {
                 assertEquals(HexUtil.countBytesForBits(bits), expectedBytesCount);
             }
         }
@@ -332,7 +332,7 @@ public class HexUtilTest {
     @Test
     public void testBitsToBytes_WithShortSize() {
         byte[] expectedByteArray = new byte[1];
-        byte[] outputArray = new byte[1];
+        byte[] outputArray;
         BitSet methodBitSet = new BitSet(8);
 
         /* 0x01 */
@@ -368,8 +368,6 @@ public class HexUtilTest {
 
     /**
      * It adds 1 to a given BitSet
-     *
-     * @param aBitSet
      */
     private void addOne(BitSet aBitSet) {
         int bitSetIndex = 0;
