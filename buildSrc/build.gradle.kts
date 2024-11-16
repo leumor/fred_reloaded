@@ -11,3 +11,8 @@ repositories {
     // Use the plugin portal to apply community plugins in convention plugins.
     gradlePluginPortal()
 }
+
+dependencies {
+    implementation("net.ltgt.gradle:gradle-errorprone-plugin:latest.release")
+    implementation("net.ltgt.gradle:gradle-nullaway-plugin:latest.release")
+}

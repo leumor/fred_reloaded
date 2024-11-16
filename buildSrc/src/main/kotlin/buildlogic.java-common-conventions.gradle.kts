@@ -5,6 +5,8 @@
 plugins {
     // Apply the java Plugin to add support for Java.
     id("java")
+    id("net.ltgt.errorprone")
+    id("net.ltgt.nullaway")
 }
 
 repositories {
@@ -17,6 +19,13 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter:latest.release")
 
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+
+    errorprone("com.google.errorprone:error_prone_core:latest.release")
+    errorprone("com.uber.nullaway:nullaway:latest.release")
+
+    compileOnly("com.uber.nullaway:nullaway-annotations:latest.release")
+    compileOnly("org.jetbrains:annotations:latest.release")
+
 }
 
 // Apply a specific Java toolchain to ease working on different environments.
@@ -24,6 +33,10 @@ java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(21)
     }
+}
+
+nullaway {
+    annotatedPackages.add("hyphanet.support")
 }
 
 tasks.named<Test>("test") {
