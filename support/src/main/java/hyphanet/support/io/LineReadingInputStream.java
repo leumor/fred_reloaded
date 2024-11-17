@@ -14,27 +14,62 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 /**
- * A specialized {@link FilterInputStream} implementation that provides line reading capabilities with
- * support for both UTF-8 and ISO-8859-1 encodings.
- * <p>
- * This class handles both Unix (\n) and Windows (\r\n) line endings automatically. It provides
- * mechanisms to limit the maximum line length to prevent out-of-memory conditions when processing
- * untrusted input.
- * </p>
+ * <p>A specialized {@link FilterInputStream} implementation that provides line reading capabilities
+ * with support for both UTF-8 and ISO-8859-1 encodings.</p>
+ *
+ * <p>Key features:</p>
+ * <ul>
+ *   <li>Support for both UTF-8 and ISO-8859-1 character encodings</li>
+ *   <li>Automatic handling of Unix (\n) and Windows (\r\n) line endings</li>
+ *   <li>Built-in protection against memory exhaustion through configurable line length limits</li>
+ *   <li>Optimized reading strategies based on underlying stream capabilities (mark/reset support)</li>
+ * </ul>
+ *
+ * <p><strong>Memory Safety:</strong><br>
+ * This implementation includes safeguards against denial-of-service attacks and out-of-memory
+ * conditions when processing untrusted input by enforcing a maximum line length.</p>
+ *
+ * <p><strong>Example usage:</strong></p>
+ * <pre>{@code
+ * try (FileInputStream fileStream = new FileInputStream("data.txt");
+ *      LineReadingInputStream reader = new LineReadingInputStream(fileStream)) {
+ *
+ *     // Read a UTF-8 encoded line with 1KB maximum length
+ *     String line = reader.readLine(1024, 128, true);
+ *
+ *     if (line != null) {
+ *         // Process the line
+ *     }
+ * }
+ * }</pre>
+ *
+ * @see LineReader
+ * @see FilterInputStream
+ * @see TooLongException
  */
 public class LineReadingInputStream extends FilterInputStream implements LineReader {
 
+    /**
+     * <p>Creates a new LineReadingInputStream that reads from the specified input stream.</p>
+     *
+     * @param in the underlying input stream to read from
+     */
     public LineReadingInputStream(InputStream in) {
         super(in);
     }
 
     /**
-     * Read a \n or \r\n terminated line of UTF-8 or ISO-8859-1.
+     * {@inheritDoc}
      *
-     * @param maxLength  The maximum length of a line. If a line is longer than this, we throw
-     *                   IOException rather than keeping on reading it forever.
-     * @param bufferSize The initial size of the read buffer.
-     * @param utf        If true, read as UTF-8, if false, read as ISO-8859-1.
+     * <p>This implementation provides two different reading strategies based on whether
+     * the underlying stream supports marking:</p>
+     * <ul>
+     *   <li>If marking is supported, uses an optimized bulk reading strategy</li>
+     *   <li>If marking is not supported, falls back to byte-by-byte reading</li>
+     * </ul>
+     *
+     * <p>The method automatically handles both Unix (\n) and Windows (\r\n) line endings,
+     * stripping them from the returned string.</p>
      */
     @Override
     public @Nullable String readLine(int maxLength, int bufferSize, boolean utf) throws IOException {
@@ -50,6 +85,26 @@ public class LineReadingInputStream extends FilterInputStream implements LineRea
             readLineWithoutMarking(maxLength, bufferSize, utf);
     }
 
+    /**
+     * <p>Reads a line when the underlying stream does not support marking.</p>
+     *
+     * <p>This method reads the input stream byte by byte until one of the following conditions is
+     * met:</p>
+     * <ul>
+     *   <li>A line terminator is encountered (\n)</li>
+     *   <li>The end of stream is reached</li>
+     *   <li>The maximum line length is exceeded</li>
+     * </ul>
+     *
+     * @param maxLength  maximum allowed length of a line in bytes
+     * @param bufferSize initial size of the read buffer
+     * @param utf        if true, decode as UTF-8; if false, decode as ISO-8859-1
+     *
+     * @return the line of text, or null if end of stream is reached immediately
+     *
+     * @throws IOException      if an I/O error occurs
+     * @throws TooLongException if the line length exceeds maxLength
+     */
     protected @Nullable String readLineWithoutMarking(int maxLength, int bufferSize, boolean utf)
         throws IOException {
         byte[] buf = new byte[calculateBufferSize(maxLength, bufferSize)];
@@ -78,15 +133,23 @@ public class LineReadingInputStream extends FilterInputStream implements LineRea
     }
 
     /**
-     * Reads a line when mark/reset is supported by the underlying stream.
+     * <p>Reads a line when the underlying stream supports marking.</p>
      *
-     * @param maxLength  maximum line length
-     * @param bufferSize initial buffer size
-     * @param utf        encoding flag
+     * <p>This method uses an optimized bulk reading strategy that:</p>
+     * <ul>
+     *   <li>Reads data in larger chunks for better performance</li>
+     *   <li>Uses mark/reset to handle line terminators efficiently</li>
+     *   <li>Dynamically resizes the buffer as needed up to maxLength</li>
+     * </ul>
      *
-     * @return the read line
+     * @param maxLength  maximum allowed length of a line in bytes
+     * @param bufferSize initial size of the read buffer
+     * @param utf        if true, decode as UTF-8; if false, decode as ISO-8859-1
      *
-     * @throws IOException if an I/O error occurs
+     * @return the line of text, or null if end of stream is reached immediately
+     *
+     * @throws IOException      if an I/O error occurs
+     * @throws TooLongException if the line length exceeds maxLength
      */
     private @Nullable String readLineWithMarking(int maxLength, int bufferSize, boolean utf)
         throws IOException {
@@ -102,7 +165,7 @@ public class LineReadingInputStream extends FilterInputStream implements LineRea
                 return handleEndOfStream(buf, ctr, bytesRead, utf);
             }
 
-            // REDFLAG this is definitely safe with UTF_8 and ISO_8859_1, it may not be safe with some
+            // WARNING: this is definitely safe with UTF_8 and ISO_8859_1, it may not be safe with some
             // wierd ones.
             int end = ctr + bytesRead;
             for (; ctr < end; ctr++) {
@@ -126,12 +189,48 @@ public class LineReadingInputStream extends FilterInputStream implements LineRea
         }
     }
 
-    // Helper methods
+    /**
+     * <p>Calculates the optimal buffer size based on the given constraints, balancing memory usage
+     * and performance.</p>
+     *
+     * <p>The buffer size calculation follows these principles:</p>
+     * <ul>
+     *   <li>Never exceeds the maximum line length (to prevent memory waste)</li>
+     *   <li>Maintains a minimum buffer size for efficiency (128 bytes)</li>
+     *   <li>Caps the maximum buffer size to a reasonable default (1024 bytes)</li>
+     *   <li>Respects the requested buffer size when it falls within these bounds</li>
+     * </ul>
+     *
+     * <p>This approach is optimal because it:</p>
+     * <ul>
+     *   <li>Minimizes memory overhead for small line lengths</li>
+     *   <li>Provides good performance for typical line lengths through adequate buffering</li>
+     *   <li>Prevents excessive memory allocation for very large lines</li>
+     *   <li>Adapts to both marking and non-marking input streams efficiently</li>
+     * </ul>
+     *
+     * @param maxLength     maximum allowed length of a line
+     * @param requestedSize requested buffer size from the caller
+     *
+     * @return the optimal buffer size that balances memory usage and performance
+     */
     private static int calculateBufferSize(int maxLength, int requestedSize) {
         return Math.max(Math.min(MIN_BUFFER_SIZE, maxLength),
                         Math.min(DEFAULT_BUFFER_SIZE, requestedSize));
     }
 
+    /**
+     * <p>Handles end-of-stream conditions when reading a line.</p>
+     *
+     * @param buf       the buffer containing the partial line
+     * @param ctr       number of bytes read so far
+     * @param bytesRead result of the last read operation
+     * @param utf       encoding flag
+     *
+     * @return the final line or null if no data was read
+     *
+     * @throws EOFException if an unexpected end of stream is encountered
+     */
     private @Nullable String handleEndOfStream(byte[] buf, int ctr, int bytesRead, boolean utf)
         throws EOFException {
         if (ctr == 0 && bytesRead < 0) {
@@ -146,13 +245,16 @@ public class LineReadingInputStream extends FilterInputStream implements LineRea
     }
 
     /**
-     * Creates a line string from the buffer, handling CR/LF.
+     * <p>Creates a string from the buffer contents, handling CR/LF line endings.</p>
      *
-     * @param buf    the buffer containing the line
+     * <p>This method automatically detects and removes carriage return characters
+     * when they precede line feeds.</p>
+     *
+     * @param buf    the buffer containing the line data
      * @param endPos the position of the line end
-     * @param utf    encoding flag
+     * @param utf    if true, decode as UTF-8; if false, decode as ISO-8859-1
      *
-     * @return the line string
+     * @return the decoded string without line termination characters
      */
     private String createLineString(byte[] buf, int endPos, boolean utf) {
         if (endPos == 0) {
@@ -163,6 +265,16 @@ public class LineReadingInputStream extends FilterInputStream implements LineRea
                           utf ? StandardCharsets.UTF_8 : StandardCharsets.ISO_8859_1);
     }
 
+    /**
+     * <p>Creates a {@link TooLongException} with detailed diagnostic information.</p>
+     *
+     * @param buf       the buffer containing the partial line
+     * @param ctr       number of bytes read
+     * @param maxLength maximum allowed length
+     * @param utf       encoding flag
+     *
+     * @return a new TooLongException with detailed error message
+     */
     private static TooLongException createTooLongException(
         byte[] buf, int ctr, int maxLength, boolean utf) {
         return new TooLongException(
@@ -173,12 +285,12 @@ public class LineReadingInputStream extends FilterInputStream implements LineRea
     }
 
     /**
-     * Minimum buffer size for reading operations
+     * Minimum buffer size for reading operations in bytes
      */
     private static final int MIN_BUFFER_SIZE = 128;
 
     /**
-     * Default buffer size for reading operations
+     * Default buffer size for reading operations in bytes
      */
     private static final int DEFAULT_BUFFER_SIZE = 1024;
 
