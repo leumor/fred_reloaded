@@ -3,11 +3,12 @@
  */
 package hyphanet.support.logger;
 
+import hyphanet.support.logger.Logger.LogLevel;
+
 /**
- * A null implementation of the Logger interface that discards all log messages.
- * This class implements the Null Object pattern for the logging system,
- * providing a no-op logger that can be used when logging is disabled or
- * not required.
+ * A null implementation of the Logger interface that discards all log messages. This class implements
+ * the Null Object pattern for the logging system, providing a no-op logger that can be used when logging
+ * is disabled or not required.
  * <p>
  * Key characteristics:
  * <ul>
@@ -37,7 +38,11 @@ package hyphanet.support.logger;
  * @see LoggerHook
  * @see LogLevel#NONE
  */
-public class VoidLogger extends Logger {
+public final class VoidLoggerHook extends LoggerHook {
+
+    VoidLoggerHook() {
+        super(LogLevel.NONE);
+    }
 
     @Override
     public void log(Object o, Class<?> source, String message, Throwable e, LogLevel priority) {
@@ -99,10 +104,10 @@ public class VoidLogger extends Logger {
     }
 
     @Override
-    public final void instanceRegisterLogThresholdCallback(LogThresholdCallback ltc) {
+    public void instanceRegisterLogThresholdCallback(LogThresholdCallback ltc) {
     }
 
     @Override
-    public final void instanceUnregisterLogThresholdCallback(LogThresholdCallback ltc) {
+    public void instanceUnregisterLogThresholdCallback(LogThresholdCallback ltc) {
     }
 }
