@@ -1,104 +1,111 @@
 package hyphanet.support.logger;
 
-import java.util.Arrays;
+import hyphanet.support.logger.Logger.LogLevel;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 
 /**
- * A class that takes logging messages and distributes them to LoggerHooks.
- * It implements LoggerHook itself, so that instances can be chained (just
- * don't create loops).
+ * A logging implementation that distributes logging messages to multiple {@link LoggerHook} instances.
+ * This class implements the Chain of Responsibility pattern for logging, allowing logging events to be
+ * processed by multiple handlers in sequence.
+ *
+ * <p>This implementation is thread-safe and supports dynamic addition and removal of logging hooks
+ * at runtime. It extends {@link LoggerHook} to allow for logger chaining, but care should be taken to
+ * avoid creating cycles in the chain.</p>
+ *
+ * <p><strong>Usage example:</strong></p>
+ * <pre>{@code
+ * LoggerHookChain chain = new LoggerHookChain(LogLevel.NORMAL);
+ * chain.addHook(new FileLoggerHook())
+ *      .addHook(new ConsoleLoggerHook());
+ * chain.log("Test message", LogLevel.NORMAL);
+ * }</pre>
+ *
+ * @see LoggerHook
+ * @see LogLevel
  */
 public class LoggerHookChain extends LoggerHook {
 
     /**
-     * Create a logger. Threshhold set to NORMAL.
+     * Constructs a new logger chain with {@link LogLevel#NORMAL} threshold.
      */
     public LoggerHookChain() {
         this(LogLevel.NORMAL);
     }
 
     /**
-     * Create a logger.
+     * Constructs a new logger chain with the specified threshold.
      *
-     * @param threshold Suppress all log calls with lower priority then
-     *                  this.
+     * @param threshold the minimum {@link LogLevel} for log messages to be processed
      */
     public LoggerHookChain(LogLevel threshold) {
         super(threshold);
-        hooks = new LoggerHook[0];
-    }
-
-    public LoggerHookChain(String threshold) throws InvalidThresholdException {
-        super(threshold);
-        hooks = new LoggerHook[0];
+        hooks = new CopyOnWriteArrayList<>();
     }
 
     /**
-     * This is the implementation of LoggerHook method, which allows
-     * one logger receive events from another.
+     * Constructs a new logger chain with a threshold specified by name.
      *
-     * @implements LoggerHook.log()
+     * @param threshold string representation of the threshold level
+     *
+     * @throws InvalidThresholdException if the threshold name is invalid
+     */
+    public LoggerHookChain(String threshold) throws InvalidThresholdException {
+        super(threshold);
+        hooks = new CopyOnWriteArrayList<>();
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>This implementation distributes the log message to all registered hooks.</p>
      */
     @Override
-    public synchronized void log(Object o, Class<?> c, String msg, Throwable e, LogLevel priority) {
+    public void log(Object o, Class<?> c, String msg, Throwable e, LogLevel priority) {
         for (LoggerHook hook : hooks) {
             hook.log(o, c, msg, e, priority);
         }
     }
 
     /**
-     * Add a hook which will be called every time a message is logged
+     * Adds a new logging hook to the chain.
+     *
+     * @param hook the logging hook to add
+     *
+     * @return this chain instance for method chaining
      */
-    public synchronized void addHook(LoggerHook lh) {
-        LoggerHook[] newHooks = Arrays.copyOf(hooks, hooks.length + 1);
-        newHooks[hooks.length] = lh;
-        hooks = newHooks;
+    public LoggerHookChain addHook(LoggerHook hook) {
+        hooks.add(hook);
+        return this;
     }
 
     /**
-     * Remove a hook from the logger.
+     * Removes a logging hook from the chain.
+     *
+     * @param hook the logging hook to remove
+     *
+     * @return this chain instance for method chaining
      */
-    public synchronized void removeHook(LoggerHook lh) {
-        final int hooksLength = hooks.length;
-        if (hooksLength == 0) return;
-        LoggerHook[] newHooks = new LoggerHook[hooksLength - 1];
-        int x = 0;
-        for (int i = 0; i < hooksLength; i++) {
-            if (hooks[i] == lh) continue;
-            if (x == newHooks.length) return; // nothing matched
-            newHooks[x++] = hooks[i];
-        }
-        if (x == newHooks.length) {
-            hooks = newHooks;
-        } else {
-            hooks = Arrays.copyOf(newHooks, x);
-        }
+    public LoggerHookChain removeHook(LoggerHook hook) {
+        hooks.remove(hook);
+        return this;
     }
 
     /**
-     * Returns all the current hooks.
+     * Returns an unmodifiable list of all currently registered hooks.
+     *
+     * @return an unmodifiable list of logging hooks
      */
-    public synchronized LoggerHook[] getHooks() {
-        return hooks;
+    public List<LoggerHook> getHooks() {
+        return Collections.unmodifiableList(hooks);
     }
 
-    @Override
-    public void setDetailedThresholds(String details) throws InvalidThresholdException {
-        super.setDetailedThresholds(details);
-        // No need to tell subordinates, we will do the filtering.
-//		LoggerHook[] h = ;
-//		for (LoggerHook h: getHooks())
-//			h.setDetailedThresholds(details);
-    }
-
-    @Override
-    public void setThreshold(LogLevel thresh) {
-        super.setThreshold(thresh);
-//		for (LoggerHook h: getHooks())
-//			h.setThreshold(thresh);
-    }
-    // Best performance, least synchronization.
-    // We will only very rarely add or remove hooks
-    private LoggerHook[] hooks;
+    /**
+     * Thread-safe list of logging hooks that will receive log messages.
+     */
+    private final CopyOnWriteArrayList<LoggerHook> hooks;
 }
 
