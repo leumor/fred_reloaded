@@ -37,6 +37,7 @@ java {
 
 nullaway {
     annotatedPackages.add("hyphanet.support")
+    annotatedPackages.add("hyphanet.key")
 }
 
 tasks.named<Test>("test") {
