@@ -1,7 +1,7 @@
 package hyphanet.support;
 
-import hyphanet.support.logger.Logger;
-import hyphanet.support.logger.Logger.LogLevel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -28,6 +28,8 @@ import java.util.BitSet;
  * @author syoung
  */
 public class HexUtil {
+    private static final Logger logger = LoggerFactory.getLogger(HexUtil.class);
+
     /**
      * Private constructor to prevent instantiation of utility class.
      */
@@ -172,7 +174,7 @@ public class HexUtil {
         byte[] b = new byte[bytesAlloc];
         StringBuilder sb = null;
 
-        if (logDEBUG) {
+        if (logger.isDebugEnabled()) {
             // "8 * bytesAlloc" would only allocate enough space for the number of bits
             // "2 * 8 * bytesAlloc" correctly allocates space for the string representation where each
             // bit becomes a character
@@ -195,9 +197,8 @@ public class HexUtil {
             b[i] = (byte) s;
         }
         if (sb != null) {
-            Logger.debug(HexUtil.class,
-                         String.format("bytes: %d returned from bitsToBytes(%s,%d): %s for %s",
-                                       bytesAlloc, ba, size, bytesToHex(b), sb));
+            logger.debug("bytes: {} returned from bitsToBytes({},{}): {} for {}", bytesAlloc, ba, size,
+                         bytesToHex(b), sb);
         }
         return b;
     }
@@ -248,9 +249,7 @@ public class HexUtil {
      * @param maxSize the maximum number of bits to read
      */
     public static void bytesToBits(byte[] b, BitSet ba, int maxSize) {
-        if (logDEBUG) {
-            Logger.debug(HexUtil.class, "bytesToBits(" + bytesToHex(b) + ",ba," + maxSize + ")");
-        }
+        logger.debug("bytesToBits({},ba,{})", bytesToHex(b), maxSize);
 
         int x = 0;
         for (byte bi : b) {
@@ -335,6 +334,4 @@ public class HexUtil {
     public static String biToHex(BigInteger bi) {
         return bytesToHex(bi.toByteArray());
     }
-
-    final private static boolean logDEBUG = Logger.shouldLog(LogLevel.DEBUG, HexUtil.class);
 }

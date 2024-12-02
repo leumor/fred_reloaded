@@ -26,6 +26,8 @@ dependencies {
     compileOnly("com.uber.nullaway:nullaway-annotations:latest.release")
     compileOnly("org.jetbrains:annotations:latest.release")
 
+    implementation("ch.qos.logback:logback-classic:latest.release")
+
 }
 
 // Apply a specific Java toolchain to ease working on different environments.

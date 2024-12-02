@@ -4,11 +4,10 @@
 package hyphanet.support.io;
 
 import hyphanet.support.StringValidityChecker;
-import hyphanet.support.logger.LogThresholdCallback;
-import hyphanet.support.logger.Logger;
-import hyphanet.support.logger.Logger.LogLevel;
 import org.bouncycastle.crypto.io.CipherInputStream;
 import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.nio.CharBuffer;
@@ -39,19 +38,16 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * </ul>
  */
 final public class FileUtil {
-
     /**
      * Default buffer size used for file operations. Set to 32KB for optimal performance on most file
      * systems.
      */
     public static final int BUFFER_SIZE = 32 * 1024;
-
     /**
      * The detected operating system for the current environment. This is determined at class
      * initialization time.
      */
     public static final OperatingSystem DETECTED_OS = detectOperatingSystem();
-
     /**
      * The detected CPU architecture for the current environment.
      *
@@ -112,14 +108,21 @@ final public class FileUtil {
         UNKNOWN, X86_32, X86_64, ARM_32, ARM_64, RISCV_64, PPC_32, PPC_64, IA64
     }
 
-    static {
-        Logger.registerLogThresholdCallback(new LogThresholdCallback() {
-            @Override
-            public void shouldUpdate() {
-                logMINOR = Logger.shouldLog(LogLevel.MINOR, this);
-            }
-        });
-    }
+    private static final Logger logger = LoggerFactory.getLogger(FileUtil.class);
+
+    // I did not find any way to detect the Charset of the file system so I'm using the file
+    // encoding charset.
+    // On Windows and Linux this is set based on the users configured system language which is
+    // probably equal to the filename charset.
+    // The worst thing which can happen if we misdetect the filename charset is that downloads
+    // fail because the filenames are invalid:
+    // We disallow path and file separator characters anyway so its not possible to cause files to
+    // be stored in arbitrary places.
+    private static final Charset FILE_NAME_CHARSET = getFileEncodingCharset();
+    //    private static final ZeroInputStream zis = new ZeroInputStream();
+    private static volatile boolean logMINOR;
+    private static CipherInputStream cis;
+    private static long cisCounter;
 
     /**
      * Gets a reader for the tail portion of a log file.
@@ -659,7 +662,7 @@ final public class FileUtil {
             // Attempt atomic move from temp to target
             return renameTo(tempFile, targetPath);
         } catch (IOException e) {
-            Logger.error(FileUtil.class, "Failed to write to " + targetPath + ": " + e.getMessage());
+            logger.error("Failed to write to {}: {}", targetPath, e.getMessage());
             return false;
         } finally {
             // Clean up temp file if still exists
@@ -698,16 +701,15 @@ final public class FileUtil {
                 Files.move(source, target, StandardCopyOption.REPLACE_EXISTING);
                 return true;
             } catch (IOException moveError) {
-                Logger.error(FileUtil.class, "Failed to rename " + source + " to " + target +
-                                             (Files.exists(target) ? " (target exists)" : "") +
-                                             (Files.exists(source) ? " (source exists)" : ""),
-                             moveError);
+                logger.error("Failed to rename {} to {}{}{}", source, target,
+                             Files.exists(target) ? " (target exists)" : "",
+                             Files.exists(source) ? " (source exists)" : "", moveError);
                 return false;
             }
         } catch (IOException e) {
-            Logger.error(FileUtil.class, "Failed to rename " + source + " to " + target +
-                                         (Files.exists(target) ? " (target exists)" : "") +
-                                         (Files.exists(source) ? " (source exists)" : ""), e);
+            logger.error("Failed to rename {} to {}{}{}", source, target,
+                         Files.exists(target) ? " (target exists)" : "",
+                         Files.exists(source) ? " (source exists)" : "", e);
             return false;
         }
     }
@@ -736,6 +738,36 @@ final public class FileUtil {
 
         return renameTo(orig.toPath(), dest.toPath());
     }
+
+    // TODO
+    //    /**
+    //     * Like renameTo(), but can move across filesystems, by copying the data.
+    //     *
+    //     * @param orig
+    //     * @param dest
+    //     * @param overwrite
+    //     */
+    //    public static boolean moveTo(File orig, File dest, boolean overwrite) {
+    //        if (orig.equals(dest)) {
+    //            throw new IllegalArgumentException("Huh? the two file descriptors are the same!");
+    //        }
+    //        if (!orig.exists()) {
+    //            throw new IllegalArgumentException("Original doesn't exist!");
+    //        }
+    //        if (dest.exists()) {
+    //            if (overwrite) {
+    //                dest.delete();
+    //            } else {
+    //                System.err.println("Not overwriting " + dest + " - already exists moving " + orig);
+    //                return false;
+    //            }
+    //        }
+    //        if (!orig.renameTo(dest)) {
+    //            return copyFile(orig, dest);
+    //        } else {
+    //            return true;
+    //        }
+    //    }
 
     /**
      * Sanitizes a filename to ensure it is valid for the specified operating system. The method removes
@@ -869,6 +901,15 @@ final public class FileUtil {
         return sanitizeFileName(fileName, DETECTED_OS, extraChars);
     }
 
+    // TODO
+    //    public static String sanitize(String filename, String mimeType) {
+    //        filename = sanitize(filename);
+    //        if (mimeType == null) {
+    //            return filename;
+    //        }
+    //        return DefaultMIMETypes.forceExtension(filename, mimeType);
+    //    }
+
     /**
      * Calculates the total length of an input stream by reading it to completion.
      *
@@ -928,36 +969,6 @@ final public class FileUtil {
 
         return length;
     }
-
-    // TODO
-    //    /**
-    //     * Like renameTo(), but can move across filesystems, by copying the data.
-    //     *
-    //     * @param orig
-    //     * @param dest
-    //     * @param overwrite
-    //     */
-    //    public static boolean moveTo(File orig, File dest, boolean overwrite) {
-    //        if (orig.equals(dest)) {
-    //            throw new IllegalArgumentException("Huh? the two file descriptors are the same!");
-    //        }
-    //        if (!orig.exists()) {
-    //            throw new IllegalArgumentException("Original doesn't exist!");
-    //        }
-    //        if (dest.exists()) {
-    //            if (overwrite) {
-    //                dest.delete();
-    //            } else {
-    //                System.err.println("Not overwriting " + dest + " - already exists moving " + orig);
-    //                return false;
-    //            }
-    //        }
-    //        if (!orig.renameTo(dest)) {
-    //            return copyFile(orig, dest);
-    //        } else {
-    //            return true;
-    //        }
-    //    }
 
     /**
      * Copies bytes from a source input stream to a destination output stream using optimized methods
@@ -1089,21 +1100,44 @@ final public class FileUtil {
                 files.sorted(Comparator.reverseOrder()).forEach(path -> {
                     try {
                         if (!Files.deleteIfExists(path)) {
-                            Logger.error(FileUtil.class, "Failed to delete: " + path);
+                            logger.error("Failed to delete: {}", path);
                             success.set(false);
                         }
                     } catch (IOException e) {
-                        Logger.error(FileUtil.class, "Failed to delete: " + path, e);
+                        logger.error("Failed to delete: {}", path, e);
                         success.set(false);
                     }
                 });
             }
             return success.get();
         } catch (IOException e) {
-            Logger.error(FileUtil.class, "Failed to delete: " + wd);
+            logger.error("Failed to delete: {}", wd, e);
             return false;
         }
     }
+
+    // TODO
+    //    public static boolean secureDeleteAll(File wd) throws IOException {
+    //        if (!wd.isDirectory()) {
+    //            System.err.println("DELETING FILE " + wd);
+    //            try {
+    //                secureDelete(wd);
+    //            } catch (IOException e) {
+    //                Logger.error(FileUtil.class, "Could not delete file: " + wd, e);
+    //                return false;
+    //            }
+    //        } else {
+    //            for (File subfile : wd.listFiles()) {
+    //                if (!removeAll(subfile)) {
+    //                    return false;
+    //                }
+    //            }
+    //            if (!wd.delete()) {
+    //                Logger.error(FileUtil.class, "Could not delete directory: " + wd);
+    //            }
+    //        }
+    //        return true;
+    //    }
 
     /**
      * Sets read and write permissions for the owner only on the specified file. This is a convenience
@@ -1128,15 +1162,6 @@ final public class FileUtil {
         return setOwnerPerm(f, true, true, false);
     }
 
-    // TODO
-    //    public static String sanitize(String filename, String mimeType) {
-    //        filename = sanitize(filename);
-    //        if (mimeType == null) {
-    //            return filename;
-    //        }
-    //        return DefaultMIMETypes.forceExtension(filename, mimeType);
-    //    }
-
     /**
      * Sets read, write, and execute permissions for the owner only on the specified file. This is a
      * convenience method that delegates to {@link #setOwnerPerm(File, boolean, boolean, boolean)}.
@@ -1159,6 +1184,40 @@ final public class FileUtil {
     public static boolean setOwnerRWX(File f) {
         return setOwnerPerm(f, true, true, true);
     }
+
+    // TODO
+    //    public static void secureDelete(File file) throws IOException {
+    //        // FIXME somebody who understands these things should have a look at this...
+    //        if (!file.exists()) {
+    //            return;
+    //        }
+    //        long size = file.length();
+    //        if (size > 0) {
+    //            RandomAccessFile raf = null;
+    //            try {
+    //                System.out.println(
+    //                    "Securely deleting " + file + " which is of length " + size + " bytes...");
+    //                raf = new RandomAccessFile(file, "rw");
+    //                // Random data first.
+    //                raf.seek(0);
+    //                fill(new RandomAccessFileOutputStream(raf), size);
+    //                raf.getFD().sync();
+    //                raf.close();
+    //                raf = null;
+    //            } finally {
+    //                Closer.close(raf);
+    //            }
+    //        }
+    //        if ((!file.delete()) && file.exists()) {
+    //            throw new IOException("Unable to delete file " + file);
+    //        }
+    //    }
+
+    // TODO
+    //    @Deprecated
+    //    public static void secureDelete(File file, Random random) throws IOException {
+    //        secureDelete(file);
+    //    }
 
     /**
      * Sets specific owner-only permissions on the specified file or directory. This is a convenience
@@ -1252,33 +1311,10 @@ final public class FileUtil {
             return success;
 
         } catch (IOException e) {
-            Logger.error(FileUtil.class, "Failed to set permissions on " + path + ": " + e.getMessage());
+            logger.error("Failed to set permissions on {}: {}", path, e.getMessage());
             return false;
         }
     }
-
-    // TODO
-    //    public static boolean secureDeleteAll(File wd) throws IOException {
-    //        if (!wd.isDirectory()) {
-    //            System.err.println("DELETING FILE " + wd);
-    //            try {
-    //                secureDelete(wd);
-    //            } catch (IOException e) {
-    //                Logger.error(FileUtil.class, "Could not delete file: " + wd, e);
-    //                return false;
-    //            }
-    //        } else {
-    //            for (File subfile : wd.listFiles()) {
-    //                if (!removeAll(subfile)) {
-    //                    return false;
-    //                }
-    //            }
-    //            if (!wd.delete()) {
-    //                Logger.error(FileUtil.class, "Could not delete directory: " + wd);
-    //            }
-    //        }
-    //        return true;
-    //    }
 
     /**
      * Compares two files for content equality. This is a convenience method that delegates to
@@ -1361,40 +1397,6 @@ final public class FileUtil {
         }
     }
 
-    // TODO
-    //    public static void secureDelete(File file) throws IOException {
-    //        // FIXME somebody who understands these things should have a look at this...
-    //        if (!file.exists()) {
-    //            return;
-    //        }
-    //        long size = file.length();
-    //        if (size > 0) {
-    //            RandomAccessFile raf = null;
-    //            try {
-    //                System.out.println(
-    //                    "Securely deleting " + file + " which is of length " + size + " bytes...");
-    //                raf = new RandomAccessFile(file, "rw");
-    //                // Random data first.
-    //                raf.seek(0);
-    //                fill(new RandomAccessFileOutputStream(raf), size);
-    //                raf.getFD().sync();
-    //                raf.close();
-    //                raf = null;
-    //            } finally {
-    //                Closer.close(raf);
-    //            }
-    //        }
-    //        if ((!file.delete()) && file.exists()) {
-    //            throw new IOException("Unable to delete file " + file);
-    //        }
-    //    }
-
-    // TODO
-    //    @Deprecated
-    //    public static void secureDelete(File file, Random random) throws IOException {
-    //        secureDelete(file);
-    //    }
-
     /**
      * Creates a temporary file with the specified prefix and suffix in the given directory. The created
      * file will be deleted when the JVM exits.
@@ -1429,6 +1431,78 @@ final public class FileUtil {
         }
         return createTempFile(prefix, suffix, directory.toPath()).toFile();
     }
+
+    // TODO
+    //    public static boolean copyFile(File copyFrom, File copyTo) {
+    //        copyTo.delete();
+    //        boolean executable = copyFrom.canExecute();
+    //        FileBucket outBucket = new FileBucket(copyTo, false, true, false, false);
+    //        FileBucket inBucket = new FileBucket(copyFrom, true, false, false, false);
+    //        try {
+    //            BucketTools.copy(inBucket, outBucket);
+    //            if (executable) {
+    //                if (!(copyTo.setExecutable(true) || copyTo.canExecute())) {
+    //                    System.err.println("Unable to preserve executable bit when copying " +
+    //                    copyFrom + " to " + copyTo + " - you may need to make it executable!");
+    //                    // return false; ??? FIXME debatable.
+    //                }
+    //            }
+    //            return true;
+    //        } catch (IOException e) {
+    //            System.err.println("Unable to copy from " + copyFrom + " to " + copyTo);
+    //            return false;
+    //        }
+    //    }
+
+    // TODO
+    //    /**
+    //     * Write hard to identify random data to the OutputStream. Does not drain the global secure
+    //     random
+    //     * number generator, and is significantly faster than it.
+    //     *
+    //     * @param os     The stream to write to.
+    //     * @param length The number of bytes to write.
+    //     *
+    //     * @throws IOException If unable to write to the stream.
+    //     */
+    //    public static void fill(OutputStream os, long length) throws IOException {
+    //        long remaining = length;
+    //        byte[] buffer = new byte[BUFFER_SIZE];
+    //        int read = 0;
+    //        while ((remaining == -1) || (remaining > 0)) {
+    //            synchronized (FileUtil.class) {
+    //                if (cis == null || cisCounter > Long.MAX_VALUE / 2) {
+    //                    // Reset it well before the birthday paradox (note this is actually counting
+    //                    bytes).
+    //                    byte[] key = new byte[16];
+    //                    byte[] iv = new byte[16];
+    //                    SecureRandom rng = NodeStarter.getGlobalSecureRandom();
+    //                    rng.nextBytes(key);
+    //                    rng.nextBytes(iv);
+    //                    AESFastEngine e = new AESFastEngine();
+    //                    SICBlockCipher ctr = new SICBlockCipher(e);
+    //                    ctr.init(true, new ParametersWithIV(new KeyParameter(key), iv));
+    //                    cis = new CipherInputStream(zis, new BufferedBlockCipher(ctr));
+    //                    cisCounter = 0;
+    //                }
+    //                read = cis.read(buffer, 0,
+    //                                ((remaining > BUFFER_SIZE) || (remaining == -1)) ? BUFFER_SIZE :
+    //                                    (int) remaining);
+    //                cisCounter += read;
+    //            }
+    //            if (read == -1) {
+    //                if (length == -1) {
+    //                    return;
+    //                }
+    //                throw new EOFException("stream reached eof");
+    //            }
+    //            os.write(buffer, 0, read);
+    //            if (remaining > 0) {
+    //                remaining -= read;
+    //            }
+    //        }
+    //
+    //    }
 
     /**
      * Creates a temporary file with the specified prefix and suffix in the given directory. The created
@@ -1685,78 +1759,6 @@ final public class FileUtil {
         throw new IllegalArgumentException("No suitable replacement character available");
     }
 
-    // TODO
-    //    public static boolean copyFile(File copyFrom, File copyTo) {
-    //        copyTo.delete();
-    //        boolean executable = copyFrom.canExecute();
-    //        FileBucket outBucket = new FileBucket(copyTo, false, true, false, false);
-    //        FileBucket inBucket = new FileBucket(copyFrom, true, false, false, false);
-    //        try {
-    //            BucketTools.copy(inBucket, outBucket);
-    //            if (executable) {
-    //                if (!(copyTo.setExecutable(true) || copyTo.canExecute())) {
-    //                    System.err.println("Unable to preserve executable bit when copying " +
-    //                    copyFrom + " to " + copyTo + " - you may need to make it executable!");
-    //                    // return false; ??? FIXME debatable.
-    //                }
-    //            }
-    //            return true;
-    //        } catch (IOException e) {
-    //            System.err.println("Unable to copy from " + copyFrom + " to " + copyTo);
-    //            return false;
-    //        }
-    //    }
-
-    // TODO
-    //    /**
-    //     * Write hard to identify random data to the OutputStream. Does not drain the global secure
-    //     random
-    //     * number generator, and is significantly faster than it.
-    //     *
-    //     * @param os     The stream to write to.
-    //     * @param length The number of bytes to write.
-    //     *
-    //     * @throws IOException If unable to write to the stream.
-    //     */
-    //    public static void fill(OutputStream os, long length) throws IOException {
-    //        long remaining = length;
-    //        byte[] buffer = new byte[BUFFER_SIZE];
-    //        int read = 0;
-    //        while ((remaining == -1) || (remaining > 0)) {
-    //            synchronized (FileUtil.class) {
-    //                if (cis == null || cisCounter > Long.MAX_VALUE / 2) {
-    //                    // Reset it well before the birthday paradox (note this is actually counting
-    //                    bytes).
-    //                    byte[] key = new byte[16];
-    //                    byte[] iv = new byte[16];
-    //                    SecureRandom rng = NodeStarter.getGlobalSecureRandom();
-    //                    rng.nextBytes(key);
-    //                    rng.nextBytes(iv);
-    //                    AESFastEngine e = new AESFastEngine();
-    //                    SICBlockCipher ctr = new SICBlockCipher(e);
-    //                    ctr.init(true, new ParametersWithIV(new KeyParameter(key), iv));
-    //                    cis = new CipherInputStream(zis, new BufferedBlockCipher(ctr));
-    //                    cisCounter = 0;
-    //                }
-    //                read = cis.read(buffer, 0,
-    //                                ((remaining > BUFFER_SIZE) || (remaining == -1)) ? BUFFER_SIZE :
-    //                                    (int) remaining);
-    //                cisCounter += read;
-    //            }
-    //            if (read == -1) {
-    //                if (length == -1) {
-    //                    return;
-    //                }
-    //                throw new EOFException("stream reached eof");
-    //            }
-    //            os.write(buffer, 0, read);
-    //            if (remaining > 0) {
-    //                remaining -= read;
-    //            }
-    //        }
-    //
-    //    }
-
     /**
      * Checks if a filename matches any Windows reserved names or patterns.
      *
@@ -1948,20 +1950,5 @@ final public class FileUtil {
         int mask = blocksize - 1;
         return (val + mask) & ~mask;
     }
-
-
-    // I did not find any way to detect the Charset of the file system so I'm using the file
-    // encoding charset.
-    // On Windows and Linux this is set based on the users configured system language which is
-    // probably equal to the filename charset.
-    // The worst thing which can happen if we misdetect the filename charset is that downloads
-    // fail because the filenames are invalid:
-    // We disallow path and file separator characters anyway so its not possible to cause files to
-    // be stored in arbitrary places.
-    private static final Charset FILE_NAME_CHARSET = getFileEncodingCharset();
-    //    private static final ZeroInputStream zis = new ZeroInputStream();
-    private static volatile boolean logMINOR;
-    private static CipherInputStream cis;
-    private static long cisCounter;
 
 }

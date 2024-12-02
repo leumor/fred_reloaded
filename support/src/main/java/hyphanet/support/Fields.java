@@ -1,8 +1,5 @@
 package hyphanet.support;
 
-import hyphanet.support.logger.LogThresholdCallback;
-import hyphanet.support.logger.Logger;
-import hyphanet.support.logger.Logger.LogLevel;
 import org.jspecify.annotations.Nullable;
 
 import java.nio.ByteBuffer;
@@ -21,14 +18,18 @@ import java.util.stream.Collectors;
  */
 public final class Fields {
 
-    static {
-        Logger.registerLogThresholdCallback(new LogThresholdCallback() {
-            @Override
-            public void shouldUpdate() {
-                logMINOR = Logger.shouldLog(LogLevel.MINOR, this);
-            }
-        });
-    }
+    /**
+     * All possible chars for representing a number as a String. Used to optimize numberList().
+     */
+    private final static char[] digits =
+        {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i',
+            'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'};
+    private static final long[] MULTIPLES =
+        {1000, 1L << 10, 1000 * 1000, 1L << 20, 1000L * 1000L * 1000L, 1L << 30,
+            1000L * 1000L * 1000L * 1000L, 1L << 40, 1000L * 1000L * 1000L * 1000L * 1000, 1L << 50,
+            1000L * 1000L * 1000L * 1000L * 1000L * 1000L, 1L << 60};
+    private static final String[] MULTIPLES_2 =
+        {"k", "K", "m", "M", "g", "G", "t", "T", "p", "P", "e", "E"};
 
     private Fields() {
         throw new AssertionError("Utility class should not be instantiated");
@@ -491,7 +492,6 @@ public final class Fields {
         return hashValue;
     }
 
-
     /**
      * Converts an array of long integers to an array of bytes using little-endian byte ordering. Each
      * long value (64 bits) is converted into 8 bytes.
@@ -687,7 +687,6 @@ public final class Fields {
         return ByteBuffer.wrap(bytes, offset, REQUIRED_BYTES).order(ByteOrder.LITTLE_ENDIAN).getInt();
     }
 
-
     /**
      * Converts an array of bytes to a short integer using little-endian byte order.
      *
@@ -761,6 +760,49 @@ public final class Fields {
         return ByteBuffer.allocate(Long.BYTES).order(ByteOrder.LITTLE_ENDIAN).putLong(value).array();
     }
 
+    // TODO
+    //    /* Removes up to one "(bits) per second" qualifier at the end of the string. If present such a
+    //    qualifier will
+    //     * prevent parsing as a size.
+    //     * @see freenet.support.Fields#parseInt(String)
+    //     */
+    //    public static String trimPerSecond(String limit) {
+    //        limit = limit.trim();
+    //        if (limit.isEmpty()) {
+    //            return "";
+    //        }
+    //        /*
+    //         * IEC endings are case sensitive, so the input string's case should not be modified.
+    //         However,
+    //         *  the
+    //         * qualifiers should not be case sensitive.
+    //         */
+    //        final String lower = limit.toLowerCase();
+    //        for (String ending : new String[]{"/s", "/sec", "/second", "ps",
+    //            NodeL10n.getBase().getString("FirstTimeWizardToadlet.bandwidthPerSecond")
+    //            .toLowerCase()}) {
+    //            if (lower.endsWith(ending)) {
+    //                return limit.substring(0, limit.length() - ending.length());
+    //            }
+    //        }
+    //        return limit;
+    //    }
+    //
+    //    public static int parseInt(String s, Dimension dimension) throws NumberFormatException {
+    //        switch (dimension) {
+    //            case NOT:
+    //            case SIZE:
+    //                return parseInt(s);
+    //            case DURATION:
+    //                long durationInMillis = TimeUtil.toMillis(s);
+    //                if ((int) durationInMillis == durationInMillis) {
+    //                    return (int) durationInMillis;
+    //                }
+    //                throw new ArithmeticException("integer overflow");
+    //        }
+    //        throw new AssertionError("Unknown dimension " + dimension);
+    //    }
+
     /**
      * Converts an array of integers to bytes using little-endian byte order.
      *
@@ -806,6 +848,19 @@ public final class Fields {
         return ByteBuffer.allocate(Integer.BYTES).order(ByteOrder.LITTLE_ENDIAN).putInt(value).array();
     }
 
+    // TODO
+    //    public static String intToString(int val, Dimension dimension) {
+    //        switch (dimension) {
+    //            case NOT:
+    //                return intToString(val, false);
+    //            case SIZE:
+    //                return intToString(val, true);
+    //            case DURATION:
+    //                return TimeUtil.formatTime(val, 6, false);
+    //        }
+    //        throw new AssertionError("Unknown dimension " + dimension);
+    //    }
+
     /**
      * Converts a short value to an array of bytes using little-endian byte order. The returned array
      * will always have a length of 2 bytes.
@@ -817,49 +872,6 @@ public final class Fields {
     public static byte[] shortToBytes(short value) {
         return ByteBuffer.allocate(Short.BYTES).order(ByteOrder.LITTLE_ENDIAN).putShort(value).array();
     }
-
-    // TODO
-    //    /* Removes up to one "(bits) per second" qualifier at the end of the string. If present such a
-    //    qualifier will
-    //     * prevent parsing as a size.
-    //     * @see freenet.support.Fields#parseInt(String)
-    //     */
-    //    public static String trimPerSecond(String limit) {
-    //        limit = limit.trim();
-    //        if (limit.isEmpty()) {
-    //            return "";
-    //        }
-    //        /*
-    //         * IEC endings are case sensitive, so the input string's case should not be modified.
-    //         However,
-    //         *  the
-    //         * qualifiers should not be case sensitive.
-    //         */
-    //        final String lower = limit.toLowerCase();
-    //        for (String ending : new String[]{"/s", "/sec", "/second", "ps",
-    //            NodeL10n.getBase().getString("FirstTimeWizardToadlet.bandwidthPerSecond")
-    //            .toLowerCase()}) {
-    //            if (lower.endsWith(ending)) {
-    //                return limit.substring(0, limit.length() - ending.length());
-    //            }
-    //        }
-    //        return limit;
-    //    }
-    //
-    //    public static int parseInt(String s, Dimension dimension) throws NumberFormatException {
-    //        switch (dimension) {
-    //            case NOT:
-    //            case SIZE:
-    //                return parseInt(s);
-    //            case DURATION:
-    //                long durationInMillis = TimeUtil.toMillis(s);
-    //                if ((int) durationInMillis == durationInMillis) {
-    //                    return (int) durationInMillis;
-    //                }
-    //                throw new ArithmeticException("integer overflow");
-    //        }
-    //        throw new AssertionError("Unknown dimension " + dimension);
-    //    }
 
     /**
      * Parses a human-readable string representation of a number with optional SI (metric) or IEC
@@ -946,19 +958,6 @@ public final class Fields {
             throw new NumberFormatException("Failed to parse value: " + e.getMessage());
         }
     }
-
-    // TODO
-    //    public static String intToString(int val, Dimension dimension) {
-    //        switch (dimension) {
-    //            case NOT:
-    //                return intToString(val, false);
-    //            case SIZE:
-    //                return intToString(val, true);
-    //            case DURATION:
-    //                return TimeUtil.formatTime(val, 6, false);
-    //        }
-    //        throw new AssertionError("Unknown dimension " + dimension);
-    //    }
 
     /**
      * Converts numeric values to their string representation, optionally with size units.
@@ -1388,19 +1387,5 @@ public final class Fields {
             throw new NumberFormatException("Arithmetic overflow: " + e.getMessage());
         }
     }
-
-    /**
-     * All possible chars for representing a number as a String. Used to optimize numberList().
-     */
-    private final static char[] digits =
-        {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i',
-            'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'};
-    private static final long[] MULTIPLES =
-        {1000, 1L << 10, 1000 * 1000, 1L << 20, 1000L * 1000L * 1000L, 1L << 30,
-            1000L * 1000L * 1000L * 1000L, 1L << 40, 1000L * 1000L * 1000L * 1000L * 1000, 1L << 50,
-            1000L * 1000L * 1000L * 1000L * 1000L * 1000L, 1L << 60};
-    private static final String[] MULTIPLES_2 =
-        {"k", "K", "m", "M", "g", "G", "t", "T", "p", "P", "e", "E"};
-    private static volatile boolean logMINOR;
 
 }
