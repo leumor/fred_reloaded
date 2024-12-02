@@ -14,3 +14,5 @@ rootProject.name = "fred_reloaded"
 include("app")
 include("key")
 include("support")
+include("crypt")
+include("ext")
