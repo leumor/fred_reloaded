@@ -27,6 +27,7 @@ dependencies {
     compileOnly("org.jetbrains:annotations:latest.release")
 
     implementation("ch.qos.logback:logback-classic:latest.release")
+    implementation("com.machinezoo.noexception:noexception:latest.release")
 
 }
 

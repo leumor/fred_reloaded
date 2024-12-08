@@ -1,6 +1,6 @@
 package hyphanet.support;
 
-import org.apache.commons.lang3.function.Failable;
+import com.machinezoo.noexception.Exceptions;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -32,15 +32,9 @@ public final class Loader {
      * @throws ClassNotFoundException if the class cannot be found
      * @throws NullPointerException   if name is null
      */
+    @SuppressWarnings("RedundantThrows")
     public static Class<?> load(String name) throws ClassNotFoundException {
-        try {
-            return classes.computeIfAbsent(name, Failable.asFunction(Class::forName));
-        } catch (RuntimeException e) {
-            if (e.getCause() instanceof ClassNotFoundException cause) {
-                throw cause;
-            }
-            throw e;
-        }
+        return classes.computeIfAbsent(name, Exceptions.sneak().function(Class::forName));
     }
 
     /**

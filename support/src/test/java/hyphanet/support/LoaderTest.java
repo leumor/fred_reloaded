@@ -20,8 +20,7 @@ import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.InvocationTargetException;
 
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Test case for {@link Loader} class.
@@ -42,5 +41,10 @@ class LoaderTest {
         }
 
         assertInstanceOf(String.class, o);
+    }
+
+    @Test
+    void testFailedLoad() {
+        assertThrows(ClassNotFoundException.class, () -> Loader.getInstance("java.lang.String2"));
     }
 }
