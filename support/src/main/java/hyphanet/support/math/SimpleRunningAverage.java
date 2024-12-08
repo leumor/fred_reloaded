@@ -6,6 +6,7 @@ package hyphanet.support.math;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.Arrays;
 
@@ -40,6 +41,7 @@ public final class SimpleRunningAverage implements RunningAverage {
     /**
      * Serial version UID for serialization support
      */
+    @Serial
     private static final long serialVersionUID = -1;
 
     /**

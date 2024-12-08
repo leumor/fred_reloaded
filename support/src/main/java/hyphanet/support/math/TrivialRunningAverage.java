@@ -1,5 +1,6 @@
 package hyphanet.support.math;
 
+import java.io.Serial;
 import java.io.Serializable;
 
 /**
@@ -15,6 +16,7 @@ import java.io.Serializable;
  */
 public final class TrivialRunningAverage implements RunningAverage {
 
+    @Serial
     private static final long serialVersionUID = 1L;
 
     /**
