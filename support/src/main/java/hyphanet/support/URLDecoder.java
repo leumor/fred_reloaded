@@ -3,6 +3,8 @@
  * http://www.gnu.org/ for further details of the GPL. */
 package hyphanet.support;
 
+import hyphanet.support.field.Fields;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -76,8 +78,8 @@ public final class URLDecoder {
     }
 
     /**
-     * Decodes a URL-encoded string using UTF-8 charset. This method handles percent-encoded sequences in
-     * URLs (e.g., %20 for space, %2F for forward slash).
+     * Decodes a URL-encoded string using UTF-8 charset. This method handles percent-encoded
+     * sequences in URLs (e.g., %20 for space, %2F for forward slash).
      *
      * <p>Example usage:
      * <pre>
@@ -94,9 +96,9 @@ public final class URLDecoder {
      *
      * @param input    The URL-encoded string to decode. Must not be null.
      * @param tolerant When {@code true}, invalid percent-encoded sequences are treated as literal
-     *                 characters instead of throwing exceptions. This mode is useful when processing
-     *                 user-pasted URLs that might contain un-encoded % characters. Not recommended for
-     *                 security-sensitive applications.
+     *                 characters instead of throwing exceptions. This mode is useful when
+     *                 processing user-pasted URLs that might contain un-encoded % characters. Not
+     *                 recommended for security-sensitive applications.
      *
      * @return The decoded string in UTF-8 encoding
      *
@@ -126,7 +128,8 @@ public final class URLDecoder {
 
             return decodedBytes.toString(StandardCharsets.UTF_8);
         } catch (IOException e) {
-            throw new URLEncodedFormatException(String.format("Failed to process input: %s", input), e);
+            throw new URLEncodedFormatException(String.format("Failed to process input: %s", input),
+                                                e);
         }
     }
 
@@ -145,7 +148,8 @@ public final class URLDecoder {
      */
     private static int decodeHexSequence(
         final String input, final int currentIndex, final ByteArrayOutputStream output,
-        final boolean tolerant, final boolean hasDecodedSomething) throws URLEncodedFormatException {
+        final boolean tolerant, final boolean hasDecodedSomething)
+        throws URLEncodedFormatException {
 
         // Ensure we have at least 2 more characters after '%' for a valid hex sequence
         if (currentIndex >= input.length() - 2) {
