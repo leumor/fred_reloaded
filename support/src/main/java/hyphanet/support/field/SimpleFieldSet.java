@@ -1015,12 +1015,12 @@ public class SimpleFieldSet {
      * of appending to it.</p>
      *
      * @param key   the key with which the specified value is to be associated. Cannot be null
-     * @param value the value to be associated with the specified key. Cannot be null
+     * @param value the value to be associated with the specified key
      *
      * @see #MULTI_LEVEL_CHAR
      * @see #putAppend(String, String)
      */
-    public void putOverwrite(String key, String value) {
+    public void putOverwrite(String key, @Nullable String value) {
         if (value == null) {
             return;
         }
@@ -1222,6 +1222,151 @@ public class SimpleFieldSet {
      */
     public void put(String key, byte[] bytes) {
         putSingle(key, Base64.encode(bytes));
+    }
+
+    /**
+     * Associates the string representation of an integer array with the specified key.
+     *
+     * <p>This method converts each integer in the array to a string and joins them with
+     * {@link #MULTI_VALUE_CHAR} as separator. The resulting string is stored in the field set.
+     * It supports both direct key-value pairs and nested hierarchical keys.</p>
+     *
+     * <p><b>Examples:</b></p>
+     * <ul>
+     *   <li>{@code put("key1", new int[]{1,2,3})} creates {@code key1=1;2;3}</li>
+     *   <li>{@code put("nested.key", new int[]{42})} creates a nested structure</li>
+     * </ul>
+     *
+     * @param key   the key with which to associate the value. Cannot be null
+     * @param value the integer array to be converted and stored. If empty, removes the entry
+     */
+    public void put(String key, int[] value) {
+        putArray(key, ArrayUtils.toObject(value));
+    }
+
+    /**
+     * Associates the string representation of a double array with the specified key.
+     *
+     * <p>This method converts each double in the array to a string and joins them with
+     * {@link #MULTI_VALUE_CHAR} as separator. The resulting string is stored in the field set.
+     * It supports both direct key-value pairs and nested hierarchical keys.</p>
+     *
+     * <p><b>Examples:</b></p>
+     * <ul>
+     *   <li>{@code put("key1", new double[]{1.5,2.0,3.14})} creates
+     *   {@code key1=1.5;2.0;3.14}</li>
+     *   <li>{@code put("nested.key", new double[]{42.0})} creates a nested structure</li>
+     * </ul>
+     *
+     * @param key   the key with which to associate the value. Cannot be null
+     * @param value the double array to be converted and stored. If empty, removes the entry
+     */
+    public void put(String key, double[] value) {
+        putArray(key, ArrayUtils.toObject(value));
+    }
+
+    /**
+     * Associates the string representation of a float array with the specified key.
+     *
+     * <p>This method converts each float in the array to a string and joins them with
+     * {@link #MULTI_VALUE_CHAR} as separator. The resulting string is stored in the field set.
+     * It supports both direct key-value pairs and nested hierarchical keys.</p>
+     *
+     * <p><b>Examples:</b></p>
+     * <ul>
+     *   <li>{@code put("key1", new float[]{1.5f,2.0f,3.14f})} creates
+     *   {@code key1=1.5;2.0;3.14}</li>
+     *   <li>{@code put("nested.key", new float[]{42.0f})} creates a nested structure</li>
+     * </ul>
+     *
+     * @param key   the key with which to associate the value. Cannot be null
+     * @param value the float array to be converted and stored. If empty, removes the entry
+     */
+    public void put(String key, float[] value) {
+        putArray(key, ArrayUtils.toObject(value));
+    }
+
+    /**
+     * Associates the string representation of a short array with the specified key.
+     *
+     * <p>This method converts each short in the array to a string and joins them with
+     * {@link #MULTI_VALUE_CHAR} as separator. The resulting string is stored in the field set.
+     * It supports both direct key-value pairs and nested hierarchical keys.</p>
+     *
+     * <p><b>Examples:</b></p>
+     * <ul>
+     *   <li>{@code put("key1", new short[]{1,2,3})} creates {@code key1=1;2;3}</li>
+     *   <li>{@code put("nested.key", new short[]{42})} creates a nested structure</li>
+     * </ul>
+     *
+     * @param key   the key with which to associate the value. Cannot be null
+     * @param value the short array to be converted and stored. If empty, removes the entry
+     */
+    public void put(String key, short[] value) {
+        putArray(key, ArrayUtils.toObject(value));
+    }
+
+    /**
+     * Associates the string representation of a long array with the specified key.
+     *
+     * <p>This method converts each long in the array to a string and joins them with
+     * {@link #MULTI_VALUE_CHAR} as separator. The resulting string is stored in the field set.
+     * It supports both direct key-value pairs and nested hierarchical keys.</p>
+     *
+     * <p><b>Examples:</b></p>
+     * <ul>
+     *   <li>{@code put("key1", new long[]{1L,2L,3L})} creates {@code key1=1;2;3}</li>
+     *   <li>{@code put("nested.key", new long[]{9223372036854775807L})} creates a nested
+     *   structure</li>
+     * </ul>
+     *
+     * @param key   the key with which to associate the value. Cannot be null
+     * @param value the long array to be converted and stored. If empty, removes the entry
+     */
+    public void put(String key, long[] value) {
+        putArray(key, ArrayUtils.toObject(value));
+    }
+
+    /**
+     * Associates the string representation of a boolean array with the specified key.
+     *
+     * <p>This method converts each boolean in the array to a string and joins them with
+     * {@link #MULTI_VALUE_CHAR} as separator. The resulting string is stored in the field set.
+     * It supports both direct key-value pairs and nested hierarchical keys.</p>
+     *
+     * <p><b>Examples:</b></p>
+     * <ul>
+     *   <li>{@code put("key1", new boolean[]{true,false,true})} creates
+     *   {@code key1=true;false;true}</li>
+     *   <li>{@code put("nested.key", new boolean[]{false})} creates a nested structure</li>
+     * </ul>
+     *
+     * @param key   the key with which to associate the value. Cannot be null
+     * @param value the boolean array to be converted and stored. If empty, removes the entry
+     */
+    public void put(String key, boolean[] value) {
+        putArray(key, ArrayUtils.toObject(value));
+    }
+
+    /**
+     * Associates an array of strings with the specified key.
+     *
+     * <p>This method joins the strings in the array using {@link #MULTI_VALUE_CHAR} as
+     * separator and stores the resulting string in the field set. It supports both direct
+     * key-value pairs and nested hierarchical keys separated by
+     * {@link #MULTI_LEVEL_CHAR}.</p>
+     *
+     * <p><b>Examples:</b></p>
+     * <ul>
+     *   <li>{@code put("key1", new String[]{"a","b","c"})} creates {@code key1=a;b;c}</li>
+     *   <li>{@code put("nested.key", new String[]{"value"})} creates a nested structure</li>
+     * </ul>
+     *
+     * @param key    the key with which to associate the value. Cannot be null
+     * @param values the string array to be joined and stored. If empty, removes the entry
+     */
+    public void put(String key, String[] values) {
+        putSingle(key, unsplit(values));
     }
 
     /**
@@ -1934,8 +2079,8 @@ public class SimpleFieldSet {
      *   <li>{@code deep}</li>
      * </ul>
      *
-     * @return an array containing the names of all direct nested subsets. Returns an empty an
-     * empty array if there are no nested subsets
+     * @return an array containing the names of all direct nested subsets. Returns an empty
+     * array if there are no nested subsets
      */
     public String[] namesOfDirectSubsets() {
         return (subsets == null) ? EMPTY_STRING_ARRAY :
@@ -2312,10 +2457,52 @@ public class SimpleFieldSet {
         }
     }
 
+    /**
+     * Retrieves a boolean value associated with the specified key, with a default fallback.
+     *
+     * <p>This method attempts to parse the value as a boolean, accepting "true" or "false"
+     * (case-insensitive). If the key doesn't exist or the value cannot be parsed as a boolean,
+     * returns the default value.</p>
+     *
+     * <p><b>Examples:</b></p>
+     * <ul>
+     *   <li>{@code getBoolean("key", false)} returns {@code true} for "key=true"</li>
+     *   <li>{@code getBoolean("key", true)} returns {@code true} for non-existent key</li>
+     *   <li>{@code getBoolean("key", false)} returns {@code false} for "key=invalid"</li>
+     * </ul>
+     *
+     * @param key the key whose associated boolean value is to be returned
+     * @param def the default value to return if the key is missing or value invalid
+     *
+     * @return the boolean value associated with the key, or the default value if not found
+     *
+     * @see Fields#stringToBool(String, boolean)
+     */
     public boolean getBoolean(String key, boolean def) {
         return Fields.stringToBool(get(key), def);
     }
 
+    /**
+     * Retrieves a boolean value associated with the specified key.
+     *
+     * <p>This method attempts to parse the value as a boolean, accepting "true" or "false"
+     * (case-insensitive). If the key doesn't exist or the value cannot be parsed as a boolean,
+     * throws an exception.</p>
+     *
+     * <p><b>Examples:</b></p>
+     * <ul>
+     *   <li>{@code getBoolean("key")} returns {@code true} for "key=true"</li>
+     *   <li>{@code getBoolean("key")} returns {@code false} for "key=false"</li>
+     * </ul>
+     *
+     * @param key the key whose associated boolean value is to be returned
+     *
+     * @return the boolean value associated with the key
+     *
+     * @throws FSParseException if the key doesn't exist or the value cannot be parsed as a
+     *                          boolean
+     * @see Fields#stringToBool(String, boolean)
+     */
     public boolean getBoolean(String key) throws FSParseException {
         try {
             return Fields.stringToBool(get(key));
@@ -2324,64 +2511,266 @@ public class SimpleFieldSet {
         }
     }
 
-    public void put(String key, int[] value) {
-        putArray(key, ArrayUtils.toObject(value));
+    /**
+     * Retrieves the string value associated with the specified key.
+     *
+     * <p>This method returns the value associated with the key in the field set.
+     * It supports both direct key-value pairs and nested hierarchical keys separated by
+     * {@link #MULTI_LEVEL_CHAR}.</p>
+     *
+     * <p><b>Examples:</b></p>
+     * <ul>
+     *   <li>For value {@code key1=value1}, {@code getString("key1")} returns
+     *   {@code "value1"}</li>
+     *   <li>For value {@code nested.key=value2}, {@code getString("nested.key")} returns
+     *   {@code "value2"}</li>
+     * </ul>
+     *
+     * @param key the key whose associated value is to be returned
+     *
+     * @return the string value associated with the key
+     *
+     * @throws FSParseException if the key doesn't exist
+     */
+    public String getString(String key) throws FSParseException {
+        String s = get(key);
+        if (s == null) {
+            throw new FSParseException("No such element " + key);
+        }
+        return s;
     }
 
-    public void put(String key, double[] value) {
-        putArray(key, ArrayUtils.toObject(value));
-    }
-
-    public void put(String key, float[] value) {
-        putArray(key, ArrayUtils.toObject(value));
-    }
-
-    public void put(String key, short[] value) {
-        putArray(key, ArrayUtils.toObject(value));
-    }
-
-    public void put(String key, long[] value) {
-        putArray(key, ArrayUtils.toObject(value));
-    }
-
-    public void put(String key, boolean[] value) {
-        putArray(key, ArrayUtils.toObject(value));
-    }
-
+    /**
+     * Retrieves an array of integers associated with the specified key.
+     *
+     * <p>This method parses a string value containing integers separated by
+     * {@link #MULTI_VALUE_CHAR} into an array of integers. It supports both direct key-value
+     * pairs and nested hierarchical keys.</p>
+     *
+     * <p><b>Examples:</b></p>
+     * <ul>
+     *   <li>For value {@code key1=1;2;3}, {@code getIntArray("key1")} returns
+     *   {@code [1,2,3]}</li>
+     *   <li>For value {@code nested.key=42}, {@code getIntArray("nested.key")} returns
+     *   {@code [42]}</li>
+     * </ul>
+     *
+     * @param key the key whose associated integer array is to be returned
+     *
+     * @return an array containing the integers associated with the key, or an empty array if:
+     * <ul>
+     *   <li>the key is null</li>
+     *   <li>the key doesn't exist</li>
+     *   <li>the key refers to a subset rather than a value</li>
+     *   <li>the value cannot be parsed as integers</li>
+     * </ul>
+     */
     public int[] getIntArray(String key) {
         Integer[] result = getPrimitiveArray(key, Integer.class, Integer::parseInt);
         return ArrayUtils.toPrimitive(result);
     }
 
+    /**
+     * Retrieves an array of long values associated with the specified key.
+     *
+     * <p>This method parses a string value containing long integers separated by
+     * {@link #MULTI_VALUE_CHAR} into an array of long values. It supports both direct
+     * key-value pairs and nested hierarchical keys.</p>
+     *
+     * <p><b>Examples:</b></p>
+     * <ul>
+     *   <li>For value {@code key1=1;2;3}, {@code getLongArray("key1")} returns
+     *   {@code [1L,2L,3L]}</li>
+     *   <li>For value {@code nested.key=9223372036854775807},
+     *   {@code getLongArray("nested.key")} returns {@code [9223372036854775807L]}</li>
+     * </ul>
+     *
+     * @param key the key whose associated long array is to be returned
+     *
+     * @return an array containing the long values associated with the key, or an empty array
+     * if:
+     * <ul>
+     *   <li>the key is null</li>
+     *   <li>the key doesn't exist</li>
+     *   <li>the key refers to a subset rather than a value</li>
+     *   <li>the value cannot be parsed as long integers</li>
+     * </ul>
+     */
     public long[] getLongArray(String key) {
         Long[] result = getPrimitiveArray(key, Long.class, Long::parseLong);
         return ArrayUtils.toPrimitive(result);
     }
 
+    /**
+     * Retrieves an array of double values associated with the specified key.
+     *
+     * <p>This method parses a string value containing double numbers separated by
+     * {@link #MULTI_VALUE_CHAR} into an array of double values. It supports both direct
+     * key-value pairs and nested hierarchical keys.</p>
+     *
+     * <p><b>Examples:</b></p>
+     * <ul>
+     *   <li>For value {@code key1=1.5;2.0;3.14}, {@code getDoubleArray("key1")} returns
+     *   {@code [1.5,2.0,3.14]}</li>
+     *   <li>For value {@code nested.key=42.0}, {@code getDoubleArray("nested.key")} returns
+     *   {@code [42.0]}</li>
+     * </ul>
+     *
+     * @param key the key whose associated double array is to be returned
+     *
+     * @return an array containing the double values associated with the key, or an empty array
+     * if:
+     * <ul>
+     *   <li>the key is null</li>
+     *   <li>the key doesn't exist</li>
+     *   <li>the key refers to a subset rather than a value</li>
+     *   <li>the value cannot be parsed as long integers</li>
+     * </ul>
+     */
     public double[] getDoubleArray(String key) {
         Double[] result = getPrimitiveArray(key, Double.class, Double::parseDouble);
         return ArrayUtils.toPrimitive(result);
     }
 
+    /**
+     * Retrieves an array of float values associated with the specified key.
+     *
+     * <p>This method parses a string value containing float numbers separated by
+     * {@link #MULTI_VALUE_CHAR} into an array of float values. It supports both direct
+     * key-value pairs and nested hierarchical keys.</p>
+     *
+     * <p><b>Examples:</b></p>
+     * <ul>
+     *   <li>For value {@code key1=1.5;2.0;3.14}, {@code getFloatArray("key1")} returns
+     *   {@code [1.5f,2.0f,3.14f]}</li>
+     *   <li>For value {@code nested.key=42.0}, {@code getFloatArray("nested.key")} returns
+     *   {@code [42.0f]}</li>
+     * </ul>
+     *
+     * @param key the key whose associated float array is to be returned
+     *
+     * @return an array containing the float values associated with the key, or an empty array
+     * if:
+     * <ul>
+     *  <li>the key is null</li>
+     *  <li>the key doesn't exist</li>
+     *  <li>the key refers to a subset rather than a value</li>
+     *  <li>the value cannot be parsed as long integers</li>
+     * </ul>
+     */
     public float[] getFloatArray(String key) {
         Float[] result = getPrimitiveArray(key, Float.class, Float::parseFloat);
         return ArrayUtils.toPrimitive(result);
     }
 
+    /**
+     * Retrieves an array of boolean values associated with the specified key.
+     *
+     * <p>This method parses a string value containing boolean values separated by
+     * {@link #MULTI_VALUE_CHAR} into an array of boolean values. It supports both direct
+     * key-value pairs and nested hierarchical keys.</p>
+     *
+     * <p><b>Examples:</b></p>
+     * <ul>
+     *   <li>For value {@code key1=true;false;true}, {@code getBooleanArray("key1")} returns
+     *   {@code [true,false,true]}</li>
+     *   <li>For value {@code nested.key=false}, {@code getBooleanArray("nested.key")}
+     *   returns {@code [false]}</li>
+     * </ul>
+     *
+     * @param key the key whose associated boolean array is to be returned
+     *
+     * @return an array containing the boolean values associated with the key, or an empty
+     * array if:
+     * <ul>
+     *  <li>the key is null</li>
+     *  <li>the key doesn't exist</li>
+     *  <li>the key refers to a subset rather than a value</li>
+     *  <li>the value cannot be parsed as long integers</li>
+     * </ul>
+     */
     public boolean[] getBooleanArray(String key) {
         Boolean[] result = getPrimitiveArray(key, Boolean.class, Boolean::parseBoolean);
         return ArrayUtils.toPrimitive(result);
     }
 
+    /**
+     * Retrieves an array of short values associated with the specified key.
+     *
+     * <p>This method parses a string value containing short integers separated by
+     * {@link #MULTI_VALUE_CHAR} into an array of short values. It supports both direct
+     * key-value pairs and nested hierarchical keys.</p>
+     *
+     * <p><b>Examples:</b></p>
+     * <ul>
+     *   <li>For value {@code key1=1;2;3}, {@code getShortArray("key1")} returns
+     *   {@code [1,2,3]}</li>
+     *   <li>For value {@code nested.key=42}, {@code getShortArray("nested.key")} returns
+     *   {@code [42]}</li>
+     * </ul>
+     *
+     * @param key the key whose associated short array is to be returned
+     *
+     * @return an array containing the short values associated with the key, or an empty array
+     * if:
+     * <ul>
+     *  <li>the key is null</li>
+     *  <li>the key doesn't exist</li>
+     *  <li>the key refers to a subset rather than a value</li>
+     *  <li>the value cannot be parsed as long integers</li>
+     * </ul>
+     */
     public short[] getShortArray(String key) {
         Short[] result = getPrimitiveArray(key, Short.class, Short::parseShort);
         return ArrayUtils.toPrimitive(result);
     }
 
+    /**
+     * Associates an array of strings with the specified key, overwriting any existing value.
+     *
+     * <p>This method joins the strings in the array using {@link #MULTI_VALUE_CHAR} as
+     * separator and stores the resulting string in the field set. It supports both direct
+     * key-value pairs and nested hierarchical keys.</p>
+     *
+     * <p><b>Examples:</b></p>
+     * <ul>
+     *   <li>{@code putOverwrite("key1", new String[]{"a","b","c"})} creates
+     *   {@code key1=a;b;c}</li>
+     *   <li>{@code putOverwrite("nested.key", new String[]{"value"})} creates a nested
+     *   structure</li>
+     * </ul>
+     *
+     * @param key     the key with which to associate the value. Cannot be null
+     * @param strings the string array to be joined and stored. Cannot be null. If empty, an
+     *                empty string is stored
+     */
     public void putOverwrite(String key, String[] strings) {
         putOverwrite(key, unsplit(strings));
     }
 
+    /**
+     * Associates an array of strings with the specified key, encoding values in Base64 if
+     * needed.
+     *
+     * <p>This method joins the strings in the array using {@link #MULTI_VALUE_CHAR} as
+     * separator and stores the resulting string in the field set. Each value is Base64 encoded
+     * if it contains special characters or if alwaysUseBase64 is set. It supports both direct
+     * key-value pairs and nested hierarchical keys.</p>
+     *
+     * <p><b>Examples:</b></p>
+     * <ul>
+     *   <li>{@code putEncoded("key1", new String[]{"a","b","c"})} creates {@code key1=a;b;
+     *   c}</li>
+     *   <li>{@code putEncoded("key2", new String[]{"hello world"})} creates {@code key2
+     *   =aGVsbG8gd29ybGQ=}</li>
+     * </ul>
+     *
+     * @param key     the key with which to associate the value. Cannot be null
+     * @param strings the string array to be joined and stored. Cannot be null. If empty, an
+     *                empty string is stored
+     *
+     * @see hyphanet.support.Base64
+     */
     public void putEncoded(String key, final String[] strings) {
         if (strings == null || strings.length == 0) {
             putSingle(key, "");
@@ -2395,53 +2784,85 @@ public class SimpleFieldSet {
         putSingle(key, unsplit(encodedStrings));
     }
 
-    public String getString(String key) throws FSParseException {
-        String s = get(key);
-        if (s == null) {
-            throw new FSParseException("No such element " + key);
-        }
-        return s;
-    }
-
     /**
-     * Get the headers. This is a list of String's that are written before the name=value
-     * pairs. Usually this is a comment (with each line starting with "#").
+     * Retrieves the header comments of this SimpleFieldSet.
+     *
+     * <p>The header consists of comment lines that appear at the beginning of the serialized
+     * form. When written, each line will be prefixed with "#".</p>
+     *
+     * <p><b>Example header format:</b></p>
+     * <pre>
+     * # Header line 1
+     * # Header line 2
+     * key1=value1
+     * </pre>
+     *
+     * @return an array containing the header lines without the "# " prefix, or null if no
+     * header is set
      */
-    public String[] getHeader() {
+    public String @Nullable [] getHeader() {
         return header;
     }
 
     /**
-     * Set the headers. This is a list of String's that are written before the name=value
-     * pairs. Usually this is a comment (with each line starting with "#").
+     * Sets the header comments for this SimpleFieldSet.
      *
-     * @param headers The list of lines to precede the SimpleFieldSet by when we write it.
+     * <p>The header consists of comment lines that appear at the beginning of the serialized
+     * form. When written, each line will be automatically prefixed with "#".</p>
+     *
+     * <p><b>Example usage:</b></p>
+     * <pre>
+     * setHeader("Header line 1", "Header line 2");
+     * // Results in:
+     * # Header line 1
+     * # Header line 2
+     * key1=value1
+     * </pre>
+     *
+     * @param headers the header lines to set. Each string becomes a separate header line. If
+     *                null or empty, removes the existing header
      */
-    public void setHeader(String... headers) {
+    public void setHeader(@Nullable String... headers) {
         // FIXME LOW should really check that each line doesn't have a "\n"
         //  in it
         this.header = headers;
     }
 
-    public void put(String key, String[] values) {
-        putSingle(key, unsplit(values));
-    }
-
     /**
-     * Write the contents of the SimpleFieldSet to a Writer. Note: The caller *must* buffer the
-     * writer to avoid lousy performance! (StringWriter is by definition buffered, otherwise
-     * wrap it in a BufferedWriter)
+     * Writes the complete field set to a Writer with specified formatting options.
      *
-     * @param w           The Writer to write to. @warning keep in mind that a Writer is not
-     *                    necessarily UTF-8!!
-     * @param prefix      String to prefix the keys with. (E.g. when writing a tree of SFS's).
-     * @param noEndMarker If true, don't write the end marker (the last line, the only one with
-     *                    no "=" in it).
-     * @param useBase64   If true, use Base64 for any value that has control characters,
-     *                    whitespace, or characters used by SimpleFieldSet in it. In this case
-     *                    the separator will be "==" not "=". This is mainly useful for node
-     *                    references, which tend to lose whitespace, gain newlines etc in
-     *                    transit. Can be overridden (to true) by alwaysUseBase64 setting.
+     * <p>This method serializes the entire field set, including headers, direct values,
+     * and nested subsets. Each key is prefixed with the specified prefix string. The output
+     * follows the standard structure:</p>
+     *
+     * <pre>
+     * # Optional header comments
+     * prefix.key1=value1
+     * prefix.key2=value2
+     * prefix.nested.key=value3
+     * End
+     * </pre>
+     *
+     * <p>Values will be Base64 encoded if useBase64 is true or if the value contains
+     * special characters that require encoding.</p>
+     *
+     * @param w           the Writer to which the field set will be written. Cannot be null
+     * @param prefix      the string to prepend to all keys. Can be empty but not null
+     * @param noEndMarker if true, suppresses writing the end marker line
+     * @param useBase64   when {@code true}, Base64 encoding will be applied to values
+     *                    containing:
+     *                    <ul>
+     *                        <li>Control characters</li>
+     *                        <li>Whitespace</li>
+     *                        <li>SimpleFieldSet special characters</li>
+     *                    </ul>
+     *                    When Base64 encoding is used, the separator changes from "=" to "==".
+     *                    This is particularly useful for node references which may be modified
+     *                    during transit (e.g., whitespace removal or newline insertion).
+     *                    Note: This parameter can be overridden to {@code true} by the
+     *                    {@code alwaysUseBase64} setting.
+     *
+     * @throws IOException if an error occurs while writing to the Writer
      */
     synchronized void writeTo(Writer w, String prefix, boolean noEndMarker, boolean useBase64)
         throws IOException {
@@ -2467,6 +2888,25 @@ public class SimpleFieldSet {
         }
     }
 
+    /**
+     * Associates the string representation of a generic array with the specified key.
+     *
+     * <p>This method converts each element in the array to a string and joins them with
+     * {@link #MULTI_VALUE_CHAR} as separator. The resulting string is stored in the field set.
+     * It supports both direct key-value pairs and nested hierarchical keys.</p>
+     *
+     * <p><b>Examples:</b></p>
+     * <ul>
+     *   <li>{@code putArray("key1", new Integer[]{1,2,3})} creates {@code key1=1;2;3}</li>
+     *   <li>{@code putArray("nested.key", new String[]{"value"})} creates a nested
+     *   structure</li>
+     * </ul>
+     *
+     * @param <T>   the type of elements in the array
+     * @param key   the key with which to associate the value. Cannot be null
+     * @param array the array to be converted and stored. Cannot be null. If empty, removes the
+     *              entry
+     */
     private <T> void putArray(String key, T[] array) {
         removeValue(key);
         for (T value : array) {
@@ -2474,6 +2914,32 @@ public class SimpleFieldSet {
         }
     }
 
+    /**
+     * Retrieves an array of primitive type values associated with the specified key.
+     *
+     * <p>This method parses a string value containing elements separated by
+     * {@link #MULTI_VALUE_CHAR} into an array of the specified primitive type. It uses the
+     * provided converter function to convert each string element to the target type.</p>
+     *
+     * <p><b>Examples:</b></p>
+     * <ul>
+     *   <li>For value {@code key1=1;2;3} with Integer type: returns {@code Integer[]{1,2,3}
+     *   }</li>
+     *   <li>For value {@code key2=true;false} with Boolean type: returns {@code Boolean[]{
+     *   true,false}}</li>
+     * </ul>
+     *
+     * @param <T>       the primitive wrapper type of the array elements
+     * @param key       the key whose associated array is to be returned
+     * @param type      the Class object representing the component type of the array
+     * @param converter the function to convert string values to type T
+     *
+     * @return an array containing the values of type T, or empty array if:
+     * <ul>
+     *   <li>the key doesn't exist</li>
+     *   <li>the value cannot be parsed into type T</li>
+     * </ul>
+     */
     @SuppressWarnings("unchecked")
     private <T> T[] getPrimitiveArray(String key, Class<T> type, ArrayConverter<T> converter) {
         String[] strings = getAll(key);
@@ -2495,8 +2961,23 @@ public class SimpleFieldSet {
     }
 
     /**
-     * Combine a list of String's into a single String, separating them by the
-     * MULTI_VALUE_CHAR.
+     * Joins an array of strings into a single string using {@link #MULTI_VALUE_CHAR} as
+     * separator.
+     *
+     * <p>This method combines multiple strings into a single string, with each value
+     * separated by the multi-value separator character. It handles null input gracefully.</p>
+     *
+     * <p><b>Examples:</b></p>
+     * <ul>
+     *   <li>{@code unsplit(new String[]{"a","b","c"})} returns {@code "a;b;c"}</li>
+     *   <li>{@code unsplit(new String[]{"value"})} returns {@code "value"}</li>
+     *   <li>{@code unsplit(null)} returns {@code ""}</li>
+     * </ul>
+     *
+     * @param strings the array of strings to join. May be null
+     *
+     * @return the joined string with values separated by {@link #MULTI_VALUE_CHAR}, or "" if
+     * the input array is null
      */
     private static String unsplit(String @Nullable [] strings) {
         if (strings == null || strings.length == 0) {
@@ -2515,7 +2996,31 @@ public class SimpleFieldSet {
     }
 
     /**
-     * @see #read(LineReader, int, int, boolean, boolean)
+     * Reads and parses field set data from a LineReader with specified parsing options.
+     *
+     * <p>This method reads the content line by line, parsing header comments, key-value
+     * pairs, and nested structures. The format should follow this structure:</p>
+     *
+     * <pre>
+     * # Optional header comments
+     * key1=value1
+     * key2=value2
+     * nested.key=value3
+     * End
+     * </pre>
+     *
+     * <p>Lines starting with '#' are treated as header comments. Empty lines are ignored.
+     * The reading process continues until either the end marker is found or the end of the
+     * input is reached.</p>
+     *
+     * @param lr            the LineReader to read data from. Cannot be null
+     * @param allowMultiple if true, allows multiple values for a single key separated by
+     *                      {@link #MULTI_VALUE_CHAR}
+     * @param allowBase64   if true, values encoded in Base64 format will be automatically
+     *                      decoded during parsing
+     *
+     * @throws IOException if an error occurs while reading from the LineReader or if the
+     *                     content format is invalid
      */
     private void read(LineReader lr, boolean allowMultiple, boolean allowBase64)
         throws IOException {
@@ -2523,13 +3028,38 @@ public class SimpleFieldSet {
     }
 
     /**
-     * Read from stream. Format:
-     * <p>
-     * # Header1 # Header2 key0=val0 key1=val1 # comment key2=val2 End
-     * <p>
-     * (headers and comments are optional)
+     * Reads and parses field set data from a LineReader with specified buffer and encoding
+     * options.
      *
-     * @param utfOrIso88591 If true, read as UTF-8, otherwise read as ISO-8859-1.
+     * <p>This method reads the content line by line, parsing header comments, key-value
+     * pairs, and nested structures. The format should follow this structure:</p>
+     *
+     * <pre>
+     * # Optional header comments
+     * key1=value1
+     * key2=value2
+     * nested.key=value3
+     * End
+     * </pre>
+     *
+     * <p>Lines starting with '#' are treated as header comments. Empty lines are ignored.
+     * The reading process continues until either the end marker is found or the end of the
+     * input is reached.</p>
+     *
+     * @param br            the LineReader to read data from. Cannot be null
+     * @param maxLength     the maximum allowed length for a single line in characters. Lines
+     *                      exceeding this length will cause an IOException
+     * @param bufferSize    the size of the buffer used for reading lines. Should be at least
+     *                      as large as maxLength
+     * @param utfOrIso88591 if true, content is read as UTF-8; if false, content is read as
+     *                      ISO-8859-1
+     * @param allowMultiple if true, allows multiple values for a single key separated by
+     *                      {@link #MULTI_VALUE_CHAR}
+     * @param allowBase64   if true, values encoded in Base64 format will be automatically
+     *                      decoded during parsing
+     *
+     * @throws IOException if an error occurs while reading from the LineReader, if the content
+     *                     is malformed, or if a line exceeds maxLength
      */
     private void read(
         LineReader br, int maxLength, int bufferSize, boolean utfOrIso88591,
@@ -2559,6 +3089,38 @@ public class SimpleFieldSet {
         }
     }
 
+    /**
+     * Processes a single line from the input during field set parsing.
+     *
+     * <p>This method handles three types of lines:</p>
+     * <ul>
+     *   <li>Header comments (starting with '#')</li>
+     *   <li>Key-value pairs (containing {@link #KEYVALUE_SEPARATOR_CHAR})</li>
+     *   <li>End marker line</li>
+     * </ul>
+     *
+     * <p><b>Example line formats:</b></p>
+     * <pre>
+     * # This is a header comment
+     * key1=value1
+     * nested.key=value2
+     * End
+     * </pre>
+     *
+     * @param line          the line to process. Cannot be null
+     * @param headers       list to collect header comments. Cannot be null
+     * @param headerSection true if currently processing the header section
+     * @param allowMultiple if true, allows multiple values for a single key separated by
+     *                      {@link #MULTI_VALUE_CHAR}
+     * @param allowBase64   if true, values encoded in Base64 format will be automatically
+     *                      decoded during parsing
+     *
+     * @return a ProcessLineResult indicating whether to continue reading and if still in the
+     * header section
+     *
+     * @throws IOException if the line format is invalid or Base64 decoding fails
+     * @see ProcessLineResult
+     */
     private ProcessLineResult processLine(
         String line, List<String> headers, boolean headerSection, boolean allowMultiple,
         boolean allowBase64) throws IOException {
@@ -2583,6 +3145,31 @@ public class SimpleFieldSet {
         }
     }
 
+    /**
+     * Processes a key-value pair line during field set parsing.
+     *
+     * <p>This method parses a line containing a key-value pair separated by
+     * {@link #KEYVALUE_SEPARATOR_CHAR}. It handles Base64 decoding if enabled and supports
+     * multiple values if allowed. The key can represent a direct value or a nested hierarchy
+     * using {@link #MULTI_LEVEL_CHAR}.</p>
+     *
+     * <p><b>Example formats:</b></p>
+     * <ul>
+     *   <li>Direct value: {@code key=value}</li>
+     *   <li>Base64 value: {@code key=base64:encoded_value}</li>
+     *   <li>Multiple values: {@code key=value1;value2;value3}</li>
+     *   <li>Nested key: {@code parent.child=value}</li>
+     * </ul>
+     *
+     * @param line           the line containing the key-value pair to process
+     * @param separatorIndex the index of the key-value separator character in the line
+     * @param allowBase64    if true, values encoded in Base64 format will be automatically
+     *                       decoded
+     * @param allowMultiple  if true, allows multiple values separated by
+     *                       {@link #MULTI_VALUE_CHAR}
+     *
+     * @throws IOException if Base64 decoding fails or if the line format is invalid
+     */
     private void processKeyValuePair(
         String line, int separatorIndex, boolean allowBase64,
         boolean allowMultiple) throws IOException {
@@ -2601,16 +3188,30 @@ public class SimpleFieldSet {
     }
 
     /**
-     * Set a key to a value.
+     * Internal method to store a key-value pair with advanced control options.
      *
-     * @param key           The key.
-     * @param value         The value.
-     * @param allowMultiple If true, if the key already exists then the value will be appended
-     *                      to the existing value. If false, we return false to indicate that
-     *                      the old value is unchanged.
+     * <p>This method handles the actual storage of values in the field set, supporting both
+     * direct key-value pairs and nested hierarchical keys. It provides fine-grained control
+     * over value handling through multiple option flags.</p>
      *
-     * @return True unless allowMultiple was false and there was a pre-existing value, or value
-     * was null.
+     * <p><b>Key handling:</b></p>
+     * <ul>
+     *   <li>Direct keys: stored in the values map</li>
+     *   <li>Nested keys: split at {@link #MULTI_LEVEL_CHAR} and stored in appropriate
+     *   subsets</li>
+     *   <li>Multiple values: when allowMultiple is true, values are split at
+     *   {@link #MULTI_VALUE_CHAR}</li>
+     * </ul>
+     *
+     * @param key           the key with which to associate the value. Cannot be null
+     * @param value         the value to be stored. If null, removes the entry
+     * @param allowMultiple if true, allows parsing of multiple values separated by
+     *                      {@link #MULTI_VALUE_CHAR}
+     * @param overwrite     if true, replaces any existing value; if false, preserves existing
+     *                      value
+     * @param fromRead      if true, indicates the operation is part of a read operation
+     *
+     * @return true if the value was stored, false if it was rejected due to overwrite=false
      */
     private synchronized boolean put(
         String key, String value, boolean allowMultiple,
@@ -2629,6 +3230,26 @@ public class SimpleFieldSet {
         return putNestedValue(key, value, separatorIndex, allowMultiple, overwrite, fromRead);
     }
 
+    /**
+     * Validates a value string according to the field set's formatting rules.
+     *
+     * <p>This method checks if a value string is valid for storage in the field set.
+     * It verifies that the value doesn't contain invalid characters or formatting that could
+     * cause problems during serialization.</p>
+     *
+     * <p><b>Validation rules:</b></p>
+     * <ul>
+     *   <li>Value must not contain newline characters if Base64 encoding is not enabled</li>
+     *   <li>When allowMultiple is false, value must not contain {@link #MULTI_VALUE_CHAR}</li>
+     * </ul>
+     *
+     * @param value         the string value to validate. May be null
+     * @param allowMultiple if true, allows the value to contain {@link #MULTI_VALUE_CHAR}
+     * @param fromRead      if true, indicates the validation is being performed during a read
+     *                      operation
+     *
+     * @throws IllegalArgumentException if the value contains invalid characters or formatting
+     */
     private void validateValue(String value, boolean allowMultiple, boolean fromRead) {
         if ((!alwaysUseBase64) && value.indexOf('\n') != -1) {
             throw new IllegalArgumentException("SimpleFieldSet cannot accept newlines");
@@ -2640,6 +3261,28 @@ public class SimpleFieldSet {
         }
     }
 
+    /**
+     * Stores a direct key-value pair in the values map with support for multiple values.
+     *
+     * <p>This method handles the storage of a single key-value pair at the current level
+     * of the field set. It supports both overwriting existing values and appending multiple
+     * values using {@link #MULTI_VALUE_CHAR} as separator.</p>
+     *
+     * <p><b>Examples:</b></p>
+     * <ul>
+     *   <li>New value: stores directly</li>
+     *   <li>Existing value with overwrite=true: replaces old value</li>
+     *   <li>Existing value with allowMultiple=true: appends with separator</li>
+     * </ul>
+     *
+     * @param key           the key with which to associate the value. Cannot be null
+     * @param value         the value to be stored
+     * @param allowMultiple if true, appends to existing value with {@link #MULTI_VALUE_CHAR}
+     * @param overwrite     if true, replaces any existing value; if false, preserves existing
+     *                      value
+     *
+     * @return true if the value was stored, false if it was rejected due to overwrite=false
+     */
     private boolean putDirectValue(
         String key, String value, boolean allowMultiple, boolean overwrite) {
         if (overwrite) {
@@ -2660,6 +3303,35 @@ public class SimpleFieldSet {
         return true;
     }
 
+    /**
+     * Stores a value in a nested hierarchy using the specified key path.
+     *
+     * <p>This method handles storage of values in nested SimpleFieldSets by splitting
+     * the key at the separator index and creating or navigating the necessary hierarchy. The
+     * value is ultimately stored in the appropriate nested level.</p>
+     *
+     * <p><b>Example hierarchical storage:</b></p>
+     * <ul>
+     *   <li>For key "parent.child.key", separatorIndex at first dot:
+     *     <ul>
+     *       <li>Creates/gets "parent" subset</li>
+     *       <li>Passes "child.key" to next level</li>
+     *     </ul>
+     *   </li>
+     * </ul>
+     *
+     * @param key            the full hierarchical key path
+     * @param value          the value to be stored
+     * @param separatorIndex the index of the {@link #MULTI_LEVEL_CHAR} where the key should be
+     *                       split
+     * @param allowMultiple  if true, allows multiple values separated by
+     *                       {@link #MULTI_VALUE_CHAR}
+     * @param overwrite      if true, replaces any existing value; if false, preserves existing
+     *                       value
+     * @param fromRead       if true, indicates the operation is part of a read operation
+     *
+     * @return true if the value was stored, false if it was rejected due to overwrite=false
+     */
     private boolean putNestedValue(
         String key, String value, int separatorIndex, boolean allowMultiple, boolean overwrite,
         boolean fromRead) {
@@ -2676,6 +3348,25 @@ public class SimpleFieldSet {
         return fs.put(after, value, allowMultiple, overwrite, fromRead);
     }
 
+    /**
+     * Writes a single key-value pair to the specified Writer with formatting options.
+     *
+     * <p><b>Example outputs:</b></p>
+     * <ul>
+     *   <li>Normal value: {@code myprefix.key1=value1}</li>
+     *   <li>Base64 value: {@code myprefix.key2=encoded_value}</li>
+     *   <li>No prefix: {@code key3=value3}</li>
+     * </ul>
+     *
+     * @param w         the Writer to write the key-value pair to
+     * @param key       the key part of the pair, without the prefix
+     * @param value     the value to write
+     * @param prefix    the prefix to prepend to the key, may be empty
+     * @param useBase64 if true, forces Base64 encoding for this value
+     *
+     * @throws IOException if an error occurs while writing to the Writer
+     * @see hyphanet.support.Base64
+     */
     private void writeValue(
         Writer w, String key, String value, String prefix, boolean useBase64)
         throws IOException {
@@ -2700,6 +3391,19 @@ public class SimpleFieldSet {
 
     }
 
+    /**
+     * Determines whether a value needs Base64 encoding for storage or transmission.
+     *
+     * <p>This method checks if a value should be encoded in Base64 format based on the value
+     * contains special characters that could interfere with parsing.</p>
+     *
+     * @param value the string to check for Base64 encoding requirement. May be null
+     *
+     * @return true if the value should be Base64 encoded, false otherwise
+     *
+     * @see #isSpecialCharacter(int)
+     * @see hyphanet.support.Base64
+     */
     private boolean shouldBase64(@Nullable String value) {
         if (value == null || value.isEmpty()) {
             return false;
@@ -2708,6 +3412,26 @@ public class SimpleFieldSet {
         return value.chars().anyMatch(this::isSpecialCharacter);
     }
 
+    /**
+     * Checks if a character is considered special in the context of field set values.
+     *
+     * <p>A character is considered special if it is any of the following:</p>
+     * <ul>
+     *   <li>The key-value separator ({@link #KEYVALUE_SEPARATOR_CHAR})</li>
+     *   <li>The multi-level separator ({@link #MULTI_LEVEL_CHAR})</li>
+     *   <li>The multi-value separator ({@link #MULTI_VALUE_CHAR})</li>
+     *   <li>An ISO control character</li>
+     *   <li>A whitespace character</li>
+     * </ul>
+     *
+     * @param c the character code to check
+     *
+     * @return true if the character is special, false otherwise
+     *
+     * @see #KEYVALUE_SEPARATOR_CHAR
+     * @see #MULTI_LEVEL_CHAR
+     * @see #MULTI_VALUE_CHAR
+     */
     private boolean isSpecialCharacter(int c) {
         return c == SimpleFieldSet.KEYVALUE_SEPARATOR_CHAR ||
                c == SimpleFieldSet.MULTI_LEVEL_CHAR || c == SimpleFieldSet.MULTI_VALUE_CHAR ||
@@ -2715,22 +3439,45 @@ public class SimpleFieldSet {
     }
 
     /**
-     * Write the SimpleFieldSet to a Writer, in order.
+     * Writes the complete field set to a Writer in alphabetically sorted order with specified
+     * formatting options.
      *
-     * @param w                   The Writer to write the SFS to.
-     * @param prefix              The prefix ("" at the top level, e.g. "something." if we are
-     *                            inside a sub-SFS called "something").
-     * @param noEndMarker         If true, don't write the end marker (usually End). Again this
-     *                            is normally set only in sub-SFS's.
-     * @param allowOptionalBase64 If true, write fields as Base64 if they contain spaces etc.
-     *                            This improves the robustness of e.g. node references, where
-     *                            the SFS can be written with or without Base64. However, for
-     *                            SFS's where the values can contain <b>anything</b>, the
-     *                            member flag alwaysUseBase64 will be set and we will write
-     *                            lines that need to be Base64 as such regardless of this
-     *                            allowOptionalBase64.
+     * <p>This method serializes the entire field set, including headers, direct values,
+     * and nested subsets, with all keys sorted alphabetically at each level. Each key is
+     * prefixed with the specified prefix string.</p>
      *
-     * @throws IOException If an error occurs writing to the Writer.
+     * <p>The output follows this structure:</p>
+     * <pre>
+     * # Optional header comments
+     * prefix.key1=value1
+     * prefix.key2=value2
+     * prefix.nested.key=value3
+     * End
+     * </pre>
+     *
+     * <p>Values will be Base64 encoded in either of these cases:</p>
+     * <ul>
+     *   <li>When allowOptionalBase64 is true</li>
+     *   <li>When the value contains special characters that require encoding</li>
+     * </ul>
+     *
+     * <p>The method ensures thread safety through synchronization on the SimpleFieldSet
+     * instance.</p>
+     *
+     * @param w                   the Writer to which the field set will be written. Cannot be
+     *                            null
+     * @param prefix              the string to prepend to all keys. Can be empty but not null
+     * @param noEndMarker         if true, suppresses writing the end marker line
+     * @param allowOptionalBase64 when true, Base64 encoding will be applied to values
+     *                            containing special characters. This improves the robustness
+     *                            of e.g. node references, where the SFS can be written with or
+     *                            without Base64. However, for SFS's where the values can
+     *                            contain <b>anything</b>, the member flag alwaysUseBase64 will
+     *                            be set, and we will write lines that need to be Base64 as
+     *                            such regardless of this allowOptionalBase64.
+     *
+     * @throws IOException if an error occurs while writing to the Writer
+     * @see hyphanet.support.Base64
      */
     private synchronized void writeToOrdered(
         Writer w, String prefix, boolean noEndMarker,
@@ -2762,6 +3509,27 @@ public class SimpleFieldSet {
         }
     }
 
+    /**
+     * Writes the header comments to the specified Writer, if any header lines exist.
+     *
+     * <p>Each header line is written with a "# " prefix. The header section appears
+     * at the beginning of the serialized field set, before any key-value pairs.</p>
+     *
+     * <p>Example output format:</p>
+     * <pre>
+     * # Header line 1
+     * # Header line 2
+     * # Header line 3
+     * </pre>
+     *
+     * <p>If no header lines are set (header array is null), this method does nothing.</p>
+     *
+     * @param w the Writer to which the header lines will be written. Cannot be null
+     *
+     * @throws IOException if an error occurs while writing to the Writer
+     * @see #setHeader(String...)
+     * @see #getHeader()
+     */
     private void writeHeader(Writer w) throws IOException {
         if (header != null) {
             var headerBuilder = new StringBuilder();
@@ -2772,11 +3540,42 @@ public class SimpleFieldSet {
         }
     }
 
+    /**
+     * A functional interface for converting string array elements to a specific primitive type
+     * array.
+     *
+     * <p>This interface is used internally by SimpleFieldSet to handle conversion of string
+     * arrays to arrays of primitive types (e.g., int[], long[], double[]) during parsing of
+     * multi-value entries.</p>
+     *
+     * @param <T> the type of array to be returned by the converter (must be an array type)
+     *
+     * @see #getIntArray(String)
+     * @see #getLongArray(String)
+     * @see #getDoubleArray(String)
+     */
     @FunctionalInterface
     private interface ArrayConverter<T> {
         T convert(String value) throws NumberFormatException;
     }
 
+    /**
+     * Represents the result of processing a single line during field set parsing.
+     *
+     * <p>This record encapsulates two pieces of information about the line processing
+     * state:</p>
+     * <ul>
+     *   <li>Whether the end marker was reached</li>
+     *   <li>Whether we're still in the header section</li>
+     * </ul>
+     *
+     * @param endReached    true if the end marker line was encountered, false otherwise
+     * @param headerSection true if currently processing header comments, false when processing
+     *                      key-value pairs
+     *
+     * @see SimpleFieldSet#processLine(String, List, boolean, boolean, boolean)
+     * @see SimpleFieldSet#read(LineReader, boolean, boolean)
+     */
     private record ProcessLineResult(boolean endReached, boolean headerSection) {
     }
 
