@@ -17,6 +17,7 @@ repositories {
 dependencies {
     // Use JUnit Jupiter for testing.
     testImplementation("org.junit.jupiter:junit-jupiter:latest.release")
+    testImplementation("org.hamcrest:hamcrest:latest.release")
 
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
