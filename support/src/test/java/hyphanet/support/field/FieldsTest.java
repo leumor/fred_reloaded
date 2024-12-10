@@ -2,7 +2,7 @@
  * Public License, version 2 (or at your option any later version). See
  * http://www.gnu.org/ for further details of the GPL. */
 
-package hyphanet.support;
+package hyphanet.support.field;
 
 import org.junit.jupiter.api.Test;
 
@@ -11,7 +11,7 @@ import java.util.Random;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Test case for {@link hyphanet.support.Fields} class.
+ * Test case for {@link Fields} class.
  *
  * @author stuart martin &lt;wavey@freenetproject.org&gt;
  */
@@ -50,7 +50,8 @@ public class FieldsTest {
         assertThrows(NumberFormatException.class,
                      () -> Fields.hexToLong("abcdef123456789aa")); // 17 chars
 
-        assertThrows(NumberFormatException.class, () -> Fields.hexToLong("DeADC0dER")); // invalid char
+        assertThrows(NumberFormatException.class,
+                     () -> Fields.hexToLong("DeADC0dER")); // invalid char
 
         // see javadoc
         l1 = Fields.hexToLong(Long.toHexString(20));
@@ -221,7 +222,8 @@ public class FieldsTest {
     @Test
     public void testBytesToLongsException() {
         byte[] bytes = new byte[3];
-        assertThrows(IllegalArgumentException.class, () -> Fields.bytesToLongs(bytes, 0, bytes.length));
+        assertThrows(IllegalArgumentException.class,
+                     () -> Fields.bytesToLongs(bytes, 0, bytes.length));
     }
 
     @Test
@@ -235,7 +237,8 @@ public class FieldsTest {
         doTestRoundTripBytesArrayToInt(bytes);
 
         byte[] finalBytes = new byte[]{};
-        assertThrows(IllegalArgumentException.class, () -> doTestRoundTripBytesArrayToInt(finalBytes));
+        assertThrows(IllegalArgumentException.class,
+                     () -> doTestRoundTripBytesArrayToInt(finalBytes));
 
         bytes = new byte[]{1, 1, 1, 1};
         doTestRoundTripBytesArrayToInt(bytes);
@@ -273,7 +276,8 @@ public class FieldsTest {
         doTestRoundTripBytesArrayToLong(bytes);
 
         byte[] finalBytes = new byte[]{};
-        assertThrows(IllegalArgumentException.class, () -> doTestRoundTripBytesArrayToLong(finalBytes));
+        assertThrows(IllegalArgumentException.class,
+                     () -> doTestRoundTripBytesArrayToLong(finalBytes));
 
         bytes = new byte[]{1, 1, 1, 1, 1, 1, 1, 1};
         doTestRoundTripBytesArrayToLong(bytes);
@@ -307,8 +311,8 @@ public class FieldsTest {
             int digits = r.nextInt(20) + 1;
             int nonDigits = r.nextInt(20) + 1;
             int digits2 = r.nextInt(20) + 1;
-            String s =
-                generateDigits(r, digits) + generateNonDigits(r, nonDigits) + generateDigits(r, digits2);
+            String s = generateDigits(r, digits) + generateNonDigits(r, nonDigits) +
+                       generateDigits(r, digits2);
             assertEquals(0, Fields.getDigits(s, 0, false));
             assertEquals(digits, Fields.getDigits(s, 0, true));
             assertEquals(nonDigits, Fields.getDigits(s, digits, false));
