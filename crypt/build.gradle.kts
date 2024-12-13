@@ -4,5 +4,6 @@ plugins {
 
 dependencies {
     implementation(project(":support"))
-    implementation("org.bouncycastle:bcprov-jdk18on:1.79")
+    implementation("org.bouncycastle:bcprov-jdk18on:latest.release")
+    implementation("org.apache.commons:commons-rng-simple:latest.release")
 }
