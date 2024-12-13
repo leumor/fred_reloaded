@@ -7,6 +7,7 @@ plugins {
     id("java")
     id("net.ltgt.errorprone")
     id("net.ltgt.nullaway")
+    id("org.sonarqube")
 }
 
 repositories {
@@ -42,6 +43,14 @@ java {
 nullaway {
     annotatedPackages.add("hyphanet.support")
     annotatedPackages.add("hyphanet.key")
+}
+
+sonar {
+    properties {
+        property("sonar.projectKey", "leumor_fred_reloaded")
+        property("sonar.organization", "leumor")
+        property("sonar.host.url", "https://sonarcloud.io")
+    }
 }
 
 tasks.named<Test>("test") {

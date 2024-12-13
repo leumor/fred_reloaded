@@ -15,4 +15,5 @@ repositories {
 dependencies {
     implementation("net.ltgt.gradle:gradle-errorprone-plugin:latest.release")
     implementation("net.ltgt.gradle:gradle-nullaway-plugin:latest.release")
+    implementation("org.sonarqube:org.sonarqube.gradle.plugin:latest.release")
 }
