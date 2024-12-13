@@ -122,7 +122,7 @@ public class JceLoader {
      * @return a clone of the BouncyCastle provider, or null if not available
      */
     public static Provider getBouncyCastle() {
-        return BouncyCastle != null ? (Provider) BouncyCastle.clone() : null;
+        return BouncyCastle;
     }
 
     /**
@@ -131,7 +131,7 @@ public class JceLoader {
      * @return a clone of the NSS provider, or null if not available
      */
     public static Provider getNSS() {
-        return NSS != null ? (Provider) NSS.clone() : null;
+        return NSS;
     }
 
     /**
@@ -140,7 +140,7 @@ public class JceLoader {
      * @return a clone of the SUN provider, or null if not available
      */
     public static Provider getSUN() {
-        return SUN != null ? (Provider) SUN.clone() : null;
+        return SUN;
     }
 
     /**
@@ -149,7 +149,7 @@ public class JceLoader {
      * @return a clone of the SunJCE provider, or null if not available
      */
     public static Provider getSunJCE() {
-        return SunJCE != null ? (Provider) SunJCE.clone() : null;
+        return SunJCE;
     }
 
     public static void main(String[] args) {
