@@ -4,7 +4,6 @@ import com.machinezoo.noexception.Exceptions;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -77,9 +76,6 @@ public final class Loader {
     public static Object getInstance(String classname, Class<?>[] argTypes, Object[] args)
         throws InvocationTargetException, NoSuchMethodException, InstantiationException,
                IllegalAccessException, ClassNotFoundException {
-        Objects.requireNonNull(classname, "Class name cannot be null");
-        Objects.requireNonNull(argTypes, "Argument types array cannot be null");
-        Objects.requireNonNull(args, "Arguments array cannot be null");
         return getInstance(load(classname), argTypes, args);
     }
 
@@ -102,10 +98,6 @@ public final class Loader {
     public static Object getInstance(Class<?> clazz, Class<?>[] argTypes, Object[] args)
         throws InvocationTargetException, NoSuchMethodException, InstantiationException,
                IllegalAccessException {
-        Objects.requireNonNull(clazz, "Class cannot be null");
-        Objects.requireNonNull(argTypes, "Argument types array cannot be null");
-        Objects.requireNonNull(args, "Arguments array cannot be null");
-
         if (argTypes.length != args.length) {
             throw new IllegalArgumentException(
                 "Argument types and arguments arrays must have the same length");
