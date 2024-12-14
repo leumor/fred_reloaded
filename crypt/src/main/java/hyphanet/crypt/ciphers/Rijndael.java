@@ -82,6 +82,18 @@ public class Rijndael implements BlockCipher {
     }
 
     /**
+     * Creates a new Rijndael cipher instance with specified key size. Block size is set to
+     * 128.
+     *
+     * @param keySize The size of the encryption key in bits. Must be 128, 192, or 256.
+     *
+     * @throws UnsupportedCipherException if the specified key size is not supported
+     */
+    public Rijndael(int keySize) throws UnsupportedCipherException {
+        this(keySize, 128);
+    }
+
+    /**
      * Returns the name of the currently selected cryptographic provider.
      *
      * @return the provider name, or null if using built-in encryption
