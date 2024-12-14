@@ -3,7 +3,6 @@
  * http://www.gnu.org/ for further details of the GPL. */
 package hyphanet.crypt;
 
-import hyphanet.support.HexUtil;
 import hyphanet.support.Loader;
 import hyphanet.support.field.Fields;
 import org.slf4j.Logger;
@@ -382,44 +381,11 @@ public class Util {
     public static BlockCipher getCipherByName(String name, int keySize) {
         try {
             return (BlockCipher) Loader.getInstance("hyphanet.crypt.ciphers." + name,
-                                                    new Class<?>[]{Integer.class},
+                                                    new Class<?>[]{int.class},
                                                     new Object[]{keySize});
         } catch (Exception e) {
             logger.error("Failed to load cipher: {} with key size: {}", name, keySize, e);
             return null;
-        }
-    }
-
-    // TODO: Move to Unit Test
-    public static void main(String[] args) throws Exception {
-        if ((args.length == 0) || args[0].equals("write")) {
-            writeMPI(new BigInteger("9"), System.out);
-            writeMPI(new BigInteger("1234567890123456789"), System.out);
-            writeMPI(new BigInteger("100200300400500600700800900"), System.out);
-        } else if (args[0].equals("read")) {
-            System.out.println("9");
-            System.out.println(readMPI(System.in));
-            System.out.println("1234567890123456789");
-            System.out.println(readMPI(System.in));
-            System.out.println("100200300400500600700800900");
-            System.out.println(readMPI(System.in));
-        } else if (args[0].equals("write-mpi")) {
-            writeMPI(new BigInteger(args[1]), System.out);
-        } else if (args[0].equals("read-mpi")) {
-            System.err.println(readMPI(System.in));
-        } else if (args[0].equals("keygen")) {
-            byte[] entropy = readMPI(System.in).toByteArray();
-            byte[] key = new byte[(args.length > 1 ? Integer.parseInt(args[1]) : 16)];
-            makeKey(entropy, key, 0, key.length);
-            System.err.println(HexUtil.bytesToHex(key, 0, key.length));
-        } else if (args[0].equals("shatest")) {
-            MessageDigest digest =
-                MessageDigest.getInstance(HashAlgorithm.SHA1.getAlgorithmName(),
-                                          MD_PROVIDERS.get(HashAlgorithm.SHA1));
-            digest.update((byte) 'a');
-            digest.update((byte) 'b');
-            digest.update((byte) 'c');
-            System.err.println(HexUtil.bytesToHex(digest.digest()));
         }
     }
 
