@@ -5,7 +5,6 @@ package hyphanet.crypt;
 
 import hyphanet.support.HexUtil;
 
-import java.io.Serial;
 import java.io.Serializable;
 import java.math.BigInteger;
 import java.security.MessageDigest;
@@ -21,55 +20,7 @@ import java.security.NoSuchAlgorithmException;
  *
  * <p>This is an abstract class, concrete implementations will define specific key types.</p>
  */
-public abstract class CryptoKey implements Serializable {
-    @Serial
-    private static final long serialVersionUID = 1L;
-
-    /**
-     * Returns a string representation of the key type.
-     *
-     * @return A string representing the key type.
-     */
-    public abstract String keyType();
-
-    /**
-     * Generates a fingerprint for the key.
-     *
-     * @return A byte array containing the key's fingerprint.
-     */
-    public abstract byte[] fingerprint();
-
-    /**
-     * Converts the key to its byte representation.
-     *
-     * @return A byte array representing the key.
-     */
-    public abstract byte[] asBytes();
-
-    /**
-     * Provides a detailed string representation of the key.
-     *
-     * @return A string with detailed information about the key.
-     */
-    public abstract String toLongString();
-
-    /**
-     * Provides a string representation of the key.
-     * <p>
-     * This method returns a concise string representation of the key, including its type and a
-     * shortened fingerprint.
-     * </p>
-     *
-     * @return A string representation of the key in the format "keyType/shortFingerprint".
-     */
-    @Override
-    public String toString() {
-        StringBuilder b = new StringBuilder(keyType().length() + 1 + 4);
-        b.append(keyType()).append('/');
-        HexUtil.bytesToHexAppend(fingerprint(), 16, 4, b);
-        return b.toString();
-    }
-
+public interface CryptoKey extends Serializable {
     /**
      * Generates a fingerprint for the given BigInteger quantities.
      * <p>
@@ -81,7 +32,7 @@ public abstract class CryptoKey implements Serializable {
      *
      * @return A byte array containing the SHA-1 hash of the provided quantities.
      */
-    protected byte[] fingerprint(BigInteger[] quantities) {
+    static byte[] fingerprint(BigInteger[] quantities) {
         try {
             var shactx = MessageDigest.getInstance(Util.HashAlgorithm.SHA1.getAlgorithmName(),
                                                    Util.MD_PROVIDERS.get(
@@ -98,4 +49,47 @@ public abstract class CryptoKey implements Serializable {
 
     }
 
+    /**
+     * Returns a string representation of the key type.
+     *
+     * @return A string representing the key type.
+     */
+    String keyType();
+
+    /**
+     * Generates a fingerprint for the key.
+     *
+     * @return A byte array containing the key's fingerprint.
+     */
+    byte[] fingerprint();
+
+    /**
+     * Converts the key to its byte representation.
+     *
+     * @return A byte array representing the key.
+     */
+    byte[] asBytes();
+
+    /**
+     * Provides a detailed string representation of the key.
+     *
+     * @return A string with detailed information about the key.
+     */
+    String toLongString();
+
+    /**
+     * Provides a string representation of the key.
+     * <p>
+     * This method returns a concise string representation of the key, including its type and a
+     * shortened fingerprint.
+     * </p>
+     *
+     * @return A string representation of the key in the format "keyType/shortFingerprint".
+     */
+    default String toDefaultString() {
+        StringBuilder b = new StringBuilder(keyType().length() + 1 + 4);
+        b.append(keyType()).append('/');
+        HexUtil.bytesToHexAppend(fingerprint(), 16, 4, b);
+        return b.toString();
+    }
 }

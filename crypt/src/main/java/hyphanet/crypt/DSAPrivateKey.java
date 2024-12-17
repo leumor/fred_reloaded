@@ -28,7 +28,7 @@ import java.math.BigInteger;
  * @see DSAGroup
  * @see CryptoKey
  */
-public class DSAPrivateKey extends CryptoKey {
+public class DSAPrivateKey implements CryptoKey {
     @Serial
     private static final long serialVersionUID = -1;
 
@@ -150,7 +150,7 @@ public class DSAPrivateKey extends CryptoKey {
      */
     @Override
     public byte[] fingerprint() {
-        return fingerprint(new BigInteger[]{x});
+        return CryptoKey.fingerprint(new BigInteger[]{x});
     }
 
     /**
