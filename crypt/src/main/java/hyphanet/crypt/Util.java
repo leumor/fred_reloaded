@@ -5,6 +5,7 @@ package hyphanet.crypt;
 
 import hyphanet.support.Loader;
 import hyphanet.support.field.Fields;
+import org.apache.commons.rng.UniformRandomProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -453,6 +454,36 @@ public class Util {
             asLong = Long.MAX_VALUE;
         }
         return ((double) asLong) / ((double) Long.MAX_VALUE);
+    }
+
+    /**
+     * Generates a random positive BigInteger with a specified number of bits using a provided
+     * random number generator.
+     *
+     * <p>This method creates a random BigInteger that is uniformly distributed
+     * over the range [0, 2^numBits - 1]. The generated number will have exactly the specified
+     * number of bits.</p>
+     *
+     * @param numBits the exact number of bits in the generated BigInteger
+     * @param rng     the uniform random number provider to use for generation
+     *
+     * @return a random, non-negative BigInteger with exactly numBits bits
+     *
+     * @throws IllegalArgumentException if numBits is negative
+     * @see java.math.BigInteger
+     * @see org.apache.commons.rng.UniformRandomProvider
+     */
+    public static BigInteger generateRandomBigInteger(int numBits, UniformRandomProvider rng) {
+        // Generate random bytes
+        byte[] bytes = new byte[(numBits + 7) / 8];
+        rng.nextBytes(bytes);
+
+        // Ensure the number has exactly numBits bits
+        if (numBits % 8 != 0) {
+            bytes[0] &= (byte) ((1 << (numBits % 8)) - 1);
+        }
+
+        return new BigInteger(1, bytes);
     }
 
     /**
