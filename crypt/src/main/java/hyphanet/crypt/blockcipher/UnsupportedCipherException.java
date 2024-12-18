@@ -1,4 +1,4 @@
-package hyphanet.crypt;
+package hyphanet.crypt.blockcipher;
 
 import java.io.Serial;
 

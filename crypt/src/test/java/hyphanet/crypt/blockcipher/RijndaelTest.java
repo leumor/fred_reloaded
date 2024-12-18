@@ -1,10 +1,8 @@
 /* This code is part of Freenet. It is distributed under the GNU General
  * Public License, version 2 (or at your option any later version). See
  * http://www.gnu.org/ for further details of the GPL. */
-package hyphanet.crypt.ciphers;
+package hyphanet.crypt.blockcipher;
 
-import hyphanet.crypt.CTRBlockCipherTest;
-import hyphanet.crypt.UnsupportedCipherException;
 import hyphanet.support.HexUtil;
 import org.junit.jupiter.api.Test;
 

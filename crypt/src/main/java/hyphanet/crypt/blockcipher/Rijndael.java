@@ -1,8 +1,7 @@
-package hyphanet.crypt.ciphers;
+package hyphanet.crypt.blockcipher;
 
 import hyphanet.crypt.BlockCipher;
 import hyphanet.crypt.JceLoader;
-import hyphanet.crypt.UnsupportedCipherException;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

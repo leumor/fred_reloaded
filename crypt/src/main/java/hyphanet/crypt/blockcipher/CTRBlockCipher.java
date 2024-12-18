@@ -3,7 +3,9 @@
  * without sorting out the policy files issues. Bouncycastle is MIT X licensed i.e. GPL
  * compatible.
  */
-package hyphanet.crypt;
+package hyphanet.crypt.blockcipher;
+
+import hyphanet.crypt.BlockCipher;
 
 import java.util.concurrent.atomic.AtomicInteger;
 

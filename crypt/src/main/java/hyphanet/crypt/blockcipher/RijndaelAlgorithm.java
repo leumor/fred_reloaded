@@ -2,7 +2,7 @@
  * Copyright (c) 1997, 1998 Systemics Ltd on behalf of
  * the Cryptix Development Team. All rights reserved.
  */
-package hyphanet.crypt.ciphers;
+package hyphanet.crypt.blockcipher;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
