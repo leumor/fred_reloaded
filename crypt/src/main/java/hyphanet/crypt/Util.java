@@ -3,7 +3,6 @@
  * http://www.gnu.org/ for further details of the GPL. */
 package hyphanet.crypt;
 
-import hyphanet.support.Loader;
 import hyphanet.support.field.Fields;
 import org.apache.commons.rng.UniformRandomProvider;
 import org.slf4j.Logger;
@@ -352,41 +351,6 @@ public class Util {
             throw new IllegalStateException("This should never happen");
         } finally {
             Arrays.fill(entropy, (byte) 0);
-        }
-    }
-
-    /**
-     * Gets a cipher implementation by its name.
-     *
-     * @param name The name of the cipher to load
-     *
-     * @return The cipher implementation or null if loading fails
-     */
-    public static BlockCipher getCipherByName(String name) {
-        try {
-            return (BlockCipher) Loader.getInstance("hyphanet.crypt.ciphers." + name);
-        } catch (Exception e) {
-            logger.error("Failed to load cipher: {}", name, e);
-            return null;
-        }
-    }
-
-    /**
-     * Gets a cipher implementation by its name and key size.
-     *
-     * @param name    The name of the cipher to load
-     * @param keySize The key size in bits
-     *
-     * @return The cipher implementation or null if loading fails
-     */
-    public static BlockCipher getCipherByName(String name, int keySize) {
-        try {
-            return (BlockCipher) Loader.getInstance("hyphanet.crypt.ciphers." + name,
-                                                    new Class<?>[]{int.class},
-                                                    new Object[]{keySize});
-        } catch (Exception e) {
-            logger.error("Failed to load cipher: {} with key size: {}", name, keySize, e);
-            return null;
         }
     }
 
