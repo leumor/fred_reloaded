@@ -273,23 +273,6 @@ class UtilTest {
     }
 
     @Test
-    void getCipherByName() {
-        assertNotNull(Util.getCipherByName("Rijndael"));
-        assertNull(Util.getCipherByName("NonExistentCipher"));
-    }
-
-    @Test
-    void getCipherByNameWithKeySize() {
-        assertNull(Util.getCipherByName("NonExistentCipher", 256));
-
-
-        BlockCipher cipher = Util.getCipherByName("Rijndael", 128);
-        assertNotNull(cipher);
-        assertEquals(128, cipher.getKeySize());
-    }
-
-
-    @Test
     void log2() {
         assertEquals(0, Util.log2(1));
         assertEquals(1, Util.log2(2));

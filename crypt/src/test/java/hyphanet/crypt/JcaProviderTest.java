@@ -15,7 +15,7 @@ import java.util.random.RandomGenerator;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
-class JceProviderTest {
+class JcaProviderTest {
 
     // FIXME I don't think there are any standard test vectors?
     static final byte[] PCFB_256_ENCRYPT_KEY =
@@ -37,7 +37,7 @@ class JceProviderTest {
 
     @BeforeAll
     static void setup() {
-        Security.addProvider(new JceProvider());
+        Security.addProvider(new JcaProvider());
     }
 
     @Test
