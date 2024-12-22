@@ -1,4 +1,4 @@
-package hyphanet.key;
+package hyphanet.access;
 
 import hyphanet.support.Base64;
 import hyphanet.support.IllegalBase64Exception;
@@ -19,9 +19,9 @@ public class Uri implements Serializable {
         USK, SSK, KSK, CHK
     }
 
-    public record Keys(RoutingKey routingKey, CryptoKey cryptoKey, byte[] extra) {
+    public record Keys(RoutingKey routingKey, DecryptionKey decryptionKey, byte[] extra) {
         public Keys {
-            if (routingKey == null || cryptoKey == null || extra == null) {
+            if (routingKey == null || decryptionKey == null || extra == null) {
                 throw new IllegalArgumentException(
                     "Routing key, crypto key and extra data must not be null");
             }
@@ -29,7 +29,7 @@ public class Uri implements Serializable {
     }
 
     // Strip http(s):// and (web+|ext+)freenet: prefix
-    protected final static Pattern URI_PREFIX =
+    protected static final Pattern URI_PREFIX =
         Pattern.compile("^(https?://[^/]+/+)?(((ext|web)\\+)?(freenet|hyphanet|hypha):)?");
     private static final char URI_SEPARATOR = '/';
 
@@ -52,7 +52,8 @@ public class Uri implements Serializable {
                 uri = URLDecoder.decode(uri, false);
             } catch (URLEncodedFormatException e) {
                 throw new MalformedURLException(
-                    "Invalid URI: no @ or /, or @ or / is escaped but there are invalid escapes");
+                    "Invalid URI: no @ or /, or @ or / is escaped but there are invalid " +
+                    "escapes");
             }
         }
 
@@ -91,10 +92,10 @@ public class Uri implements Serializable {
     }
 
     public Uri(
-        UriType uriType, RoutingKey routingKey, CryptoKey cryptoKey, byte[] extra,
+        UriType uriType, RoutingKey routingKey, DecryptionKey decryptionKey, byte[] extra,
         String[] metaStrings) {
 
-        this(uriType, new Keys(routingKey, cryptoKey, extra), metaStrings);
+        this(uriType, new Keys(routingKey, decryptionKey, extra), metaStrings);
     }
 
     public Uri(UriType uriType, Keys keys, String[] metaStrings) {
@@ -141,8 +142,8 @@ public class Uri implements Serializable {
 
         if (!routingKey.isEmpty() && !cryptoKey.isEmpty() && !extra.isEmpty()) {
             try {
-                return new Keys(RoutingKey.fromBase64(routingKey), CryptoKey.fromBase64(cryptoKey),
-                                Base64.decode(extra));
+                return new Keys(RoutingKey.fromBase64(routingKey),
+                                DecryptionKey.fromBase64(cryptoKey), Base64.decode(extra));
             } catch (IllegalArgumentException | IllegalBase64Exception e) {
                 throw new MalformedURLException(
                     "Invalid URI: invalid routing key, crypto key or extra data");
@@ -171,7 +172,8 @@ public class Uri implements Serializable {
 
             // If we skipped any consecutive '/', add one empty string
             // As SSK@blah,blah,blah//filename is allowed with empty docname
-            if (start > 1 && start < uriPath.length() && uriPath.charAt(start - 1) == URI_SEPARATOR &&
+            if (start > 1 && start < uriPath.length() &&
+                uriPath.charAt(start - 1) == URI_SEPARATOR &&
                 uriPath.charAt(start - 2) == URI_SEPARATOR) {
                 metaStrings.add("");
             }

@@ -12,7 +12,7 @@ plugins {
 
 rootProject.name = "fred_reloaded"
 include("app")
-include("key")
+include("access")
 include("support")
 include("crypt")
 include("ext")

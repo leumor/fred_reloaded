@@ -4,4 +4,5 @@ plugins {
 
 dependencies {
     implementation(project(":support"))
+    implementation(project(":crypt"))
 }
