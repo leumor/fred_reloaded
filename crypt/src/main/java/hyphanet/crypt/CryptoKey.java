@@ -34,9 +34,7 @@ public interface CryptoKey extends Serializable {
      */
     static byte[] fingerprint(BigInteger[] quantities) {
         try {
-            var shactx = MessageDigest.getInstance(Util.HashAlgorithm.SHA1.getAlgorithmName(),
-                                                   Util.MD_PROVIDERS.get(
-                                                       Util.HashAlgorithm.SHA1));
+            var shactx = MessageDigest.getInstance(Util.HashAlgorithm.SHA1.getAlgorithmName());
             for (BigInteger quantity : quantities) {
                 byte[] mpi = Util.calcMPIBytes(quantity);
                 shactx.update(mpi, 0, mpi.length);
