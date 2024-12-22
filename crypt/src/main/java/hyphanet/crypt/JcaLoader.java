@@ -25,7 +25,8 @@ import java.security.Signature;
  * </ul>
  * </p>
  */
-public class JceLoader {
+public final class JcaLoader {
+
     /**
      * Exception thrown when there are problems loading or initializing cryptographic
      * providers.
@@ -46,28 +47,26 @@ public class JceLoader {
      * The BouncyCastle provider instance.
      */
     private static final Provider BouncyCastle;
-
     /**
      * The NSS provider instance. May be null if not available.
      */
     private static final Provider NSS; // optional, may be null
-
     /**
      * The SUN provider instance. May be null if not enabled.
      */
     private static final Provider SUN; // optional, may be null
-
     /**
      * The SunJCE provider instance. May be null if not enabled.
      */
     private static final Provider SunJCE; // optional, may be null
-
     /**
      * Logger for this class.
      */
-    private static final Logger logger = LoggerFactory.getLogger(JceLoader.class);
+    private static final Logger logger = LoggerFactory.getLogger(JcaLoader.class);
 
     static {
+        Security.setProperty("crypto.policy", "unlimited");
+
         Provider p = null;
 
         // NSS is preferred over BC, add it first
@@ -114,6 +113,12 @@ public class JceLoader {
 
         // SUN provider loading
         SUN = checkUse("use.SUN") ? Security.getProvider("SUN") : null;
+
+        // Load Hyphanet JCA Provider
+        Security.addProvider(new JcaProvider());
+    }
+
+    private JcaLoader() {
     }
 
     /**
@@ -186,7 +191,7 @@ public class JceLoader {
      * @return true if the feature should be used, false otherwise
      */
     private static boolean checkUse(String prop, String def) {
-        return "true".equalsIgnoreCase(System.getProperty("freenet.jce." + prop, def));
+        return "true".equalsIgnoreCase(System.getProperty("hyphanet.jce." + prop, def));
     }
 
     /**
