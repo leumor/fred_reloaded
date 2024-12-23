@@ -3,6 +3,7 @@
  * http://www.gnu.org/ for further details of the GPL. */
 package hyphanet.support.io;
 
+import hyphanet.support.io.stream.LineReadingInputStream;
 import org.jspecify.annotations.Nullable;
 
 import java.io.IOException;
@@ -58,18 +59,21 @@ public interface LineReader {
      *   <li>The maximum line length is exceeded</li>
      * </ul>
      *
-     * @param maxLength  the maximum allowed length of a line in bytes. If a line exceeds this length, a
-     *                   {@link TooLongException} will be thrown to prevent memory exhaustion
-     * @param bufferSize the initial size of the internal read buffer in bytes. This value may affect
-     *                   performance but not functionality. The actual buffer may grow up to maxLength if
-     *                   needed
-     * @param utf        if {@code true}, decode the input as UTF-8; if {@code false}, decode as
-     *                   ISO-8859-1
+     * @param maxLength  the maximum allowed length of a line in bytes. If a line exceeds this
+     *                   length, a {@link TooLongException} will be thrown to prevent memory
+     *                   exhaustion
+     * @param bufferSize the initial size of the internal read buffer in bytes. This value may
+     *                   affect performance but not functionality. The actual buffer may grow
+     *                   up to maxLength if needed
+     * @param utf        if {@code true}, decode the input as UTF-8; if {@code false}, decode
+     *                   as ISO-8859-1
      *
-     * @return the line of text without any line termination characters, or {@code null} if the end of e
-     * end of the stream has been reached with no data read or if maxLength is less than 1
+     * @return the line of text without any line termination characters, or {@code null} if the
+     * end of e end of the stream has been reached with no data read or if maxLength is less
+     * than 1
      *
-     * @throws IOException      if an I/O error occurs while reading from the underlying stream
+     * @throws IOException      if an I/O error occurs while reading from the underlying
+     *                          stream
      * @throws TooLongException if the line length exceeds the specified maxLength
      * @see LineReadingInputStream#readLine(int, int, boolean)
      */

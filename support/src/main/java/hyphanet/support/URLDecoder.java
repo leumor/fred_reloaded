@@ -3,7 +3,7 @@
  * http://www.gnu.org/ for further details of the GPL. */
 package hyphanet.support;
 
-import hyphanet.support.field.Fields;
+import hyphanet.base.Fields;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -95,19 +95,21 @@ public final class URLDecoder {
      * </ul>
      *
      * @param input    The URL-encoded string to decode. Must not be null.
-     * @param tolerant When {@code true}, invalid percent-encoded sequences are treated as literal
-     *                 characters instead of throwing exceptions. This mode is useful when
-     *                 processing user-pasted URLs that might contain un-encoded % characters. Not
-     *                 recommended for security-sensitive applications.
+     * @param tolerant When {@code true}, invalid percent-encoded sequences are treated as
+     *                 literal characters instead of throwing exceptions. This mode is useful
+     *                 when processing user-pasted URLs that might contain un-encoded %
+     *                 characters. Not recommended for security-sensitive applications.
      *
      * @return The decoded string in UTF-8 encoding
      *
-     * @throws URLEncodedFormatException if the input contains invalid or incomplete percent-encoded
-     *                                   sequences and tolerant mode is disabled
+     * @throws URLEncodedFormatException if the input contains invalid or incomplete
+     *                                   percent-encoded sequences and tolerant mode is
+     *                                   disabled
      * @see java.net.URLEncoder
      * @see java.nio.charset.StandardCharsets#UTF_8
      */
-    public static String decode(String input, boolean tolerant) throws URLEncodedFormatException {
+    public static String decode(String input, boolean tolerant)
+        throws URLEncodedFormatException {
         if (input.isEmpty()) {
             return "";
         }
@@ -119,7 +121,8 @@ public final class URLDecoder {
                 char c = input.charAt(i);
 
                 if (c == '%') {
-                    i = decodeHexSequence(input, i, decodedBytes, tolerant, hasDecodedSomething);
+                    i = decodeHexSequence(input, i, decodedBytes, tolerant,
+                                          hasDecodedSomething);
                     hasDecodedSomething = true;
                 } else {
                     decodedBytes.write(String.valueOf(c).getBytes(StandardCharsets.UTF_8));
@@ -128,8 +131,8 @@ public final class URLDecoder {
 
             return decodedBytes.toString(StandardCharsets.UTF_8);
         } catch (IOException e) {
-            throw new URLEncodedFormatException(String.format("Failed to process input: %s", input),
-                                                e);
+            throw new URLEncodedFormatException(
+                String.format("Failed to process input: %s", input), e);
         }
     }
 
@@ -137,7 +140,8 @@ public final class URLDecoder {
      * Decodes a percent-encoded hex sequence in the input string.
      *
      * @param input               The complete input string being decoded
-     * @param currentIndex        The current position in the input string (at the '%' character)
+     * @param currentIndex        The current position in the input string (at the '%'
+     *                            character)
      * @param output              The output stream where decoded bytes are written
      * @param tolerant            If true, treats invalid sequences as literal characters
      * @param hasDecodedSomething Whether any successful decoding has occurred previously

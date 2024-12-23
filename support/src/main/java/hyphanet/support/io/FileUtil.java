@@ -4,6 +4,7 @@
 package hyphanet.support.io;
 
 import hyphanet.support.StringValidityChecker;
+import hyphanet.support.io.stream.LineReadingInputStream;
 import org.bouncycastle.crypto.io.CipherInputStream;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -26,8 +27,9 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Utility class providing file system operations and helper methods for file manipulation. This class
- * handles common file operations with proper error handling and platform-specific considerations.
+ * Utility class providing file system operations and helper methods for file manipulation.
+ * This class handles common file operations with proper error handling and platform-specific
+ * considerations.
  *
  * <p>Key features include:
  * <ul>
@@ -39,8 +41,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 final public class FileUtil {
     /**
-     * Default buffer size used for file operations. Set to 32KB for optimal performance on most file
-     * systems.
+     * Default buffer size used for file operations. Set to 32KB for optimal performance on
+     * most file systems.
      */
     public static final int BUFFER_SIZE = 32 * 1024;
     /**
@@ -116,7 +118,8 @@ final public class FileUtil {
     // probably equal to the filename charset.
     // The worst thing which can happen if we misdetect the filename charset is that downloads
     // fail because the filenames are invalid:
-    // We disallow path and file separator characters anyway so its not possible to cause files to
+    // We disallow path and file separator characters anyway so its not possible to cause
+    // files to
     // be stored in arbitrary places.
     private static final Charset FILE_NAME_CHARSET = getFileEncodingCharset();
     //    private static final ZeroInputStream zis = new ZeroInputStream();
@@ -127,7 +130,8 @@ final public class FileUtil {
     /**
      * Gets a reader for the tail portion of a log file.
      *
-     * <p><b>Note:</b> The actual number of bytes read may be slightly more than the specified limit
+     * <p><b>Note:</b> The actual number of bytes read may be slightly more than the specified
+     * limit
      * to ensure the first line is complete.
      *
      * @param logfile   The log file to read from
@@ -147,7 +151,8 @@ final public class FileUtil {
     /**
      * Gets a reader for the tail portion of a log file.
      *
-     * <p><b>Note:</b> The actual number of bytes read may be slightly more than the specified limit
+     * <p><b>Note:</b> The actual number of bytes read may be slightly more than the specified
+     * limit
      * to ensure the first line is complete.
      *
      * @param logfilePath The path to the log file to read
@@ -163,7 +168,8 @@ final public class FileUtil {
         throws IOException {
         // Validate inputs
         if (byteLimit < 0) {
-            throw new IllegalArgumentException("Byte limit must be non-negative: " + byteLimit);
+            throw new IllegalArgumentException(
+                "Byte limit must be non-negative: " + byteLimit);
         }
         if (!Files.exists(logfilePath)) {
             throw new IllegalArgumentException("Path does not exist: " + logfilePath);
@@ -184,7 +190,8 @@ final public class FileUtil {
             if (startPosition > 0) {
                 fis.skipNBytes(startPosition);
 
-                // Read and discard the first partial line to ensure we start at a line boundary
+                // Read and discard the first partial line to ensure we start at a line
+                // boundary
                 lis.readLine(100000, 200, true);
 
             }
@@ -195,7 +202,8 @@ final public class FileUtil {
     /**
      * Returns the Charset corresponding to the system's "file.encoding" property.
      *
-     * <p>This method provides access to the system's default file encoding, which is typically:
+     * <p>This method provides access to the system's default file encoding, which is
+     * typically:
      * <ul>
      *   <li>On Windows: Set to the user's configured system language</li>
      *   <li>On Unix/Linux: Usually UTF-8</li>
@@ -205,7 +213,8 @@ final public class FileUtil {
      * The method first attempts to use the system's default charset. If this fails,
      * it falls back to UTF-8 to ensure a valid Charset is always returned.
      *
-     * @return The system's default file encoding Charset, or UTF-8 if the default cannot be determined
+     * @return The system's default file encoding Charset, or UTF-8 if the default cannot be
+     * determined
      *
      * @see Charset#defaultCharset()
      * @see StandardCharsets#UTF_8
@@ -219,8 +228,8 @@ final public class FileUtil {
     }
 
     /**
-     * Estimates the actual disk usage for a file, including filesystem overhead. This is a convenience
-     * method that delegates to {@link #estimateUsage(Path, long)}.
+     * Estimates the actual disk usage for a file, including filesystem overhead. This is a
+     * convenience method that delegates to {@link #estimateUsage(Path, long)}.
      *
      * @param file The file to analyze
      * @param flen The length of the file in bytes
@@ -297,7 +306,8 @@ final public class FileUtil {
         } catch (IOException e) {
             // Fall back to original conservative estimates if we can't get file system info
             long blockUsage = roundup_2n(flen, 4096);  // Assume 4kB clusters
-            // Assume 512 byte filename entries, with 100 bytes overhead, for filename overhead (NTFS)
+            // Assume 512 byte filename entries, with 100 bytes overhead, for filename
+            // overhead (NTFS)
             String filename = path.getFileName().toString();
             int nameLength = 100 + Math.max(filename.getBytes(StandardCharsets.UTF_16).length,
                                             filename.getBytes(StandardCharsets.UTF_8).length);
@@ -310,14 +320,14 @@ final public class FileUtil {
     }
 
     /**
-     * Determines if one file is a parent directory of another file. This is a convenience method that
-     * delegates to {@link #isParent(Path, Path)}.
+     * Determines if one file is a parent directory of another file. This is a convenience
+     * method that delegates to {@link #isParent(Path, Path)}.
      *
      * @param poss     The potential parent file
      * @param filename The file to check
      *
-     * @return {@code true} if poss is a parent of filename or if they are the same path, {@code false}
-     * if they are unrelated or if an error occurs
+     * @return {@code true} if poss is a parent of filename or if they are the same path,
+     * {@code false} if they are unrelated or if an error occurs
      *
      * @see #isParent(Path, Path)
      */
@@ -346,8 +356,8 @@ final public class FileUtil {
      * @param poss     The potential parent path to check
      * @param filename The path that might be a child of the parent
      *
-     * @return {@code true} if poss is a parent of filename or if they are the same path, {@code false}
-     * if they are unrelated or if an error occurs
+     * @return {@code true} if poss is a parent of filename or if they are the same path,
+     * {@code false} if they are unrelated or if an error occurs
      */
     public static boolean isParent(Path poss, Path filename) {
         try {
@@ -369,8 +379,8 @@ final public class FileUtil {
     }
 
     /**
-     * Returns the canonical form of the specified file. This is a convenience method that delegates to
-     * {@link #getCanonicalFile(Path)}.
+     * Returns the canonical form of the specified file. This is a convenience method that
+     * delegates to {@link #getCanonicalFile(Path)}.
      *
      * @param file The file to canonicalize
      *
@@ -388,8 +398,8 @@ final public class FileUtil {
     }
 
     /**
-     * Returns the canonical form of the specified path, resolving symbolic links and normalizing the
-     * path name.
+     * Returns the canonical form of the specified path, resolving symbolic links and
+     * normalizing the path name.
      *
      * <p>This method performs the following operations:
      * <ul>
@@ -446,7 +456,8 @@ final public class FileUtil {
      *
      * @return A StringBuilder containing the file's content encoded as UTF-8
      *
-     * @throws FileNotFoundException if the file does not exist or cannot be opened for reading
+     * @throws FileNotFoundException if the file does not exist or cannot be opened for
+     *                               reading
      * @throws IOException           if an I/O error occurs during reading
      * @see #readUTF(Path)
      */
@@ -455,15 +466,17 @@ final public class FileUtil {
     }
 
     /**
-     * Reads the content of a file as UTF-8, starting at a specified offset. This is a convenience method
-     * that delegates to {@link #readUTF(Path, long)}.
+     * Reads the content of a file as UTF-8, starting at a specified offset. This is a
+     * convenience method that delegates to {@link #readUTF(Path, long)}.
      *
      * @param file   The file to read the content from
      * @param offset The byte offset in the file at which to start reading
      *
-     * @return A StringBuilder containing the file's content from the specified offset, encoded as UTF-8
+     * @return A StringBuilder containing the file's content from the specified offset, encoded
+     * as UTF-8
      *
-     * @throws FileNotFoundException    if the file does not exist or cannot be opened for reading
+     * @throws FileNotFoundException    if the file does not exist or cannot be opened for
+     *                                  reading
      * @throws IOException              if an I/O error occurs during reading
      * @throws IllegalArgumentException if offset is negative
      * @see #readUTF(Path, long)
@@ -473,8 +486,8 @@ final public class FileUtil {
     }
 
     /**
-     * Reads the entire content of a file as UTF-8 using NIO Path API. This is a convenience method that
-     * delegates to {@link #readUTF(Path, long)}.
+     * Reads the entire content of a file as UTF-8 using NIO Path API. This is a convenience
+     * method that delegates to {@link #readUTF(Path, long)}.
      *
      * @param path The path to the file to read
      *
@@ -488,13 +501,14 @@ final public class FileUtil {
     }
 
     /**
-     * Reads the content of a file as UTF-8 starting at a specified offset using NIO Path API. The method
-     * uses a buffered reader for efficient reading of large files.
+     * Reads the content of a file as UTF-8 starting at a specified offset using NIO Path API.
+     * The method uses a buffered reader for efficient reading of large files.
      *
      * @param path   The path to the file to read
      * @param offset The byte offset in the file at which to start reading
      *
-     * @return A StringBuilder containing the file's content from the specified offset, encoded as UTF-8
+     * @return A StringBuilder containing the file's content from the specified offset, encoded
+     * as UTF-8
      *
      * @throws IOException              if an I/O error occurs during reading
      * @throws IllegalArgumentException if offset is negative
@@ -515,8 +529,8 @@ final public class FileUtil {
     }
 
     /**
-     * Reads the entire content of an input stream as UTF-8. This is a convenience method that delegates
-     * to {@link #readUTF(InputStream, long)}.
+     * Reads the entire content of an input stream as UTF-8. This is a convenience method that
+     * delegates to {@link #readUTF(InputStream, long)}.
      *
      * @param stream The input stream to read from
      *
@@ -530,14 +544,14 @@ final public class FileUtil {
     }
 
     /**
-     * Reads the content of an input stream as UTF-8, starting at a specified offset. The method uses
-     * buffered reading for efficient processing of large streams.
+     * Reads the content of an input stream as UTF-8, starting at a specified offset. The
+     * method uses buffered reading for efficient processing of large streams.
      *
      * @param stream The input stream to read from
      * @param offset The number of bytes to skip before starting to read
      *
-     * @return A StringBuilder containing the stream's content from the specified offset, encoded as
-     * UTF-8
+     * @return A StringBuilder containing the stream's content from the specified offset,
+     * encoded as UTF-8
      *
      * @throws IOException              if an I/O error occurs during reading or skipping
      * @throws IllegalArgumentException if offset is negative
@@ -556,22 +570,23 @@ final public class FileUtil {
     }
 
     /**
-     * Reliably skips a specified number of bytes from an input stream. This method ensures that the
-     * exact number of bytes requested are skipped, unlike {@link InputStream#skip(long)} which may skip
-     * fewer bytes.
+     * Reliably skips a specified number of bytes from an input stream. This method ensures
+     * that the exact number of bytes requested are skipped, unlike
+     * {@link InputStream#skip(long)} which may skip fewer bytes.
      *
      * @param is     The input stream to skip bytes from
      * @param toSkip The exact number of bytes to skip
      *
      * @throws IllegalArgumentException if toSkip is negative
-     * @throws EOFException             if the end of stream is reached before the requested number of
-     *                                  bytes could be skipped
+     * @throws EOFException             if the end of stream is reached before the requested
+     *                                  number of bytes could be skipped
      * @throws IOException              if an I/O error occurs while skipping
      * @see InputStream#skipNBytes(long)
      */
     public static void skipFully(InputStream is, long toSkip) throws IOException {
         if (toSkip < 0) {
-            throw new IllegalArgumentException("Cannot skip negative number of bytes: " + toSkip);
+            throw new IllegalArgumentException(
+                "Cannot skip negative number of bytes: " + toSkip);
         }
 
         try {
@@ -582,21 +597,22 @@ final public class FileUtil {
     }
 
     /**
-     * Reliably skips a specified number of characters from a reader. This method ensures that the exact
-     * number of characters requested are skipped.
+     * Reliably skips a specified number of characters from a reader. This method ensures that
+     * the exact number of characters requested are skipped.
      *
      * @param reader The reader to skip characters from
      * @param toSkip The exact number of characters to skip
      *
      * @throws IllegalArgumentException if toSkip is negative
-     * @throws EOFException             if the end of reader is reached before the requested number of
-     *                                  characters could be skipped
+     * @throws EOFException             if the end of reader is reached before the requested
+     *                                  number of characters could be skipped
      * @throws IOException              if an I/O error occurs while skipping
      * @see Reader#skip(long)
      */
     public static void skipFully(Reader reader, long toSkip) throws IOException {
         if (toSkip < 0) {
-            throw new IllegalArgumentException("Cannot skip negative number of characters: " + toSkip);
+            throw new IllegalArgumentException(
+                "Cannot skip negative number of characters: " + toSkip);
         }
 
         long skipped = reader.skip(toSkip);
@@ -607,8 +623,8 @@ final public class FileUtil {
     }
 
     /**
-     * Writes the contents of an input stream to a target file. This is a convenience method that
-     * delegates to {@link #writeTo(InputStream, Path)}.
+     * Writes the contents of an input stream to a target file. This is a convenience method
+     * that delegates to {@link #writeTo(InputStream, Path)}.
      *
      * @param input  The input stream to read data from
      * @param target The target file to write the data to
@@ -623,8 +639,8 @@ final public class FileUtil {
     }
 
     /**
-     * Writes the contents of an input stream to a target path using atomic operations where possible.
-     * This method ensures data integrity by:
+     * Writes the contents of an input stream to a target path using atomic operations where
+     * possible. This method ensures data integrity by:
      * <ul>
      *   <li>Creating a temporary file in the same directory as the target</li>
      *   <li>Writing the input stream contents to the temporary file</li>
@@ -671,16 +687,17 @@ final public class FileUtil {
     }
 
     /**
-     * Renames a file with atomic move support. This method attempts to perform an atomic move operation
-     * first, falling back to a regular move if atomic operations are not supported by the filesystem.
+     * Renames a file with atomic move support. This method attempts to perform an atomic move
+     * operation first, falling back to a regular move if atomic operations are not supported
+     * by the filesystem.
      *
      * @param source The source Path to move from
      * @param target The target Path to move to
      *
      * @return {@code true} if the rename was successful, {@code false} if the operation failed
      *
-     * @throws IllegalArgumentException if the source and target paths are the same or if the source path
-     *                                  does not exist
+     * @throws IllegalArgumentException if the source and target paths are the same or if the
+     *                                  source path does not exist
      */
     public static boolean renameTo(Path source, Path target) {
         if (source.equals(target)) {
@@ -723,8 +740,8 @@ final public class FileUtil {
      *
      * @return {@code true} if the rename was successful, {@code false} if the operation failed
      *
-     * @throws IllegalArgumentException if the source and destination files are the same or if the source
-     *                                  file does not exist
+     * @throws IllegalArgumentException if the source and destination files are the same or if
+     *                                  the source file does not exist
      * @see #renameTo(Path, Path)
      */
     public static boolean renameTo(File orig, File dest) {
@@ -749,7 +766,8 @@ final public class FileUtil {
     //     */
     //    public static boolean moveTo(File orig, File dest, boolean overwrite) {
     //        if (orig.equals(dest)) {
-    //            throw new IllegalArgumentException("Huh? the two file descriptors are the same!");
+    //            throw new IllegalArgumentException("Huh? the two file descriptors are the
+    //            same!");
     //        }
     //        if (!orig.exists()) {
     //            throw new IllegalArgumentException("Original doesn't exist!");
@@ -758,7 +776,8 @@ final public class FileUtil {
     //            if (overwrite) {
     //                dest.delete();
     //            } else {
-    //                System.err.println("Not overwriting " + dest + " - already exists moving " + orig);
+    //                System.err.println("Not overwriting " + dest + " - already exists
+    //                moving " + orig);
     //                return false;
     //            }
     //        }
@@ -770,8 +789,9 @@ final public class FileUtil {
     //    }
 
     /**
-     * Sanitizes a filename to ensure it is valid for the specified operating system. The method removes
-     * or replaces invalid characters and handles platform-specific filename restrictions.
+     * Sanitizes a filename to ensure it is valid for the specified operating system. The
+     * method removes or replaces invalid characters and handles platform-specific filename
+     * restrictions.
      *
      * <p>The sanitization process includes:</p>
      * <ul>
@@ -781,7 +801,8 @@ final public class FileUtil {
      *   <li>Ensuring the result is a valid filename across different filesystems</li>
      * </ul>
      *
-     * <p>For {@code OperatingSystem.UNKNOWN}, the method applies the most restrictive combination
+     * <p>For {@code OperatingSystem.UNKNOWN}, the method applies the most restrictive
+     * combination
      * of rules to ensure compatibility across all supported platforms:</p>
      * <ul>
      *   <li>Windows: {@code <>:"/\|?*}</li>
@@ -805,7 +826,8 @@ final public class FileUtil {
      * @throws IllegalArgumentException if fileName is null
      * @see OperatingSystem
      */
-    public static String sanitizeFileName(String fileName, OperatingSystem targetOS, String extraChars) {
+    public static String sanitizeFileName(
+        String fileName, OperatingSystem targetOS, String extraChars) {
         if (fileName.isEmpty()) {
             return "Invalid_filename";
         }
@@ -852,13 +874,14 @@ final public class FileUtil {
     }
 
     /**
-     * Sanitizes a filename using the detected operating system's rules. This is a convenience method
-     * that delegates to {@link #sanitizeFileName(String, OperatingSystem, String)} with no extra allowed
-     * characters.
+     * Sanitizes a filename using the detected operating system's rules. This is a convenience
+     * method that delegates to {@link #sanitizeFileName(String, OperatingSystem, String)} with
+     * no extra allowed characters.
      *
-     * <p>The method uses the system's detected operating system ({@link #DETECTED_OS}) to determine
-     * which character restrictions to apply. This ensures the filename will be valid on the current
-     * platform.</p>
+     * <p>The method uses the system's detected operating system ({@link #DETECTED_OS}) to
+     * determine
+     * which character restrictions to apply. This ensures the filename will be valid on the
+     * current platform.</p>
      *
      * @param fileName The filename to sanitize
      *
@@ -873,13 +896,14 @@ final public class FileUtil {
     }
 
     /**
-     * Sanitizes a filename using the detected operating system's rules, allowing additional specified
-     * characters to be considered valid. This is a convenience method that delegates to
-     * {@link #sanitizeFileName(String, OperatingSystem, String)}.
+     * Sanitizes a filename using the detected operating system's rules, allowing additional
+     * specified characters to be considered valid. This is a convenience method that delegates
+     * to {@link #sanitizeFileName(String, OperatingSystem, String)}.
      *
-     * <p>This method extends the basic sanitization by allowing specific characters to be preserved
-     * in the filename. This is useful when certain special characters are known to be safe in a
-     * particular context.</p>
+     * <p>This method extends the basic sanitization by allowing specific characters to be
+     * preserved
+     * in the filename. This is useful when certain special characters are known to be safe in
+     * a particular context.</p>
      *
      * <p>Example usage:</p>
      * <pre>
@@ -890,8 +914,8 @@ final public class FileUtil {
      * @param fileName   The filename to sanitize
      * @param extraChars Additional characters to be considered valid (not replaced)
      *
-     * @return A sanitized filename that is valid for the current operating system, preserving the
-     * specified extra characters
+     * @return A sanitized filename that is valid for the current operating system, preserving
+     * the specified extra characters
      *
      * @throws IllegalArgumentException if fileName is null
      * @see #sanitizeFileName(String, OperatingSystem, String)
@@ -913,7 +937,8 @@ final public class FileUtil {
     /**
      * Calculates the total length of an input stream by reading it to completion.
      *
-     * <p>This method reads the entire input stream to determine its length. Important notes:</p>
+     * <p>This method reads the entire input stream to determine its length. Important
+     * notes:</p>
      * <ul>
      *   <li>The stream is consumed during this operation and cannot be reset</li>
      *   <li>For large streams, memory usage is controlled using buffered reading</li>
@@ -923,8 +948,10 @@ final public class FileUtil {
      * <p>Performance considerations:</p>
      * <ul>
      *   <li>For {@link FileInputStream}, consider using {@link Files#size(Path)} instead</li>
-     *   <li>For {@link ByteArrayInputStream}, use {@link ByteArrayInputStream#available()} instead</li>
-     *   <li>For other streams, this method must read the entire content to determine length</li>
+     *   <li>For {@link ByteArrayInputStream}, use {@link ByteArrayInputStream#available()}
+     *   instead</li>
+     *   <li>For other streams, this method must read the entire content to determine
+     *   length</li>
      * </ul>
      *
      * <p>Special cases:</p>
@@ -971,13 +998,15 @@ final public class FileUtil {
     }
 
     /**
-     * Copies bytes from a source input stream to a destination output stream using optimized methods
-     * based on the stream types and data length.
+     * Copies bytes from a source input stream to a destination output stream using optimized
+     * methods based on the stream types and data length.
      *
      * <p>The method employs several optimization strategies:</p>
      * <ul>
-     *   <li>Uses NIO channels for {@link FileInputStream} to {@link FileOutputStream} copies</li>
-     *   <li>Falls back to buffered stream copying when channel operations aren't available</li>
+     *   <li>Uses NIO channels for {@link FileInputStream} to {@link FileOutputStream}
+     *   copies</li>
+     *   <li>Falls back to buffered stream copying when channel operations aren't
+     *   available</li>
      *   <li>Automatically selects appropriate buffer sizes based on the copy length</li>
      * </ul>
      *
@@ -1009,7 +1038,8 @@ final public class FileUtil {
         if (length == -1 || length > BUFFER_SIZE * 4) {
             try {
                 // Try to use NIO copy if both streams support channels
-                if (source instanceof FileInputStream && destination instanceof FileOutputStream) {
+                if (source instanceof FileInputStream &&
+                    destination instanceof FileOutputStream) {
                     FileChannel sourceChannel = ((FileInputStream) source).getChannel();
                     FileChannel destChannel = ((FileOutputStream) destination).getChannel();
 
@@ -1033,15 +1063,16 @@ final public class FileUtil {
             long remaining = length;
 
             while ((remaining == -1) || (remaining > 0)) {
-                int bytesToRead =
-                    (remaining == -1 || remaining > BUFFER_SIZE) ? BUFFER_SIZE : (int) remaining;
+                int bytesToRead = (remaining == -1 || remaining > BUFFER_SIZE) ? BUFFER_SIZE :
+                    (int) remaining;
 
                 int bytesRead = bufferedSource.read(buffer, 0, bytesToRead);
                 if (bytesRead == -1) {
                     if (length == -1) {
                         return;
                     }
-                    throw new EOFException("Stream reached EOF before copying " + length + " bytes");
+                    throw new EOFException(
+                        "Stream reached EOF before copying " + length + " bytes");
                 }
 
                 bufferedDest.write(buffer, 0, bytesRead);
@@ -1053,11 +1084,13 @@ final public class FileUtil {
     }
 
     /**
-     * Recursively deletes a directory and all its contents. This method should be used with extreme
-     * caution as it permanently deletes all files and subdirectories.
+     * Recursively deletes a directory and all its contents. This method should be used with
+     * extreme caution as it permanently deletes all files and subdirectories.
      *
-     * <p><strong>Warning:</strong> This is a destructive operation that cannot be undone. Only use
-     * this method when absolutely certain that all data in the directory is safe to delete.</p>
+     * <p><strong>Warning:</strong> This is a destructive operation that cannot be undone. Only
+     * use
+     * this method when absolutely certain that all data in the directory is safe to
+     * delete.</p>
      *
      * <p>The deletion process:</p>
      * <ul>
@@ -1081,9 +1114,11 @@ final public class FileUtil {
      *   <li>Requires appropriate filesystem permissions for all operations</li>
      * </ul>
      *
-     * @param wd The directory or file to delete. If it's a directory, all contents will be deleted
+     * @param wd The directory or file to delete. If it's a directory, all contents will be
+     *           deleted
      *
-     * @return {@code true} if all deletions were successful, {@code false} if any deletion failed
+     * @return {@code true} if all deletions were successful, {@code false} if any deletion
+     * failed
      *
      * @throws SecurityException if the security manager denies access to the files
      * @see Files#walk(Path, FileVisitOption...)
@@ -1140,8 +1175,9 @@ final public class FileUtil {
     //    }
 
     /**
-     * Sets read and write permissions for the owner only on the specified file. This is a convenience
-     * method that delegates to {@link #setOwnerPerm(File, boolean, boolean, boolean)}.
+     * Sets read and write permissions for the owner only on the specified file. This is a
+     * convenience method that delegates to
+     * {@link #setOwnerPerm(File, boolean, boolean, boolean)}.
      *
      * <p>This method attempts to set the following permissions:</p>
      * <ul>
@@ -1153,7 +1189,8 @@ final public class FileUtil {
      *
      * @param f The file to modify permissions on
      *
-     * @return {@code true} if the permissions were successfully modified, {@code false} otherwise
+     * @return {@code true} if the permissions were successfully modified, {@code false}
+     * otherwise
      *
      * @throws SecurityException if the security manager denies access to the file
      * @see #setOwnerPerm(File, boolean, boolean, boolean)
@@ -1163,8 +1200,9 @@ final public class FileUtil {
     }
 
     /**
-     * Sets read, write, and execute permissions for the owner only on the specified file. This is a
-     * convenience method that delegates to {@link #setOwnerPerm(File, boolean, boolean, boolean)}.
+     * Sets read, write, and execute permissions for the owner only on the specified file. This
+     * is a convenience method that delegates to
+     * {@link #setOwnerPerm(File, boolean, boolean, boolean)}.
      *
      * <p>This method attempts to set the following permissions:</p>
      * <ul>
@@ -1176,7 +1214,8 @@ final public class FileUtil {
      *
      * @param f The file to modify permissions on
      *
-     * @return {@code true} if the permissions were successfully modified, {@code false} otherwise
+     * @return {@code true} if the permissions were successfully modified, {@code false}
+     * otherwise
      *
      * @throws SecurityException if the security manager denies access to the file
      * @see #setOwnerPerm(File, boolean, boolean, boolean)
@@ -1196,7 +1235,8 @@ final public class FileUtil {
     //            RandomAccessFile raf = null;
     //            try {
     //                System.out.println(
-    //                    "Securely deleting " + file + " which is of length " + size + " bytes...");
+    //                    "Securely deleting " + file + " which is of length " + size + "
+    //                    bytes...");
     //                raf = new RandomAccessFile(file, "rw");
     //                // Random data first.
     //                raf.seek(0);
@@ -1220,15 +1260,17 @@ final public class FileUtil {
     //    }
 
     /**
-     * Sets specific owner-only permissions on the specified file or directory. This is a convenience
-     * method that delegates to {@link #setOwnerPerm(Path, boolean, boolean, boolean)}.
+     * Sets specific owner-only permissions on the specified file or directory. This is a
+     * convenience method that delegates to
+     * {@link #setOwnerPerm(Path, boolean, boolean, boolean)}.
      *
      * @param f The file to modify permissions on
      * @param r If {@code true}, enable read permission for owner
      * @param w If {@code true}, enable write permission for owner
      * @param x If {@code true}, enable execute permission for owner
      *
-     * @return {@code true} if the permissions were successfully modified, {@code false} otherwise
+     * @return {@code true} if the permissions were successfully modified, {@code false}
+     * otherwise
      *
      * @throws SecurityException if the security manager denies access to the file
      * @see #setOwnerPerm(Path, boolean, boolean, boolean)
@@ -1239,13 +1281,14 @@ final public class FileUtil {
     }
 
     /**
-     * Sets specific owner-only permissions on the specified file or directory. This method removes all
-     * group and others permissions, leaving only the specified owner permissions.
+     * Sets specific owner-only permissions on the specified file or directory. This method
+     * removes all group and others permissions, leaving only the specified owner permissions.
      *
      * <p>Permission bits that can be set:</p>
      * <ul>
      *   <li>Read (r): Controls ability to read file contents or list directory contents</li>
-     *   <li>Write (w): Controls ability to modify file contents or create/delete files in directory</li>
+     *   <li>Write (w): Controls ability to modify file contents or create/delete files in
+     *   directory</li>
      *   <li>Execute (x): Controls ability to execute file or traverse directory</li>
      * </ul>
      *
@@ -1261,7 +1304,8 @@ final public class FileUtil {
      * @param w    If {@code true}, enable write permission for owner
      * @param x    If {@code true}, enable execute permission for owner
      *
-     * @return {@code true} if the permissions were successfully modified, {@code false} otherwise
+     * @return {@code true} if the permissions were successfully modified, {@code false}
+     * otherwise
      *
      * @throws SecurityException if the security manager denies access to the file
      * @see PosixFilePermission
@@ -1323,9 +1367,11 @@ final public class FileUtil {
      * @param a The first file to compare
      * @param b The second file to compare
      *
-     * @return {@code true} if both files exist and have identical content, {@code false} otherwise
+     * @return {@code true} if both files exist and have identical content, {@code false}
+     * otherwise
      *
-     * @throws SecurityException if a security manager exists and denies read access to either file
+     * @throws SecurityException if a security manager exists and denies read access to either
+     *                           file
      * @see #equals(Path, Path)
      */
     public static boolean equals(File a, File b) {
@@ -1360,9 +1406,11 @@ final public class FileUtil {
      * @param pathA The first path to compare
      * @param pathB The second path to compare
      *
-     * @return {@code true} if both files exist and have identical content, {@code false} otherwise
+     * @return {@code true} if both files exist and have identical content, {@code false}
+     * otherwise
      *
-     * @throws SecurityException if a security manager exists and denies read access to either file
+     * @throws SecurityException if a security manager exists and denies read access to either
+     *                           file
      * @see Files#size(Path)
      * @see Files#isSameFile(Path, Path)
      */
@@ -1398,34 +1446,37 @@ final public class FileUtil {
     }
 
     /**
-     * Creates a temporary file with the specified prefix and suffix in the given directory. The created
-     * file will be deleted when the JVM exits.
+     * Creates a temporary file with the specified prefix and suffix in the given directory.
+     * The created file will be deleted when the JVM exits.
      *
      * <p>This method is similar to {@link #createTempFile(String, String, Path)} but accepts
      * a {@link File} parameter for the directory and allows null values for all parameters.
      *
-     * @param prefix    The prefix string to be used in generating the file's name; must be at least
-     *                  three characters long
-     * @param suffix    The suffix string to be used in generating the file's name; may be null, in which
-     *                  case ".tmp" is used
-     * @param directory The directory in which the file is to be created. If null, uses the default
-     *                  temporary directory
+     * @param prefix    The prefix string to be used in generating the file's name; must be at
+     *                  least three characters long
+     * @param suffix    The suffix string to be used in generating the file's name; may be
+     *                  null, in which case ".tmp" is used
+     * @param directory The directory in which the file is to be created. If null, uses the
+     *                  default temporary directory
      *
      * @return A newly created temporary File object
      *
      * @throws IOException              If a file could not be created due to:
      *                                  <ul>
-     *                                  <li>Insufficient permissions in the target directory</li>
+     *                                  <li>Insufficient permissions in the target
+     *                                  directory</li>
      *                                  <li>Target directory does not exist</li>
      *                                  <li>Disk space is exhausted</li>
      *                                  </ul>
-     * @throws IllegalArgumentException If prefix is shorter than 3 characters or the specified directory
-     *                                  is not a directory
-     * @throws SecurityException        If a security manager exists and denies write access to the file
+     * @throws IllegalArgumentException If prefix is shorter than 3 characters or the specified
+     *                                  directory is not a directory
+     * @throws SecurityException        If a security manager exists and denies write access to
+     *                                  the file
      * @see Files#createTempFile
      * @see File#deleteOnExit()
      */
-    public static File createTempFile(String prefix, String suffix, File directory) throws IOException {
+    public static File createTempFile(String prefix, String suffix, File directory)
+        throws IOException {
         if (directory == null) {
             directory = new File(".");
         }
@@ -1442,8 +1493,10 @@ final public class FileUtil {
     //            BucketTools.copy(inBucket, outBucket);
     //            if (executable) {
     //                if (!(copyTo.setExecutable(true) || copyTo.canExecute())) {
-    //                    System.err.println("Unable to preserve executable bit when copying " +
-    //                    copyFrom + " to " + copyTo + " - you may need to make it executable!");
+    //                    System.err.println("Unable to preserve executable bit when copying
+    //                    " +
+    //                    copyFrom + " to " + copyTo + " - you may need to make it
+    //                    executable!");
     //                    // return false; ??? FIXME debatable.
     //                }
     //            }
@@ -1456,7 +1509,8 @@ final public class FileUtil {
 
     // TODO
     //    /**
-    //     * Write hard to identify random data to the OutputStream. Does not drain the global secure
+    //     * Write hard to identify random data to the OutputStream. Does not drain the
+    //     global secure
     //     random
     //     * number generator, and is significantly faster than it.
     //     *
@@ -1472,7 +1526,8 @@ final public class FileUtil {
     //        while ((remaining == -1) || (remaining > 0)) {
     //            synchronized (FileUtil.class) {
     //                if (cis == null || cisCounter > Long.MAX_VALUE / 2) {
-    //                    // Reset it well before the birthday paradox (note this is actually counting
+    //                    // Reset it well before the birthday paradox (note this is
+    //                    actually counting
     //                    bytes).
     //                    byte[] key = new byte[16];
     //                    byte[] iv = new byte[16];
@@ -1486,7 +1541,8 @@ final public class FileUtil {
     //                    cisCounter = 0;
     //                }
     //                read = cis.read(buffer, 0,
-    //                                ((remaining > BUFFER_SIZE) || (remaining == -1)) ? BUFFER_SIZE :
+    //                                ((remaining > BUFFER_SIZE) || (remaining == -1)) ?
+    //                                BUFFER_SIZE :
     //                                    (int) remaining);
     //                cisCounter += read;
     //            }
@@ -1505,35 +1561,38 @@ final public class FileUtil {
     //    }
 
     /**
-     * Creates a temporary file with the specified prefix and suffix in the given directory. The created
-     * file will be deleted when the JVM exits.
+     * Creates a temporary file with the specified prefix and suffix in the given directory.
+     * The created file will be deleted when the JVM exits.
      *
      * <p>This method provides control over the location of the temporary file.
      * The specified directory must exist and be writable.
      *
-     * @param prefix    The prefix string to be used in generating the file's name; must be at least
-     *                  three characters long
-     * @param suffix    The suffix string to be used in generating the file's name; may be null, in which
-     *                  case ".tmp" is used
-     * @param directory The directory in which the file is to be created. If null, uses the default
-     *                  temporary directory
+     * @param prefix    The prefix string to be used in generating the file's name; must be at
+     *                  least three characters long
+     * @param suffix    The suffix string to be used in generating the file's name; may be
+     *                  null, in which case ".tmp" is used
+     * @param directory The directory in which the file is to be created. If null, uses the
+     *                  default temporary directory
      *
      * @return A newly created temporary File object
      *
      * @throws IOException              If a file could not be created due to:
      *                                  <ul>
-     *                                  <li>Insufficient permissions in the target directory</li>
+     *                                  <li>Insufficient permissions in the target
+     *                                  directory</li>
      *                                  <li>Target directory does not exist</li>
      *                                  <li>Disk space is exhausted</li>
      *                                  </ul>
-     * @throws IllegalArgumentException If prefix is shorter than 3 characters or the specified directory
-     *                                  is not a directory
-     * @throws SecurityException        If a security manager exists and denies write access to the file
+     * @throws IllegalArgumentException If prefix is shorter than 3 characters or the specified
+     *                                  directory is not a directory
+     * @throws SecurityException        If a security manager exists and denies write access to
+     *                                  the file
      * @see Files#createTempFile
      * @see File#deleteOnExit()
      */
     public static Path createTempFile(
-        @Nullable String prefix, @Nullable String suffix, @Nullable Path directory) throws IOException {
+        @Nullable String prefix, @Nullable String suffix, @Nullable Path directory)
+        throws IOException {
         // Validate inputs
         if (prefix == null) {
             prefix = "";
@@ -1560,8 +1619,9 @@ final public class FileUtil {
             }
 
             // Create temp file with restricted permissions
-            return Files.createTempFile(directory, prefix, suffix, PosixFilePermissions.asFileAttribute(
-                PosixFilePermissions.fromString("rw-------")));
+            return Files.createTempFile(directory, prefix, suffix,
+                                        PosixFilePermissions.asFileAttribute(
+                                            PosixFilePermissions.fromString("rw-------")));
 
         } catch (UnsupportedOperationException e) {
             // Fall back to basic temp file creation on non-POSIX systems
@@ -1601,13 +1661,14 @@ final public class FileUtil {
      * @param b    the second input stream to compare
      * @param size the maximum number of bytes to compare
      *
-     * @return true if both streams contain identical content up to the specified size, false otherwise
+     * @return true if both streams contain identical content up to the specified size, false
+     * otherwise
      *
      * @throws IOException if an I/O error occurs while reading either stream
      * @see InputStream#read()
      */
-    public static boolean equalStreams(@Nullable InputStream a, @Nullable InputStream b, long size)
-        throws IOException {
+    public static boolean equalStreams(
+        @Nullable InputStream a, @Nullable InputStream b, long size) throws IOException {
         if (a == b) {
             return true;
         }
@@ -1620,10 +1681,12 @@ final public class FileUtil {
             throw new IllegalArgumentException("Size cannot be negative: " + size);
         }
 
-        try (var bufferedA = new BufferedInputStream(a); var bufferedB = new BufferedInputStream(b)) {
+        try (var bufferedA = new BufferedInputStream(a);
+             var bufferedB = new BufferedInputStream(b)) {
 
             // Use larger buffer for better performance with large files
-            byte[] bufferA = new byte[Math.min(BUFFER_SIZE, Math.max(8192, (int) (size / 1024)))];
+            byte[] bufferA =
+                new byte[Math.min(BUFFER_SIZE, Math.max(8192, (int) (size / 1024)))];
             byte[] bufferB = new byte[bufferA.length];
 
             long remaining = size;
@@ -1657,9 +1720,11 @@ final public class FileUtil {
     }
 
     /**
-     * Determines whether a character in a filename should be replaced based on operating system rules.
+     * Determines whether a character in a filename should be replaced based on operating
+     * system rules.
      *
-     * <p>This method evaluates a single character against platform-specific filename restrictions
+     * <p>This method evaluates a single character against platform-specific filename
+     * restrictions
      * and custom validation rules.</p>
      *
      * <h3>Operating System Rules:</h3>
@@ -1668,7 +1733,8 @@ final public class FileUtil {
      *   characters</li>
      *   <li><strong>macOS:</strong> Restricts colon {@code :} and forward slash {@code /}</li>
      *   <li><strong>Linux:</strong> Restricts forward slash {@code /} and null character</li>
-     *   <li><strong>Unknown OS:</strong> Applies the most restrictive combination of rules</li>
+     *   <li><strong>Unknown OS:</strong> Applies the most restrictive combination of
+     *   rules</li>
      * </ul>
      *
      * <p>The method also handles special cases:</p>
@@ -1705,21 +1771,26 @@ final public class FileUtil {
 
         // Check OS-specific restrictions
         return switch (targetOS) {
-            case WINDOWS ->
-                c < 32 || StringValidityChecker.isWindowsReservedPrintableFilenameCharacter((char) c);
-            case MACOS -> StringValidityChecker.isMacOSReservedPrintableFilenameCharacter((char) c);
+            case WINDOWS -> c < 32 ||
+                            StringValidityChecker.isWindowsReservedPrintableFilenameCharacter(
+                                (char) c);
+            case MACOS ->
+                StringValidityChecker.isMacOSReservedPrintableFilenameCharacter((char) c);
             case LINUX, FREEBSD, GENERIC_UNIX ->
                 StringValidityChecker.isUnixReservedPrintableFilenameCharacter((char) c);
-            case UNKNOWN ->
-                c < 32 || StringValidityChecker.isWindowsReservedPrintableFilenameCharacter((char) c) ||
-                StringValidityChecker.isMacOSReservedPrintableFilenameCharacter((char) c) ||
-                StringValidityChecker.isUnixReservedPrintableFilenameCharacter((char) c);
+            case UNKNOWN -> c < 32 ||
+                            StringValidityChecker.isWindowsReservedPrintableFilenameCharacter(
+                                (char) c) ||
+                            StringValidityChecker.isMacOSReservedPrintableFilenameCharacter(
+                                (char) c) ||
+                            StringValidityChecker.isUnixReservedPrintableFilenameCharacter(
+                                (char) c);
         };
     }
 
     /**
-     * Determines an appropriate replacement character for invalid filename characters based on the
-     * provided set of extra allowed characters.
+     * Determines an appropriate replacement character for invalid filename characters based on
+     * the provided set of extra allowed characters.
      *
      * <p>The method selects a replacement character that is:
      * <ul>
@@ -1735,11 +1806,13 @@ final public class FileUtil {
      *   <li>Hyphen (-) if not in extraChars</li>
      * </ol>
      * <p>
-     * If no suitable replacement character can be found (all potential replacements are in extraChars),
+     * If no suitable replacement character can be found (all potential replacements are in
+     * extraChars),
      * an IllegalStateException is thrown to prevent creation of invalid filenames.
      *
-     * @param extraChars A string containing additional characters that should be considered valid and
-     *                   therefore not used as replacement characters. May be null or empty.
+     * @param extraChars A string containing additional characters that should be considered
+     *                   valid and therefore not used as replacement characters. May be null or
+     *                   empty.
      *
      * @return A character suitable for replacing invalid filename characters
      *
@@ -1769,7 +1842,8 @@ final public class FileUtil {
      *   <li>Legacy device names (COM1-COM9, LPT1-LPT9)</li>
      * </ul>
      *
-     * <p>The check is case-insensitive as Windows treats filenames in a case-insensitive manner.
+     * <p>The check is case-insensitive as Windows treats filenames in a case-insensitive
+     * manner.
      * For example, both "CON" and "con" are considered reserved names.</p>
      *
      * <p>Examples of reserved names:</p>
@@ -1784,15 +1858,16 @@ final public class FileUtil {
      *
      * @param filename the filename to check, without any path components
      *
-     * @return {@code true} if the filename matches a Windows reserved name, {@code false} otherwise
+     * @return {@code true} if the filename matches a Windows reserved name, {@code false}
+     * otherwise
      */
     private static boolean isWindowsReservedName(String filename) {
         return filename.matches("(?i)^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(?:\\.[^.]*)?$");
     }
 
     /**
-     * Calculates the actual storage space used by a filename on the filesystem. This method takes into
-     * account:
+     * Calculates the actual storage space used by a filename on the filesystem. This method
+     * takes into account:
      * <ul>
      *   <li>Operating system-specific filesystem implementations</li>
      *   <li>Character encoding overhead (UTF-8/UTF-16)</li>
@@ -1801,12 +1876,12 @@ final public class FileUtil {
      *
      * @param path The {@link Path} object representing the file whose name is being analyzed
      *
-     * @return The total number of bytes used to store the filename on the filesystem, including metadata
-     * metadata and alignment padding
+     * @return The total number of bytes used to store the filename on the filesystem,
+     * including metadata metadata and alignment padding
      *
-     * @implNote For Windows (NTFS), assumes UTF-16 encoding with 100 bytes base metadata. For macOS
-     * (HFS+/APFS), assumes UTF-8 encoding with 248 bytes header. For other systems, uses the larger of
-     * UTF-8 and UTF-16 encodings with 100 bytes overhead.
+     * @implNote For Windows (NTFS), assumes UTF-16 encoding with 100 bytes base metadata. For
+     * macOS (HFS+/APFS), assumes UTF-8 encoding with 248 bytes header. For other systems, uses
+     * the larger of UTF-8 and UTF-16 encodings with 100 bytes overhead.
      * @see #roundup_2n(long, int)
      */
     private static long getFilenameUsage(Path path) {
@@ -1853,13 +1928,15 @@ final public class FileUtil {
      *   <li>Generic Unix-like systems</li>
      * </ul>
      *
-     * @return The detected {@link OperatingSystem} enum value representing the current operating system.
-     * Returns {@code OperatingSystem.UNKNOWN} if the system cannot be identified.
+     * @return The detected {@link OperatingSystem} enum value representing the current
+     * operating system. Returns {@code OperatingSystem.UNKNOWN} if the system cannot be
+     * identified.
      *
-     * @implNote This method uses pattern matching in switch expressions (requires Java 17+). The
-     * fallback detection uses the filesystem path separator character to distinguish between Unix-like
-     * systems ('/') and others.
-     * @todo This method should be relocated to a more appropriate utility or system-related class
+     * @implNote This method uses pattern matching in switch expressions (requires Java 17+).
+     * The fallback detection uses the filesystem path separator character to distinguish
+     * between Unix-like systems ('/') and others.
+     * @todo This method should be relocated to a more appropriate utility or system-related
+     * class
      * @see System#getProperty(String)
      * @see OperatingSystem
      */
@@ -1870,9 +1947,8 @@ final public class FileUtil {
             case String s when s.contains("linux") -> OperatingSystem.LINUX;
             case String s when s.contains("freebsd") -> OperatingSystem.FREEBSD;
             case String s when s.contains("unix") -> OperatingSystem.GENERIC_UNIX;
-            default ->
-                Path.of("").getFileSystem().getSeparator().equals("/") ? OperatingSystem.GENERIC_UNIX :
-                    OperatingSystem.UNKNOWN;
+            default -> Path.of("").getFileSystem().getSeparator().equals("/") ?
+                OperatingSystem.GENERIC_UNIX : OperatingSystem.UNKNOWN;
         };
     }
 
@@ -1908,12 +1984,13 @@ final public class FileUtil {
      *   </tr>
      * </table>
      *
-     * @return The detected {@link CPUArchitecture} enum value representing the current CPU architecture.
-     * Returns {@code CPUArchitecture.UNKNOWN} if the architecture cannot be identified.
+     * @return The detected {@link CPUArchitecture} enum value representing the current CPU
+     * architecture. Returns {@code CPUArchitecture.UNKNOWN} if the architecture cannot be
+     * identified.
      *
-     * @implNote This method uses pattern matching in switch expressions (requires Java 17+). The
-     * detection is based on the "os.arch" system property value. Regular expressions are used to match
-     * various architecture naming conventions.
+     * @implNote This method uses pattern matching in switch expressions (requires Java 17+).
+     * The detection is based on the "os.arch" system property value. Regular expressions are
+     * used to match various architecture naming conventions.
      * @see System#getProperty(String)
      * @see CPUArchitecture
      */
@@ -1933,8 +2010,8 @@ final public class FileUtil {
     }
 
     /**
-     * Rounds up a value to the nearest multiple of a power-of-two block size. This method is used for
-     * calculating actual storage space usage on block-based filesystems.
+     * Rounds up a value to the nearest multiple of a power-of-two block size. This method is
+     * used for calculating actual storage space usage on block-based filesystems.
      *
      * @param val       The value to round up
      * @param blocksize The block size to align to (must be a power of 2)
@@ -1942,9 +2019,9 @@ final public class FileUtil {
      * @return The value rounded up to the nearest multiple of blocksize
      *
      * @throws IllegalArgumentException implicitly if blocksize is not a power of 2
-     * @implNote Uses bitwise operations for efficient calculation: 1. Creates a mask from blocksize 2.
-     * Adds (blocksize - 1) to handle rounding 3. Uses bitwise AND with inverted mask to align to block
-     * boundary
+     * @implNote Uses bitwise operations for efficient calculation: 1. Creates a mask from
+     * blocksize 2. Adds (blocksize - 1) to handle rounding 3. Uses bitwise AND with inverted
+     * mask to align to block boundary
      */
     private static long roundup_2n(long val, int blocksize) {
         int mask = blocksize - 1;

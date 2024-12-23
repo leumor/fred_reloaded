@@ -3,6 +3,7 @@
  * http://www.gnu.org/ for further details of the GPL. */
 package hyphanet.support.io;
 
+import hyphanet.support.io.stream.LineReadingInputStream;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
@@ -14,7 +15,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class LineReadingInputStreamTest {
     public static final String BLOCK = "\ntesting1\ntesting2\r\ntesting3\n\n";
-    public static final List<String> LINES = List.of("", "testing1", "testing2", "testing3", "");
+    public static final List<String> LINES =
+        List.of("", "testing1", "testing2", "testing3", "");
 
     public static final String STRESSED_LINE = "\nĔ\n";
     public static final String NULL_LINE = "a\u0000\u0000\u0000\u0000\n";
@@ -27,7 +29,8 @@ public class LineReadingInputStreamTest {
     @Test
     public void testReadLineWithoutMarking() throws Exception {
         // try utf8
-        InputStream is = new ByteArrayInputStream(STRESSED_LINE.getBytes(StandardCharsets.UTF_8));
+        InputStream is =
+            new ByteArrayInputStream(STRESSED_LINE.getBytes(StandardCharsets.UTF_8));
         LineReadingInputStream instance = new LineReadingInputStream(is);
         assertEquals("", instance.readLineWithoutMarking(MAX_LENGTH, BUFFER_SIZE, true));
         assertEquals("Ĕ", instance.readLineWithoutMarking(MAX_LENGTH, BUFFER_SIZE, true));
@@ -37,7 +40,8 @@ public class LineReadingInputStreamTest {
         is = new ByteArrayInputStream(BLOCK.getBytes(StandardCharsets.ISO_8859_1));
         instance = new LineReadingInputStream(is);
         for (String expectedLine : LINES) {
-            assertEquals(expectedLine, instance.readLineWithoutMarking(MAX_LENGTH, BUFFER_SIZE, false));
+            assertEquals(expectedLine,
+                         instance.readLineWithoutMarking(MAX_LENGTH, BUFFER_SIZE, false));
         }
         assertNull(instance.readLineWithoutMarking(MAX_LENGTH, BUFFER_SIZE, false));
 
@@ -53,25 +57,28 @@ public class LineReadingInputStreamTest {
 
         var finalInstance = instance;
         assertThrows(TooLongException.class,
-                     () -> finalInstance.readLineWithoutMarking(LENGTH_CHECKING_LINE_LF - 1, BUFFER_SIZE,
-                                                                true));
+                     () -> finalInstance.readLineWithoutMarking(LENGTH_CHECKING_LINE_LF - 1,
+                                                                BUFFER_SIZE, true));
 
         // Same test shouldn't throw
         is = new ByteArrayInputStream(LENGTH_CHECKING_LINE.getBytes(StandardCharsets.UTF_8));
         instance = new LineReadingInputStream(is);
         assertEquals(LENGTH_CHECKING_LINE.substring(0, LENGTH_CHECKING_LINE_LF),
-                     instance.readLineWithoutMarking(LENGTH_CHECKING_LINE_LF, BUFFER_SIZE, true));
+                     instance.readLineWithoutMarking(LENGTH_CHECKING_LINE_LF, BUFFER_SIZE,
+                                                     true));
 
         // is it handling nulls properly? @see #2501
         is = new ByteArrayInputStream(NULL_LINE.getBytes(StandardCharsets.UTF_8));
         instance = new LineReadingInputStream(is);
-        assertEquals(NULL_LINE.substring(0, 5), instance.readLineWithoutMarking(BUFFER_SIZE, 1, true));
+        assertEquals(NULL_LINE.substring(0, 5),
+                     instance.readLineWithoutMarking(BUFFER_SIZE, 1, true));
     }
 
     @Test
     public void testReadLine() throws Exception {
         // try utf8
-        InputStream is = new ByteArrayInputStream(STRESSED_LINE.getBytes(StandardCharsets.UTF_8));
+        InputStream is =
+            new ByteArrayInputStream(STRESSED_LINE.getBytes(StandardCharsets.UTF_8));
         LineReadingInputStream instance = new LineReadingInputStream(is);
         assertEquals("", instance.readLine(MAX_LENGTH, BUFFER_SIZE, true));
         assertEquals("\u0114", instance.readLine(MAX_LENGTH, BUFFER_SIZE, true));
@@ -97,7 +104,8 @@ public class LineReadingInputStreamTest {
 
         var finalInstance = instance;
         assertThrows(TooLongException.class,
-                     () -> finalInstance.readLine(LENGTH_CHECKING_LINE_LF - 1, BUFFER_SIZE, true));
+                     () -> finalInstance.readLine(LENGTH_CHECKING_LINE_LF - 1, BUFFER_SIZE,
+                                                  true));
 
         // Same test shouldn't throw
         is = new ByteArrayInputStream(LENGTH_CHECKING_LINE.getBytes(StandardCharsets.UTF_8));
@@ -121,7 +129,8 @@ public class LineReadingInputStreamTest {
         LineReadingInputStream lris2 = new LineReadingInputStream(bis2);
 
         while (bis1.available() > 0 || bis2.available() > 0) {
-            String stringWithoutMark = lris2.readLineWithoutMarking(MAX_LENGTH * 10, BUFFER_SIZE, true);
+            String stringWithoutMark =
+                lris2.readLineWithoutMarking(MAX_LENGTH * 10, BUFFER_SIZE, true);
             String stringWithMark = lris1.readLine(MAX_LENGTH * 10, BUFFER_SIZE, true);
             assertEquals(stringWithMark, stringWithoutMark);
         }

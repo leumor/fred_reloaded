@@ -1,6 +1,6 @@
 module hyphanet.crypt {
     requires org.jspecify;
-    requires hyphanet.support;
+    requires hyphanet.base;
     requires org.bouncycastle.provider;
     requires ch.qos.logback.classic;
     requires org.slf4j;
@@ -8,5 +8,4 @@ module hyphanet.crypt {
     requires org.apache.commons.rng.api;
 
     exports hyphanet.crypt;
-    exports hyphanet.crypt.cryptokey;
 }

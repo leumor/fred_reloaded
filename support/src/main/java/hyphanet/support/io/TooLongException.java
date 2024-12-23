@@ -3,14 +3,16 @@
  * http://www.gnu.org/ for further details of the GPL. */
 package hyphanet.support.io;
 
+import hyphanet.support.io.stream.LineReadingInputStream;
+
 import java.io.IOException;
 
 /**
  * Exception thrown when attempting to read a line that exceeds the maximum allowed length.
  * <p>
- * This exception is typically thrown by {@link LineReadingInputStream} when encountering a line that is
- * longer than the specified maximum length. This helps prevent denial-of-service attacks and
- * out-of-memory conditions when processing untrusted input.
+ * This exception is typically thrown by {@link LineReadingInputStream} when encountering a
+ * line that is longer than the specified maximum length. This helps prevent denial-of-service
+ * attacks and out-of-memory conditions when processing untrusted input.
  * </p>
  *
  * <p>Example usage:</p>
@@ -24,9 +26,9 @@ import java.io.IOException;
  * }</pre>
  */
 public class TooLongException extends IOException {
+    private static final long serialVersionUID = -1;
+
     TooLongException(String s) {
         super(s);
     }
-
-    private static final long serialVersionUID = -1;
 }

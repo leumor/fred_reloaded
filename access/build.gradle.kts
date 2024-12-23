@@ -3,6 +3,7 @@ plugins {
 }
 
 dependencies {
-    implementation(project(":support"))
+    implementation(project(":base"))
     implementation(project(":crypt"))
+    implementation(project(":support"))
 }
