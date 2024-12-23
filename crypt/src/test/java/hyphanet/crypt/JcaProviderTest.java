@@ -1,6 +1,6 @@
 package hyphanet.crypt;
 
-import hyphanet.support.HexUtil;
+import hyphanet.base.HexUtil;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -46,10 +46,18 @@ class JcaProviderTest {
                IllegalBlockSizeException, ShortBufferException, NoSuchAlgorithmException,
                BadPaddingException, InvalidKeyException {
         // Rijndael(256,256)
-        checkKnownValuesRandomLength(PCFB_256_ENCRYPT_KEY, PCFB_256_ENCRYPT_IV,
-                                     PCFB_256_ENCRYPT_PLAINTEXT, PCFB_256_ENCRYPT_CIPHERTEXT);
-        checkKnownValuesRandomLength(PCFB_256_DECRYPT_KEY, PCFB_256_DECRYPT_IV,
-                                     PCFB_256_DECRYPT_PLAINTEXT, PCFB_256_DECRYPT_CIPHERTEXT);
+        checkKnownValuesRandomLength(
+            PCFB_256_ENCRYPT_KEY,
+            PCFB_256_ENCRYPT_IV,
+            PCFB_256_ENCRYPT_PLAINTEXT,
+            PCFB_256_ENCRYPT_CIPHERTEXT
+                                    );
+        checkKnownValuesRandomLength(
+            PCFB_256_DECRYPT_KEY,
+            PCFB_256_DECRYPT_IV,
+            PCFB_256_DECRYPT_PLAINTEXT,
+            PCFB_256_DECRYPT_CIPHERTEXT
+                                    );
     }
 
     @Test
@@ -57,10 +65,18 @@ class JcaProviderTest {
                                              InvalidAlgorithmParameterException,
                                              InvalidKeyException, IllegalBlockSizeException,
                                              BadPaddingException {
-        checkKnownValues(PCFB_256_ENCRYPT_KEY, PCFB_256_ENCRYPT_IV, PCFB_256_ENCRYPT_PLAINTEXT,
-                         PCFB_256_ENCRYPT_CIPHERTEXT);
-        checkKnownValues(PCFB_256_DECRYPT_KEY, PCFB_256_DECRYPT_IV, PCFB_256_DECRYPT_PLAINTEXT,
-                         PCFB_256_DECRYPT_CIPHERTEXT);
+        checkKnownValues(
+            PCFB_256_ENCRYPT_KEY,
+            PCFB_256_ENCRYPT_IV,
+            PCFB_256_ENCRYPT_PLAINTEXT,
+            PCFB_256_ENCRYPT_CIPHERTEXT
+                        );
+        checkKnownValues(
+            PCFB_256_DECRYPT_KEY,
+            PCFB_256_DECRYPT_IV,
+            PCFB_256_DECRYPT_PLAINTEXT,
+            PCFB_256_DECRYPT_CIPHERTEXT
+                        );
     }
 
 

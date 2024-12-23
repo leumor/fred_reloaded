@@ -3,7 +3,7 @@
  * http://www.gnu.org/ for further details of the GPL. */
 package hyphanet.crypt;
 
-import hyphanet.support.field.Fields;
+import hyphanet.base.Fields;
 import org.apache.commons.rng.UniformRandomProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -75,8 +75,11 @@ public class Util {
     static {
         // Load All necessary JCA Providers
         try {
-            Class.forName("hyphanet.crypt.JcaLoader", false,
-                          ClassLoader.getSystemClassLoader());
+            Class.forName(
+                "hyphanet.crypt.JcaLoader",
+                false,
+                ClassLoader.getSystemClassLoader()
+                         );
         } catch (ClassNotFoundException e) {
             throw new IllegalStateException("This should never happen");
         }
@@ -410,9 +413,13 @@ public class Util {
         for (int i = 0; i < 32; i++) {
             md.update(input, 0, input.length);
             md.digest(output, 0, output.length);
-            System.arraycopy(output, 0, input,
-                             (i * output.length) % (input.length - output.length),
-                             output.length);
+            System.arraycopy(
+                output,
+                0,
+                input,
+                (i * output.length) % (input.length - output.length),
+                output.length
+                            );
         }
         for (int i = 0; i < 128; i++) {
             long startTime = System.nanoTime();

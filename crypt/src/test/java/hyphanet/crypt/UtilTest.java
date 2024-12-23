@@ -1,6 +1,6 @@
 package hyphanet.crypt;
 
-import hyphanet.support.HexUtil;
+import hyphanet.base.HexUtil;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
@@ -184,9 +184,10 @@ class UtilTest {
         byte[] data2 = "testing".getBytes(StandardCharsets.UTF_8);
         byte[] offsetSha256Hash =
             Util.hashBytes(Util.HashAlgorithm.SHA256, data2, 1, data2.length - 1);
-        byte[] expectedOffsetSha256Hash = Util.hashBytes(Util.HashAlgorithm.SHA256,
-                                                         "esting".getBytes(
-                                                             StandardCharsets.UTF_8));
+        byte[] expectedOffsetSha256Hash = Util.hashBytes(
+            Util.HashAlgorithm.SHA256,
+            "esting".getBytes(StandardCharsets.UTF_8)
+                                                        );
         assertArrayEquals(expectedOffsetSha256Hash, offsetSha256Hash);
     }
 
