@@ -29,17 +29,17 @@ public enum MacType {
     /**
      * HMAC implementation using SHA-256 hash function
      */
-    HMAC_SHA_256(1, "HmacSHA256", KeyType.HMAC_SHA_256),
+    HMAC_SHA_256(1, "HMACSHA256", KeyType.HMAC_SHA_256),
 
     /**
      * HMAC implementation using SHA-384 hash function
      */
-    HMAC_SHA_384(2, "HmacSHA384", KeyType.HMAC_SHA_384),
+    HMAC_SHA_384(2, "HMACSHA384", KeyType.HMAC_SHA_384),
 
     /**
      * HMAC implementation using SHA-512 hash function
      */
-    HMAC_SHA_512(2, "HmacSHA512", KeyType.HMAC_SHA_512),
+    HMAC_SHA_512(2, "HMACSHA512", KeyType.HMAC_SHA_512),
 
     /**
      * Poly1305-AES authentication algorithm with 16-byte IV
@@ -54,7 +54,7 @@ public enum MacType {
     /**
      * The name of the MAC algorithm.
      */
-    public final String macName;
+    public final String algName;
 
     /**
      * The length of the initialization vector (IV) in bytes. A value of -1 indicates that no
@@ -71,12 +71,12 @@ public enum MacType {
      * Constructs a MAC algorithm type that doesn't require an initialization vector.
      *
      * @param bitmask The bitmask value for algorithm aggregation
-     * @param macName The name of the MAC algorithm
+     * @param algName The name of the MAC algorithm
      * @param type    The required key type for this algorithm
      */
-    MacType(int bitmask, String macName, KeyType type) {
+    MacType(int bitmask, String algName, KeyType type) {
         this.bitmask = bitmask;
-        this.macName = macName;
+        this.algName = algName;
         ivLen = -1;
         keyType = type;
     }
@@ -85,13 +85,13 @@ public enum MacType {
      * Constructs a MAC algorithm type that requires an initialization vector.
      *
      * @param bitmask The bitmask value for algorithm aggregation
-     * @param macName The name of the MAC algorithm
+     * @param algName The name of the MAC algorithm
      * @param ivLen   The length of the initialization vector in bytes
      * @param type    The required key type for this algorithm
      */
-    MacType(int bitmask, String macName, int ivLen, KeyType type) {
+    MacType(int bitmask, String algName, int ivLen, KeyType type) {
         this.bitmask = bitmask;
-        this.macName = macName;
+        this.algName = algName;
         this.ivLen = ivLen;
         keyType = type;
     }
@@ -103,7 +103,7 @@ public enum MacType {
      */
     public final javax.crypto.Mac get() {
         try {
-            return javax.crypto.Mac.getInstance(macName);
+            return javax.crypto.Mac.getInstance(algName);
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException("This should never happen", e);
         }
