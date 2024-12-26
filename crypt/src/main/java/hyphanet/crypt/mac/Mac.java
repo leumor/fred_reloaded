@@ -5,7 +5,7 @@ package hyphanet.crypt.mac;
 
 import hyphanet.base.Fields;
 import hyphanet.crypt.UnsupportedTypeException;
-import hyphanet.crypt.key.KeyGenUtils;
+import hyphanet.crypt.key.KeyGenUtil;
 import org.bouncycastle.crypto.generators.Poly1305KeyGenerator;
 
 import javax.crypto.SecretKey;
@@ -75,10 +75,10 @@ public final class Mac {
      * @param cryptoKey The key bytes to use
      *
      * @throws InvalidKeyException if the key bytes are invalid for the selected algorithm
-     * @see KeyGenUtils#getSecretKey
+     * @see KeyGenUtil#getSecretKey
      */
     public Mac(MacType type, byte[] cryptoKey) throws InvalidKeyException {
-        this(type, KeyGenUtils.getSecretKey(type.keyType, cryptoKey));
+        this(type, KeyGenUtil.getSecretKey(type.keyType, cryptoKey));
     }
 
     /**
@@ -105,10 +105,10 @@ public final class Mac {
      * @param type The MAC algorithm to use
      *
      * @throws InvalidKeyException if key generation fails
-     * @see KeyGenUtils#genSecretKey
+     * @see KeyGenUtil#genSecretKey
      */
     public Mac(MacType type) throws InvalidKeyException {
-        this(type, KeyGenUtils.genSecretKey(type.keyType), true, null);
+        this(type, KeyGenUtil.genSecretKey(type.keyType), true, null);
     }
 
     /**
@@ -140,7 +140,7 @@ public final class Mac {
      * @throws InvalidKeyException if the key is invalid for the selected algorithm
      */
     public Mac(MacType type, byte[] key, IvParameterSpec iv) throws InvalidKeyException {
-        this(type, KeyGenUtils.getSecretKey(type.keyType, key), iv);
+        this(type, KeyGenUtil.getSecretKey(type.keyType, key), iv);
     }
 
     /**
@@ -448,14 +448,14 @@ public final class Mac {
      *
      * @throws UnsupportedTypeException if the MAC algorithm doesn't support IVs
      * @throws IllegalArgumentException if there's an error setting the generated IV
-     * @see KeyGenUtils#genIV
+     * @see KeyGenUtil#genIV
      */
     public IvParameterSpec genIV() {
         if (type.ivLen == -1) {
             throw new UnsupportedTypeException(type);
         }
         try {
-            setIV(KeyGenUtils.genIV(type.ivLen));
+            setIV(KeyGenUtil.genIV(type.ivLen));
         } catch (InvalidAlgorithmParameterException e) {
             throw new IllegalArgumentException("Error setting generated IV", e);
         }
