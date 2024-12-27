@@ -54,7 +54,7 @@ public enum Hmac {
      *
      * @throws IllegalArgumentException if the key length is incorrect
      */
-    public static byte[] mac(Hmac hash, byte[] key, byte[] data) {
+    public static byte[] mac(Hmac hash, final byte[] key, final byte[] data) {
         if (key.length != hash.digestSize) {
             throw new IllegalArgumentException(String.format(
                 "Invalid key size: expected %d bytes, got %d bytes",
@@ -63,15 +63,11 @@ public enum Hmac {
             ));
         }
 
-        // Create defensive copies of the input arrays
-        byte[] keyCopy = key.clone();
-        byte[] dataCopy = data.clone();
-
         try {
-            SecretKeySpec signingKey = new SecretKeySpec(keyCopy, hash.algo);
+            SecretKeySpec signingKey = new SecretKeySpec(key, hash.algo);
             Mac mac = Mac.getInstance(hash.algo);
             mac.init(signingKey);
-            return mac.doFinal(dataCopy);
+            return mac.doFinal(data);
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException("HMAC algorithm not available", e);
         } catch (InvalidKeyException e) {
