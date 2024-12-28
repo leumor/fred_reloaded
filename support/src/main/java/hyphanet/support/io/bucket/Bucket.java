@@ -3,84 +3,119 @@
  * http://www.gnu.org/ for further details of the GPL. */
 package hyphanet.support.io.bucket;
 
+import org.jspecify.annotations.Nullable;
+
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
 /**
- * A bucket is any arbitrary object can temporarily store data. In other words, it is the
- * equivalent of a temporary file, but it could be in RAM, on disk, encrypted, part of a file
- * on disk, composed from a chain of other buckets etc.
- * <p>
- * Not all buckets are Serializable.
+ * Represents a temporary data storage container that can hold arbitrary data. A Bucket is
+ * conceptually similar to a temporary file but may be implemented using various storage
+ * mechanisms including RAM, disk storage, encryption, or combinations thereof.
+ *
+ * <p>Buckets provide a unified interface for temporary data storage regardless
+ * of the underlying implementation. They can be chained, encrypted, or stored in various ways
+ * while maintaining a consistent API.</p>
+ *
+ * <p><strong>Note:</strong> Not all Bucket implementations are Serializable.</p>
  *
  * @author oskar
  */
-public interface Bucket {
+public interface Bucket extends AutoCloseable {
 
     /**
-     * Returns an OutputStream that is used to put data in this Bucket, from the beginning. It
-     * is not possible to append data to a Bucket! This simplifies the code significantly for
-     * some classes. If you need to append, just pass the OutputStream around. Will be buffered
-     * if appropriate (e.g. byte array backed buckets don't need to be buffered).
+     * Creates a new {@link OutputStream} for writing data to this Bucket from the beginning.
+     *
+     * <p><strong>Important:</strong> Appending data is not supported. This simplifies the
+     * code significantly for some classes. If you need to append, just pass the OutputStream
+     * around. The stream will be automatically buffered if appropriate for the
+     * implementation.</p>
+     *
+     * @return A new {@link OutputStream} for writing to this Bucket
+     *
+     * @throws IOException if an I/O error occurs
      */
     OutputStream getOutputStream() throws IOException;
 
     /**
-     * Get an OutputStream which is not buffered. Should be called when we will buffer the
-     * stream at a higher level or when we will only be doing large writes (e.g. copying data
-     * from one Bucket to another). Does not make any more persistence guarantees than
-     * getOutputStream() does, this is just to save memory.
+     * Creates an unbuffered {@link OutputStream} for writing data to this Bucket.
+     *
+     * <p>This method should be used when:</p>
+     * <ul>
+     *   <li>Buffering is handled at a higher level</li>
+     *   <li>Only large writes will be performed (e.g., copying between Buckets)</li>
+     * </ul>
+     *
+     * @return An unbuffered {@link OutputStream}
+     *
+     * @throws IOException if an I/O error occurs
      */
     OutputStream getOutputStreamUnbuffered() throws IOException;
 
     /**
-     * Returns an InputStream that reads data from this Bucket. If there is no data in this
-     * bucket, null is returned.
-     * <p>
-     * You have to call Closer.close(inputStream) on the obtained stream to prevent resource
-     * leakage.
+     * Creates an {@link InputStream} to read data from this Bucket.
+     *
+     * <p><strong>Resource Management:</strong> The caller must close the returned stream to
+     * prevent resource leaks.</p>
+     *
+     * @return An {@link InputStream}, or null if the Bucket is empty
+     *
+     * @throws IOException if an I/O error occurs
      */
+    @Nullable
     InputStream getInputStream() throws IOException;
 
+    /**
+     * Creates an unbuffered {@link InputStream} to read data from this Bucket.
+     *
+     * <p><strong>Resource Management:</strong> The caller must close the returned stream to
+     * prevent resource leaks.</p>
+     *
+     * @return An unbuffered {@link InputStream}, or null if the Bucket is empty
+     *
+     * @throws IOException if an I/O error occurs
+     */
+    @Nullable
     InputStream getInputStreamUnbuffered() throws IOException;
 
     /**
-     * Returns a name for the bucket, may be used to identify them in certain in certain
-     * situations.
+     * Returns an identifier for this Bucket.
+     *
+     * @return A String name identifying this Bucket
      */
     String getName();
 
     /**
-     * Returns the amount of data currently in this bucket in bytes.
+     * Returns the current size of data stored in this Bucket.
+     *
+     * @return The size in bytes
      */
     long size();
 
     /**
-     * Is the bucket read-only?
+     * Checks if this Bucket is read-only.
+     *
+     * @return {@code true} if the Bucket is read-only, {@code false} otherwise
      */
     boolean isReadOnly();
 
     /**
-     * Make the bucket read-only. Irreversible.
+     * Makes this Bucket read-only. This operation cannot be reversed.
      */
     void setReadOnly();
 
     /**
-     * Free the bucket, if supported. Note that you must call free() even if you haven't used
-     * the Bucket (haven't called getOutputStream()) for some kinds of Bucket's, as they may
-     * have allocated space (e.g. created a temporary file).
+     * Creates a shallow, read-only copy of this Bucket sharing the same external storage.
+     *
+     * <p><strong>Warning:</strong> If the original Bucket is deleted, the shadow copy
+     * may become invalid, potentially throwing {@link IOException} on read operations or
+     * returning incomplete data.</p>
+     *
+     * @return A new Bucket instance, or null if shadow creation is not supported
      */
-    void free();
-
-    /**
-     * Create a shallow read-only copy of this bucket, using different objects but using the
-     * same external storage. If this is not possible, return null. Note that if the underlying
-     * bucket is deleted, the copy will become invalid and probably throw an IOException on
-     * read, or possibly return too-short data etc. In some use cases e.g. on fproxy, this is
-     * acceptable.
-     */
+    @Nullable
     Bucket createShadow();
 
     /* TODO: Move to another interface
@@ -96,10 +131,15 @@ public interface Bucket {
     //    void onResume(ClientContext context) throws ResumeFailedException;
 
     /**
-     * Write enough data to reconstruct the Bucket, or throw UnsupportedOperationException.
-     * Used for recovering in emergencies, should be versioned if necessary.
+     * Stores the Bucket's reconstruction data to the provided output stream.
      *
-     * @throws IOException
+     * <p>This method is intended for emergency recovery scenarios and may be
+     * version-dependent.</p>
+     *
+     * @param dos The {@link DataOutputStream} to write to
+     *
+     * @throws IOException                   if an I/O error occurs
+     * @throws UnsupportedOperationException if the operation is not supported
      */
     void storeTo(DataOutputStream dos) throws IOException;
 
