@@ -1,32 +1,56 @@
 package hyphanet.support.io.bucket;
 
 import hyphanet.support.io.randomaccessbuffer.Lockable;
+import hyphanet.support.io.randomaccessbuffer.RandomAccessBuffer;
 
 import java.io.IOException;
 
-
 /**
- * A Bucket which can be converted to a LockableRandomAccessBuffer without copying. Mostly we
- * need this where the size of something we will later use as a RandomAccessBuffer is
- * uncertain. It provides a separate object because the API's are incompatible; in particular,
- * the size of a RandomAccessBuffer is fixed (and this is mostly a good thing).
- * <p>
- * FINALIZERS: Persistent RandomAccessBucket's should never free on finalize. Transient RABs
- * can free on finalize, but must ensure that this only happens if both the Bucket and the RAB
- * are no longer reachable.
+ * A specialized {@link Bucket} implementation that supports random access operations. This
+ * interface provides functionality to convert a Bucket to a {@link Lockable} random access
+ * buffer without data copying.
+ *
+ * <p>This interface is particularly useful when dealing with data of uncertain size
+ * that will later need random access capabilities. It provides a separate abstraction due to
+ * API incompatibilities, particularly regarding size constraints - a RandomAccessBuffer has a
+ * fixed size, which is a design feature.</p>
+ *
+ * <h3>Finalization Behavior:</h3>
+ * <ul>
+ *   <li>Persistent RandomAccess bucket implementations must never free resources in
+ *   finalizers</li>
+ *   <li>Transient RandomAccess bucket implementations may free resources in finalizers, but
+ *   must ensure this only occurs when both the {@link Bucket} and
+ *   {@link RandomAccessBuffer} are unreachable</li>
+ * </ul>
+ *
+ * @see Bucket
+ * @see Lockable
+ * @see RandomAccessBuffer
  */
 public interface RandomAccess extends Bucket {
 
     /**
-     * Convert the Bucket to a LockableRandomAccessBuffer. Must be efficient, i.e. will not
-     * copy the data. Freeing the Bucket is unnecessary if you free the
-     * LockableRandomAccessBuffer. Both the parent Bucket and the return value will be made
-     * read only.
+     * Converts this Bucket to a {@link Lockable} random access buffer efficiently without
+     * copying the underlying data.
      *
-     * @throws IOException
+     * <p>After conversion:</p>
+     * <ul>
+     *   <li>Both the original Bucket and the returned buffer become read-only</li>
+     *   <li>Freeing the original Bucket becomes optional if the returned buffer is freed</li>
+     * </ul>
+     *
+     * @return A {@link Lockable} random access buffer containing this bucket's data
+     *
+     * @throws IOException if the conversion fails due to I/O errors
      */
     Lockable toRandomAccessBuffer() throws IOException;
 
+    /**
+     * {@inheritDoc} Creates a read-only shadow copy of this RandomAccess bucket.
+     *
+     * @return A new RandomAccess instance sharing the same underlying storage
+     */
     @Override
     RandomAccess createShadow();
 
