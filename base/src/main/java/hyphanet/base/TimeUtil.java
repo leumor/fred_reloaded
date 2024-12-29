@@ -18,12 +18,15 @@
 
 package hyphanet.base;
 
+import java.time.DateTimeException;
 import java.time.Instant;
-import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.Locale;
 import java.util.regex.Pattern;
+
+import static java.time.ZoneOffset.UTC;
 
 /**
  * Time formatting utility. Formats milliseconds into a week/day/hour/second/milliseconds
@@ -78,11 +81,17 @@ public final class TimeUtil {
         }
 
         TimeUnit[] units = {
-            new TimeUnit("w", ChronoUnit.WEEKS.getDuration().toMillis()),
-            new TimeUnit("d", ChronoUnit.DAYS.getDuration().toMillis()),
-            new TimeUnit("h", ChronoUnit.HOURS.getDuration().toMillis()),
-            new TimeUnit("m", ChronoUnit.MINUTES.getDuration().toMillis()),
-            new TimeUnit("s", ChronoUnit.SECONDS.getDuration().toMillis())
+            new TimeUnit("w", ChronoUnit.WEEKS.getDuration().toMillis()), new TimeUnit(
+            "d",
+                                                                                       ChronoUnit.DAYS.getDuration()
+                                                                                                      .toMillis()
+        ), new TimeUnit(
+            "h",
+            ChronoUnit.HOURS.getDuration().toMillis()
+        ), new TimeUnit("m", ChronoUnit.MINUTES.getDuration().toMillis()), new TimeUnit(
+            "s",
+            ChronoUnit.SECONDS.getDuration().toMillis()
+        )
         };
 
         int termCount = 0;
@@ -134,9 +143,10 @@ public final class TimeUtil {
                 case 'h' -> ChronoUnit.HOURS.getDuration().toMillis() * Long.parseLong(value);
                 case 'm' ->
                     ChronoUnit.MINUTES.getDuration().toMillis() * Long.parseLong(value);
-                case 's' ->
-                    term.contains(".") ? Integer.parseInt(term.replaceAll("[a-z.]", "")) :
-                        ChronoUnit.SECONDS.getDuration().toMillis() * Long.parseLong(value);
+                case 's' -> term.contains(".") ? Integer.parseInt(term.replaceAll(
+                    "[a-z.]",
+                    ""
+                )) : ChronoUnit.SECONDS.getDuration().toMillis() * Long.parseLong(value);
                 default -> throw new IllegalArgumentException("Unknown time unit: " + unit);
             };
         }
@@ -147,12 +157,23 @@ public final class TimeUtil {
     /**
      * Helper to format time HTTP conform
      */
-    public static String makeHTTPDate(long time) {
-        // For HTTP, GMT == UTC
-        var formatter = DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss 'GMT'")
-                                         .withLocale(Locale.US).withZone(ZoneOffset.UTC);
-
-        return formatter.format(Instant.ofEpochMilli(time));
+    public static String makeHttpDate(long time) {
+        try {
+            return DateTimeFormatter.RFC_1123_DATE_TIME.format(Instant.ofEpochMilli(time)
+                                                                      .atZone(UTC));
+        } catch (DateTimeException e) {
+            // Handle dates beyond year 9999
+            return DateTimeFormatter.RFC_1123_DATE_TIME.format(ZonedDateTime.of(
+                9999,
+                12,
+                31,
+                23,
+                59,
+                59,
+                999_999_999,
+                UTC
+            ));
+        }
     }
 
     /**
