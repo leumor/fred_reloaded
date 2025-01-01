@@ -7,7 +7,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.Arrays;
 
-public class ByteArrayRandomAccessBuffer implements Lockable, Serializable {
+public class ByteArrayRandomAccessBuffer implements RandomAccessBuffer, Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -86,8 +86,8 @@ public class ByteArrayRandomAccessBuffer implements Lockable, Serializable {
     }
 
     @Override
-    public RAFLock lockOpen() {
-        return new RAFLock() {
+    public RabLock lockOpen() {
+        return new RabLock() {
 
             @Override
             protected void innerUnlock() {
@@ -98,7 +98,7 @@ public class ByteArrayRandomAccessBuffer implements Lockable, Serializable {
     }
 
     @Override
-    public void free() {
+    public void dispose() {
         // Do nothing.
     }
 

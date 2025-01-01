@@ -1,7 +1,7 @@
 package hyphanet.support.io.bucket;
 
 import hyphanet.support.io.randomaccessbuffer.ByteArrayRandomAccessBuffer;
-import hyphanet.support.io.randomaccessbuffer.Lockable;
+import hyphanet.support.io.randomaccessbuffer.RandomAccessBuffer;
 
 import java.io.*;
 import java.util.Arrays;
@@ -108,9 +108,9 @@ public class Array implements Bucket, Serializable, RandomAccess {
     }
 
     @Override
-    public Lockable toRandomAccessBuffer() {
+    public RandomAccessBuffer toRandomAccessBuffer() {
         readOnly = true;
-        Lockable raf = new ByteArrayRandomAccessBuffer(data, 0, data.length, true);
+        RandomAccessBuffer raf = new ByteArrayRandomAccessBuffer(data, 0, data.length, true);
         return raf;
     }
 

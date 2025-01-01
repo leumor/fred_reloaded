@@ -3,6 +3,7 @@
  * http://www.gnu.org/ for further details of the GPL. */
 package hyphanet.support.io.bucket;
 
+import hyphanet.support.io.ResumeFailedException;
 import org.jspecify.annotations.Nullable;
 
 import java.io.DataOutputStream;
@@ -118,17 +119,20 @@ public interface Bucket extends AutoCloseable {
     @Nullable
     Bucket createShadow();
 
-    /* TODO: Move to another interface
+    /**
      * Called after restarting. The Bucket should do any necessary housekeeping after resuming,
      * e.g. registering itself with the appropriate persistent bucket tracker to avoid being
-     * garbage-collected.  May be called twice, so the Bucket may need to track this
+     * garbage-collected. May be called twice, so the Bucket may need to track this
      * internally.
      *
-     * @param context All the necessary runtime support will be on this object.
+     * @param context The necessary runtime support for resuming the Bucket. This is provided
+     *                through an implementation of the {@link ResumeContext} interface.
      *
-     * @throws ResumeFailedException
+     * @throws ResumeFailedException If the resumption process encounters an error and the
+     *                               Bucket cannot be properly initialized.
+     * @see ResumeContext
      */
-    //    void onResume(ClientContext context) throws ResumeFailedException;
+    void onResume(ResumeContext context) throws ResumeFailedException;
 
     /**
      * Stores the Bucket's reconstruction data to the provided output stream.

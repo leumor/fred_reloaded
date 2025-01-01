@@ -9,7 +9,7 @@ import java.io.IOException;
  *
  * @author toad
  */
-public interface LockableFactory {
+public interface Factory {
 
     /**
      * Create a bucket.
@@ -24,7 +24,7 @@ public interface LockableFactory {
      * @throws IOException              If an I/O error prevented the operation.
      * @throws IllegalArgumentException If size < 0.
      */
-    Lockable makeRAF(long size) throws IOException;
+    RandomAccessBuffer makeRAF(long size) throws IOException;
 
     /**
      * Create a bucket with specified initial contents.
@@ -40,7 +40,7 @@ public interface LockableFactory {
      *
      * @throws IOException If an I/O error prevented the operation.
      */
-    Lockable makeRAF(byte[] initialContents, int offset, int size, boolean readOnly)
+    RandomAccessBuffer makeRAF(byte[] initialContents, int offset, int size, boolean readOnly)
         throws IOException;
 
 }

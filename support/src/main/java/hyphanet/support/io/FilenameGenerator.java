@@ -1,16 +1,15 @@
 package hyphanet.support.io;
 
-import freenet.support.LogThresholdCallback;
-import freenet.support.Logger;
-import freenet.support.Logger.LogLevel;
-import freenet.support.TimeUtil;
-import org.tanukisoftware.wrapper.WrapperManager;
+import hyphanet.base.TimeUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Random;
-
-import static java.util.concurrent.TimeUnit.MINUTES;
+import java.util.stream.Stream;
 
 /**
  * Tracks the current temporary files settings (dir and prefix), and translates between ID's
@@ -24,17 +23,8 @@ import static java.util.concurrent.TimeUnit.MINUTES;
  */
 public class FilenameGenerator {
 
-    private static volatile boolean logMINOR;
+    private static final Logger logger = LoggerFactory.getLogger(FilenameGenerator.class);
 
-    static {
-        Logger.registerLogThresholdCallback(new LogThresholdCallback() {
-
-            @Override
-            public void shouldUpdate() {
-                logMINOR = Logger.shouldLog(LogLevel.MINOR, this);
-            }
-        });
-    }
     /**
      * @param random
      * @param wipeFiles
@@ -43,110 +33,160 @@ public class FilenameGenerator {
      *
      * @throws IOException
      */
-    public FilenameGenerator(Random random, boolean wipeFiles, File dir, String prefix)
+    public FilenameGenerator(Random random, boolean wipeFiles, Path dir, String prefix)
         throws IOException {
         this.random = random;
         this.prefix = prefix;
-		if (dir == null) {
-			tmpDir = FileUtil.getCanonicalFile(new File(System.getProperty("java.io.tmpdir")));
-		} else {
-			tmpDir = FileUtil.getCanonicalFile(dir);
-		}
-        if (!tmpDir.exists()) {
-            tmpDir.mkdir();
-        }
-		if (!(tmpDir.isDirectory() && tmpDir.canRead() && tmpDir.canWrite())) {
-			throw new IOException("Not a directory or cannot read/write: " + tmpDir);
-		}
+        this.tmpDir = initializeDirectory(dir);
+
         if (wipeFiles) {
-            long wipedFiles = 0;
-            long wipeableFiles = 0;
-            long startWipe = System.currentTimeMillis();
-            File[] filenames = tmpDir.listFiles();
-            if (filenames != null) {
-                for (int i = 0; i < filenames.length; i++) {
-                    WrapperManager.signalStarting((int) MINUTES.toMillis(5));
-					if (i % 1024 == 0 && i > 0)
-					// User may want some feedback during startup
-					{
-						System.err.println(
-							"Deleted " + wipedFiles + " temp files (" + (i - wipeableFiles) +
-							" non-temp files in temp dir)");
-					}
-                    File f = filenames[i];
-                    String name = f.getName();
-                    if ((((File.separatorChar == '\\') &&
-                          name.toLowerCase().startsWith(prefix.toLowerCase())) ||
-                         name.startsWith(prefix))) {
-                        wipeableFiles++;
-						if ((!f.delete()) && f.exists()) {
-							System.err.println("Unable to delete temporary file " + f +
-											   " - permissions problem?");
-						} else {
-							wipedFiles++;
-						}
-                    }
-                }
-                long endWipe = System.currentTimeMillis();
-                System.err.println(
-                    "Deleted " + wipedFiles + " of " + wipeableFiles + " temporary files (" +
-                    (filenames.length - wipeableFiles) +
-                    " non-temp files in temp directory) in " +
-                    TimeUtil.formatTime(endWipe - startWipe));
-            }
+            wipeExistingFiles();
         }
     }
 
     public long makeRandomFilename() throws IOException {
-        long randomFilename; // should be plenty
         while (true) {
-            randomFilename = random.nextLong();
-			if (randomFilename == -1) {
-				continue; // Disallowed as used for error reporting
-			}
-            String filename = prefix + Long.toHexString(randomFilename);
-            File ret = new File(tmpDir, filename);
-            if (ret.createNewFile()) {
-				if (logMINOR) {
-					Logger.minor(this, "Made random filename: " + ret, new Exception("debug"));
-				}
+            long randomFilename = random.nextLong();
+            if (randomFilename == -1) {
+                continue; // Disallowed as used for error reporting
+            }
+
+            Path path = tmpDir.resolve(prefix + Long.toHexString(randomFilename));
+
+            try {
+                Files.createFile(path);
+                logger.info("Made random filename: {}", path);
                 return randomFilename;
+            } catch (FileAlreadyExistsException e) {
+                // Try again with a different random number
             }
         }
     }
 
-    public File getFilename(long id) {
-        return new File(tmpDir, prefix + Long.toHexString(id));
+    public Path getPath(long id) {
+        return tmpDir.resolve(prefix + Long.toHexString(id));
     }
 
-    public File makeRandomFile() throws IOException {
-        return getFilename(makeRandomFilename());
+    public Path makeRandomFile() throws IOException {
+        return getPath(makeRandomFilename());
     }
 
-    public File getDir() {
+    public Path getDir() {
         return tmpDir;
     }
 
-    public File maybeMove(File file, long id) {
-		if (matches(file)) {
-			return file;
-		}
-        File newFile = getFilename(id);
-        Logger.normal(this, "Moving tempfile " + file + " to " + newFile);
-		if (FileUtil.moveTo(file, newFile, false)) {
-			return newFile;
-		} else {
-			Logger.error(this, "Unable to move old temporary file " + file + " to " + newFile);
-			return file;
-		}
+    public Path maybeMove(Path path, long id) {
+        if (matches(path)) {
+            return path;
+        }
+        Path newPath = getPath(id);
+        logger.info("Moving tempfile {} to {}", path, newPath);
+        if (FileIoUtil.moveTo(path, newPath, false)) {
+            return newPath;
+        } else {
+            logger.error("Unable to move old temporary file {} to {}", path, newPath);
+            return path;
+        }
     }
 
-    protected boolean matches(File file) {
-        return FileUtil.equals(file.getParentFile(), tmpDir) &&
-               file.getName().startsWith(prefix);
+    protected boolean matches(Path path) {
+        return FileIoUtil.equals(path.getParent(), tmpDir) &&
+               path.getFileName().toString().startsWith(prefix);
     }
-    private final transient Random random;
+
+    private Path initializeDirectory(Path dir) throws IOException {
+        Path resolvedDir =
+            (dir == null) ? FileUtil.getCanonicalFile(Path.of(System.getProperty(
+                "java.io.tmpdir"))) : FileUtil.getCanonicalFile(dir);
+
+        Files.createDirectories(resolvedDir);
+
+        if (!Files.isDirectory(resolvedDir) || !Files.isReadable(resolvedDir) ||
+            !Files.isWritable(resolvedDir)) {
+            throw new IOException("Not a directory or cannot read/write: " + resolvedDir);
+        }
+
+        return resolvedDir;
+    }
+
+    private void wipeExistingFiles() throws IOException {
+        long startWipe = System.currentTimeMillis();
+        var stats = new WipeStats();
+
+        try (Stream<Path> files = Files.list(tmpDir)) {
+            files.forEach(path -> processFile(path, stats));
+        }
+
+        long endWipe = System.currentTimeMillis();
+        logger.atInfo().setMessage(
+            "Deleted {} of {} temporary files ({} non-temp files in temp directory) in" +
+            " {}").addArgument(stats.wipedFiles).addArgument(stats.wipeableFiles).addArgument(
+            stats.count - stats.wipeableFiles).addArgument(() -> TimeUtil.formatTime(
+            endWipe - startWipe)).log();
+
+    }
+
+    private void processFile(Path path, WipeStats stats) {
+        if (stats.count % 1000 == 0 && stats.count > 0) {
+            // User may want some feedback during startup
+            logger.info(
+                "Deleted {} temp files ({} non-temp files in temp dir)",
+                stats.wipedFiles,
+                stats.count - stats.wipeableFiles
+            );
+        }
+
+        stats.incrementCount();
+
+        String filename = path.getFileName().toString();
+        boolean matchesPrefix = System.getProperty("os.name").toLowerCase().contains("win") ?
+            filename.toLowerCase().startsWith(prefix.toLowerCase()) : filename.startsWith(
+            prefix);
+
+        if (matchesPrefix) {
+            stats.incrementWipeable();
+            try {
+                Files.deleteIfExists(path);
+                stats.incrementWiped();
+            } catch (IOException e) {
+                logger.error(
+                    "Unable to delete temporary file {} - permissions problem?",
+                    path
+                );
+            }
+        }
+    }
+
+
+    private static class WipeStats {
+        WipeStats() {
+            this(0, 0);
+        }
+
+        WipeStats(long wipedFiles, long wipeableFiles) {
+            this.wipedFiles = wipedFiles;
+            this.wipeableFiles = wipeableFiles;
+        }
+
+        void incrementWipeable() {
+            wipeableFiles++;
+        }
+
+        void incrementWiped() {
+            wipedFiles++;
+        }
+
+        void incrementCount() {
+            count++;
+        }
+
+        long wipedFiles;
+        long wipeableFiles;
+        long count = 0;
+    }
+
+    private final Random random;
     private final String prefix;
-    private final File tmpDir;
+    private final Path tmpDir;
 
 }

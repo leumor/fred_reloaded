@@ -3,7 +3,7 @@
  * http://www.gnu.org/ for further details of the GPL. */
 package hyphanet.support.io;
 
-import java.io.File;
+import java.nio.file.Path;
 
 public interface PersistentFileTracker extends DiskSpaceChecker {
 
@@ -13,7 +13,7 @@ public interface PersistentFileTracker extends DiskSpaceChecker {
      * delete files which were present at startup and have not been claimed; new files are
      * fine.
      */
-    void register(File file);
+    void register(Path path);
 
     /**
      * A positive number incremented on every transaction.
@@ -35,7 +35,7 @@ public interface PersistentFileTracker extends DiskSpaceChecker {
     /**
      * Get the persistent temp files directory.
      */
-    File getDir();
+    Path getDir();
 
     FilenameGenerator getGenerator();
 

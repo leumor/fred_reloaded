@@ -4,6 +4,7 @@ import freenet.client.async.ClientContext;
 import freenet.crypt.MasterSecret;
 import freenet.support.api.LockableRandomAccessBuffer;
 import freenet.support.api.RandomAccessBucket;
+import hyphanet.support.io.FileUtil;
 
 import java.io.*;
 
@@ -19,6 +20,7 @@ public class PaddedRandomAccessBucket implements RandomAccessBucket, Serializabl
     static final int VERSION = 1;
     private static final long serialVersionUID = 1L;
     private static final long MIN_PADDED_SIZE = 1024;
+
     /**
      * Create a PaddedBucket, assumed to be empty
      */
@@ -45,8 +47,7 @@ public class PaddedRandomAccessBucket implements RandomAccessBucket, Serializabl
     }
 
     protected PaddedRandomAccessBucket(
-        DataInputStream dis, FilenameGenerator fg,
-        PersistentFileTracker persistentFileTracker,
+        DataInputStream dis, FilenameGenerator fg, PersistentFileTracker persistentFileTracker,
         MasterSecret masterKey)
         throws IOException, StorageFormatException, ResumeFailedException {
         int version = dis.readInt();
@@ -55,9 +56,12 @@ public class PaddedRandomAccessBucket implements RandomAccessBucket, Serializabl
         }
         size = dis.readLong();
         readOnly = dis.readBoolean();
-        underlying =
-            (RandomAccessBucket) BucketTools.restoreFrom(dis, fg, persistentFileTracker,
-                                                         masterKey);
+        underlying = (RandomAccessBucket) BucketTools.restoreFrom(
+            dis,
+            fg,
+            persistentFileTracker,
+            masterKey
+        );
     }
 
     @Override
@@ -247,6 +251,7 @@ public class PaddedRandomAccessBucket implements RandomAccessBucket, Serializabl
             return "TrivialPaddedBucketOutputStream:" + out + "(" +
                    PaddedRandomAccessBucket.this + ")";
         }
+
         private boolean closed;
 
     }
@@ -328,9 +333,11 @@ public class PaddedRandomAccessBucket implements RandomAccessBucket, Serializabl
             }
             return Math.max(ret, 0);
         }
+
         private long counter;
 
     }
+
     private final RandomAccessBucket underlying;
     private long size;
     private transient boolean outputStreamOpen;

@@ -12,6 +12,7 @@ import freenet.support.Logger;
 import freenet.support.Logger.LogLevel;
 import freenet.support.api.BucketFactory;
 import freenet.support.api.RandomAccessBucket;
+import hyphanet.support.io.FileUtil;
 
 import java.io.File;
 import java.io.FileFilter;
@@ -68,8 +69,8 @@ public class PersistentTempBucketFactory implements BucketFactory, PersistentFil
      * @throws IOException If we are unable to read the directory, etc.
      */
     public PersistentTempBucketFactory(
-        File dir, final String prefix, RandomSource strongPRNG, Random weakPRNG,
-        boolean encrypt) throws IOException {
+        File dir, final String prefix, RandomSource strongPRNG,
+        Random weakPRNG, boolean encrypt) throws IOException {
         this.strongPRNG = strongPRNG;
         this.weakPRNG = weakPRNG;
         this.encrypt = encrypt;
@@ -81,29 +82,26 @@ public class PersistentTempBucketFactory implements BucketFactory, PersistentFil
                     "Directory does not exist and cannot be created: " + dir);
             }
         }
-		if (!dir.isDirectory()) {
-			throw new IOException("Directory is not a directory: " + dir);
-		}
+        if (!dir.isDirectory()) {
+            throw new IOException("Directory is not a directory: " + dir);
+        }
         originalFiles = new HashSet<File>();
         File[] files = dir.listFiles(new FileFilter() {
 
             @Override
             public boolean accept(File pathname) {
-				if (!pathname.exists() || pathname.isDirectory()) {
-					return false;
-				}
+                if (!pathname.exists() || pathname.isDirectory()) {
+                    return false;
+                }
                 String name = pathname.getName();
-				if (name.startsWith(prefix)) {
-					return true;
-				}
-                return false;
+                return name.startsWith(prefix);
             }
         });
         for (File f : files) {
             f = FileUtil.getCanonicalFile(f);
-			if (logMINOR) {
-				Logger.minor(this, "Found " + f);
-			}
+            if (logMINOR) {
+                Logger.minor(this, "Found " + f);
+            }
             originalFiles.add(f);
         }
 
@@ -128,17 +126,20 @@ public class PersistentTempBucketFactory implements BucketFactory, PersistentFil
     @Override
     public void register(File file) {
         synchronized (this) {
-			if (originalFiles == null) {
-				throw new IllegalStateException("completed Init has already been called!");
-			}
+            if (originalFiles == null) {
+                throw new IllegalStateException("completed Init has already been called!");
+            }
             file = FileUtil.getCanonicalFile(file);
-			if (logMINOR) {
-				Logger.minor(this, "Preserving " + file, new Exception("debug"));
-			}
-			if (!originalFiles.remove(file)) {
-				Logger.error(this, "Preserving " + file + " but it wasn't found!",
-							 new Exception("error"));
-			}
+            if (logMINOR) {
+                Logger.minor(this, "Preserving " + file, new Exception("debug"));
+            }
+            if (!originalFiles.remove(file)) {
+                Logger.error(
+                    this,
+                    "Preserving " + file + " but it wasn't found!",
+                    new Exception("error")
+                );
+            }
         }
     }
 
@@ -151,9 +152,9 @@ public class PersistentTempBucketFactory implements BucketFactory, PersistentFil
             return;
         }
         for (File f : originalFiles) {
-			if (Logger.shouldLog(LogLevel.MINOR, this)) {
-				Logger.minor(this, "Deleting old tempfile " + f);
-			}
+            if (Logger.shouldLog(LogLevel.MINOR, this)) {
+                Logger.minor(this, "Deleting old tempfile " + f);
+            }
             f.delete();
         }
         originalFiles = null;
@@ -168,20 +169,22 @@ public class PersistentTempBucketFactory implements BucketFactory, PersistentFil
     public RandomAccessBucket makeBucket(long size) throws IOException {
         RandomAccessBucket rawBucket = null;
         boolean mustWrap = true;
-		if (rawBucket == null) {
-			rawBucket = new PersistentTempFileBucket(fg.makeRandomFilename(), fg, this);
-		}
+        if (rawBucket == null) {
+            rawBucket = new PersistentTempFileBucket(fg.makeRandomFilename(), fg, this);
+        }
         synchronized (encryptLock) {
             if (encrypt) {
                 rawBucket = new PaddedRandomAccessBucket(rawBucket);
-                rawBucket =
-                    new EncryptedRandomAccessBucket(TempBucketFactory.CRYPT_TYPE, rawBucket,
-                                                    secret);
+                rawBucket = new EncryptedRandomAccessBucket(
+                    TempBucketFactory.CRYPT_TYPE,
+                                                            rawBucket,
+                                                            secret
+                );
             }
         }
-		if (mustWrap) {
-			rawBucket = new DelayedFreeRandomAccessBucket(this, rawBucket);
-		}
+        if (mustWrap) {
+            rawBucket = new DelayedFreeRandomAccessBucket(this, rawBucket);
+        }
         return rawBucket;
     }
 
@@ -206,9 +209,9 @@ public class PersistentTempBucketFactory implements BucketFactory, PersistentFil
      */
     public DelayedFree[] grabBucketsToFree() {
         synchronized (this) {
-			if (bucketsToFree.isEmpty()) {
-				return null;
-			}
+            if (bucketsToFree.isEmpty()) {
+                return null;
+            }
             DelayedFree[] buckets =
                 bucketsToFree.toArray(new DelayedFree[bucketsToFree.size()]);
             bucketsToFree.clear();
@@ -264,12 +267,16 @@ public class PersistentTempBucketFactory implements BucketFactory, PersistentFil
         if (buckets != null) {
             for (DelayedFree bucket : buckets) {
                 try {
-					if (bucket.toFree()) {
-						bucket.realFree();
-					}
+                    if (bucket.toFree()) {
+                        bucket.realFree();
+                    }
                 } catch (Throwable t) {
-                    Logger.error(this, "Caught " + t + " freeing bucket " + bucket +
-                                       " after transaction commit", t);
+                    Logger.error(
+                        this,
+                        "Caught " + t + " freeing bucket " + bucket +
+                        " after transaction commit",
+                        t
+                    );
                 }
             }
         }
@@ -279,6 +286,7 @@ public class PersistentTempBucketFactory implements BucketFactory, PersistentFil
     public boolean checkDiskSpace(File file, int toWrite, int bufferSize) {
         return checker.checkDiskSpace(file, toWrite, bufferSize);
     }
+
     /**
      * Buckets to free. When buckets are freed, we write them to this list, and delete the
      * files *after* the transaction recording the buckets being deleted hits the disk.
@@ -286,20 +294,20 @@ public class PersistentTempBucketFactory implements BucketFactory, PersistentFil
     private final ArrayList<DelayedFree> bucketsToFree;
     private final Object encryptLock = new Object();
     /**
+     * Cryptographically strong random number generator
+     */
+    private final transient RandomSource strongPRNG;
+    /**
+     * Weak but fast random number generator.
+     */
+    private final transient Random weakPRNG;
+    /**
      * Original contents of directory. This used to be used to delete any files that we can't
      * account for. However at the moment we do not support garbage collection for non-blob
      * persistent temp files. When we implement it it will probably not use this structure...
      * FIXME!
      */
     private HashSet<File> originalFiles;
-    /**
-     * Cryptographically strong random number generator
-     */
-    private transient RandomSource strongPRNG;
-    /**
-     * Weak but fast random number generator.
-     */
-    private transient Random weakPRNG;
     /**
      * Should we encrypt temporary files?
      */

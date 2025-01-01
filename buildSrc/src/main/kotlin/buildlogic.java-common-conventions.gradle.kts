@@ -25,11 +25,12 @@ dependencies {
     errorprone("com.google.errorprone:error_prone_core:latest.release")
     errorprone("com.uber.nullaway:nullaway:latest.release")
 
+    compileOnly("com.google.errorprone:error_prone_annotations:latest.release")
     compileOnly("com.uber.nullaway:nullaway-annotations:latest.release")
-    compileOnly("org.jetbrains:annotations:latest.release")
 
     implementation("ch.qos.logback:logback-classic:latest.release")
     implementation("com.machinezoo.noexception:noexception:latest.release")
+    implementation("org.jspecify:jspecify:latest.release")
 
 }
 

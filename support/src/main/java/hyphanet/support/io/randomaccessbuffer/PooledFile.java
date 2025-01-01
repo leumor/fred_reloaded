@@ -404,7 +404,7 @@ public class PooledFile implements RandomAccessBuffer, Serializable {
         }
         try {
             if (secureDelete) {
-                FileUtil.secureDelete(path);
+                FileIoUtil.secureDelete(path);
             } else {
                 Files.delete(path);
             }

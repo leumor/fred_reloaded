@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.channels.SeekableByteChannel;
 
 /**
  * Provides access to operating system-specific {@code fallocate} and {@code posix_fallocate}
@@ -41,9 +42,9 @@ public final class Fallocate {
     }
 
     public Fallocate fromOffset(long offset) {
-      if (offset < 0 || offset > final_filesize) {
-        throw new IllegalArgumentException();
-      }
+        if (offset < 0 || offset > final_filesize) {
+            throw new IllegalArgumentException();
+        }
         this.offset = offset;
         return this;
     }
@@ -58,8 +59,12 @@ public final class Fallocate {
         int errno = 0;
         boolean isUnsupported = false;
         if (IS_LINUX) {
-            final int result =
-                FallocateHolder.fallocate(fd, mode, offset, final_filesize - offset);
+            final int result = FallocateHolder.fallocate(
+                fd,
+                mode,
+                offset,
+                final_filesize - offset
+            );
             errno = result == 0 ? 0 : Native.getLastError();
         } else if (IS_POSIX) {
             errno = FallocateHolderPOSIX.posix_fallocate(fd, offset, final_filesize - offset);
@@ -91,25 +96,29 @@ public final class Fallocate {
             field.setAccessible(true);
             return getDescriptor((FileDescriptor) field.get(channel));
         } catch (final Exception e) {
-            throw new UnsupportedOperationException("unsupported FileChannel implementation",
-                                                    e);
+            throw new UnsupportedOperationException(
+                "unsupported FileChannel implementation",
+                                                    e
+            );
         }
     }
 
     private static int getDescriptor(FileDescriptor descriptor) {
         try {
             // Oracle java.io.FileDescriptor declares private int fd
-            final Field field =
-                descriptor.getClass().getDeclaredField(IS_ANDROID ? "descriptor" : "fd");
+            final Field field = descriptor.getClass().getDeclaredField(
+                IS_ANDROID ? "descriptor" : "fd");
             field.setAccessible(true);
             return (int) field.get(descriptor);
         } catch (final Exception e) {
             throw new UnsupportedOperationException(
-                "unsupported FileDescriptor implementation", e);
+                "unsupported FileDescriptor implementation",
+                e
+            );
         }
     }
 
-    private static void legacyFill(FileChannel fc, long newLength, long offset)
+    private static void legacyFill(SeekableByteChannel fc, long newLength, long offset)
         throws IOException {
         MersenneTwister mt = new MersenneTwister();
         byte[] b = new byte[4096];
@@ -139,6 +148,7 @@ public final class Fallocate {
 
         private static native int posix_fallocate(int fd, long offset, long length);
     }
+
     private final int fd;
     private final long final_filesize;
     private final FileChannel channel;

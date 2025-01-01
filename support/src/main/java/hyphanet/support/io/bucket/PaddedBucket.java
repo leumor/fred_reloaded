@@ -3,6 +3,7 @@ package hyphanet.support.io.bucket;
 import freenet.client.async.ClientContext;
 import freenet.crypt.MasterSecret;
 import freenet.support.api.Bucket;
+import hyphanet.support.io.FileUtil;
 
 import java.io.*;
 
@@ -18,6 +19,7 @@ public class PaddedBucket implements Bucket, Serializable {
     static final int VERSION = 1;
     private static final long serialVersionUID = 1L;
     private static final long MIN_PADDED_SIZE = 1024;
+
     /**
      * Create a PaddedBucket, assumed to be empty
      */
@@ -295,9 +297,11 @@ public class PaddedBucket implements Bucket, Serializable {
             }
             return Math.max(ret, 0);
         }
+
         private long counter;
 
     }
+
     private final Bucket underlying;
     private long size;
     private transient boolean outputStreamOpen;

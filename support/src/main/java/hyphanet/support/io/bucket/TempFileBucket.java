@@ -7,7 +7,10 @@ import freenet.support.Logger.LogLevel;
 import freenet.support.api.Bucket;
 import freenet.support.api.RandomAccessBucket;
 
-import java.io.*;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.Serializable;
 
 /*
  *  This code is part of FProxy, an HTTP proxy server for Freenet.
@@ -84,11 +87,11 @@ public class TempFileBucket extends BaseFile implements Bucket, Serializable {
         }
         readOnly = dis.readBoolean();
         deleteOnFree = dis.readBoolean();
-        file = new File(dis.readUTF());
+        file = new RegularFile(dis.readUTF());
     }
 
     @Override
-    public File getFile() {
+    public RegularFile getFile() {
         if (file != null) {
             return file;
         }
@@ -200,7 +203,7 @@ public class TempFileBucket extends BaseFile implements Bucket, Serializable {
             // File must exist!
             if (!file.exists()) {
                 // Maybe moved after the last checkpoint?
-                File f = generator.getFilename(filenameID);
+                RegularFile f = generator.getFilename(filenameID);
                 if (f.exists()) {
                     file = f;
                 }
@@ -223,7 +226,7 @@ public class TempFileBucket extends BaseFile implements Bucket, Serializable {
         throw new UnsupportedOperationException();
     }
 
-    private void checkExists(File file) throws ResumeFailedException {
+    private void checkExists(RegularFile file) throws ResumeFailedException {
         // File must exist!
         try {
             if (!(file.createNewFile() || file.exists())) {
@@ -239,7 +242,7 @@ public class TempFileBucket extends BaseFile implements Bucket, Serializable {
     protected transient FilenameGenerator generator;
     long filenameID;
     private boolean readOnly;
-    private File file;
+    private RegularFile file;
     private transient boolean resumed;
 
 }

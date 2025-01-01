@@ -3,6 +3,7 @@ package hyphanet.support.io.randomaccessbuffer;
 import freenet.client.async.ClientContext;
 import freenet.support.Logger;
 import freenet.support.api.LockableRandomAccessBuffer;
+import hyphanet.support.io.FileUtil;
 
 import java.io.*;
 
@@ -11,6 +12,7 @@ public class FileRandomAccessBuffer implements LockableRandomAccessBuffer, Seria
     static final int MAGIC = 0xdd0f4ab2;
     static final int VERSION = 1;
     private static final long serialVersionUID = 1L;
+
     public FileRandomAccessBuffer(RandomAccessFile raf, File filename, boolean readOnly)
         throws IOException {
         this.raf = raf;
@@ -18,6 +20,7 @@ public class FileRandomAccessBuffer implements LockableRandomAccessBuffer, Seria
         length = raf.length();
         this.readOnly = readOnly;
     }
+
     public FileRandomAccessBuffer(File filename, long length, boolean readOnly)
         throws IOException {
         raf = new RandomAccessFile(filename, readOnly ? "r" : "rw");
@@ -26,12 +29,14 @@ public class FileRandomAccessBuffer implements LockableRandomAccessBuffer, Seria
         this.file = filename;
         this.readOnly = readOnly;
     }
+
     public FileRandomAccessBuffer(File filename, boolean readOnly) throws IOException {
         raf = new RandomAccessFile(filename, readOnly ? "r" : "rw");
         this.length = raf.length();
         this.file = filename;
         this.readOnly = readOnly;
     }
+
     public FileRandomAccessBuffer(DataInputStream dis)
         throws IOException, StorageFormatException, ResumeFailedException {
         int version = dis.readInt();
@@ -204,6 +209,7 @@ public class FileRandomAccessBuffer implements LockableRandomAccessBuffer, Seria
         }
         return secureDelete == other.secureDelete;
     }
+
     final File file;
     private final long length;
     private final boolean readOnly;

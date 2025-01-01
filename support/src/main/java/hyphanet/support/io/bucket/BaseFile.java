@@ -1,98 +1,32 @@
 package hyphanet.support.io.bucket;
 
-import hyphanet.support.io.FileDoesNotExistException;
-import hyphanet.support.io.FileExistsException;
-import hyphanet.support.io.FileUtil;
+import hyphanet.support.io.ResumeFailedException;
 import hyphanet.support.io.StorageFormatException;
-import hyphanet.support.io.randomaccessbuffer.Lockable;
 import hyphanet.support.io.randomaccessbuffer.PooledFile;
+import hyphanet.support.io.randomaccessbuffer.RandomAccessBuffer;
 import hyphanet.support.io.stream.NullInputStream;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
-import java.util.Vector;
+import java.util.HashSet;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 public abstract class BaseFile implements RandomAccess {
     public static final int MAGIC = 0xc4b7533d;
     static final int VERSION = 1;
     private static final Logger logger = LoggerFactory.getLogger(BaseFile.class);
-    protected static String tempDir = null;
-
-    static {
-        // Try the Java property (1.2 and above)
-        tempDir = System.getProperty("java.io.tmpdir");
-
-        // Deprecated calls removed.
-
-        // Try TEMP and TMP
-        //	if (tempDir == null) {
-        //	    tempDir = System.getenv("TEMP");
-        //	}
-
-        //	if (tempDir == null) {
-        //	    tempDir = System.getenv("TMP");
-        //	}
-
-        // make some semi-educated guesses based on OS.
-
-        if (tempDir == null) {
-            String os = System.getProperty("os.name");
-            if (os != null) {
-
-                String[] candidates = null;
-
-                // XXX: Add more possible OSes here.
-                if (os.equalsIgnoreCase("Linux") || os.equalsIgnoreCase("FreeBSD")) {
-                    String[] linuxCandidates = {"/tmp", "/var/tmp"};
-                    candidates = linuxCandidates;
-                } else if (os.equalsIgnoreCase("Windows")) {
-                    String[] windowsCandidates = {"C:\\TEMP", "C:\\WINDOWS\\TEMP"};
-                    candidates = windowsCandidates;
-                }
-
-                if (candidates != null) {
-                    for (String candidate : candidates) {
-                        File path = new File(candidate);
-                        if (path.exists() && path.isDirectory() && path.canWrite()) {
-                            tempDir = candidate;
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-
-        // last resort -- use current working directory
-
-        if (tempDir == null) {
-            // This can be null -- but that's OK, null => cwd for File
-            // constructor, anyways.
-            tempDir = System.getProperty("user.dir");
-        }
-    }
-
-    /**
-     * Constructor.
-     *
-     * @param file
-     * @param deleteOnExit If true, call File.deleteOnExit() on the file. WARNING: Delete on
-     *                     exit is a memory leak: The filenames are kept until the JVM exits,
-     *                     and cannot be removed even when the file has been deleted! It should
-     *                     only be used where it is ESSENTIAL! Note that if you want temp files
-     *                     to be deleted on exit, you also need to override deleteOnExit().
-     */
-    public BaseFile(File file, boolean deleteOnExit) {
-        if (file == null) {
-            throw new NullPointerException();
-        }
-        maybeSetDeleteOnExit(deleteOnExit, file);
-        assert (!(createFileOnly() && tempFileAlreadyExists())); // Mutually incompatible!
-    }
+    private static @Nullable Path tempDir = initializeTempDir();
 
     protected BaseFile() {
-        // For serialization.
+        assert (!(createFileOnly() && tempFileAlreadyExists())); // Mutually incompatible!
     }
 
     protected BaseFile(DataInputStream dis) throws IOException, StorageFormatException {
@@ -111,9 +45,11 @@ public abstract class BaseFile implements RandomAccess {
     /**
      * Return directory used for temp files.
      */
-    public synchronized static String getTempDir() {
-        return tempDir;  // **FIXME**/TODO: locking on tempDir needs to be checked by a Java
-        // guru for consistency
+    public static synchronized String getTempDir() {
+        if (tempDir == null) {
+            return "";
+        }
+        return tempDir.toString();
     }
 
     /**
@@ -121,19 +57,18 @@ public abstract class BaseFile implements RandomAccess {
      * <p>
      * The directory must exist.
      */
-    public synchronized static void setTempDir(String dirName) {
-        File dir = new File(dirName);
-        if (!(dir.exists() && dir.isDirectory() && dir.canWrite())) {
-            throw new IllegalArgumentException("Bad Temp Directory: " + dir.getAbsolutePath());
+    public static synchronized void setTempDir(String dirName) {
+        Path dir = Path.of(dirName);
+        if (!Files.isDirectory(dir) || !Files.isWritable(dir)) {
+            throw new IllegalArgumentException("Bad Temp Directory: " + dir.toAbsolutePath());
         }
-        tempDir = dirName;  // **FIXME**/TODO: locking on tempDir needs to be checked by a Java
-        // guru for consistency
+        tempDir = dir;
     }
 
     @Override
     public OutputStream getOutputStreamUnbuffered() throws IOException {
         synchronized (this) {
-            File file = getFile();
+            var path = getPath();
             if (freed) {
                 throw new IOException("File already freed: " + this);
             }
@@ -141,30 +76,35 @@ public abstract class BaseFile implements RandomAccess {
                 throw new IOException("Bucket is read-only: " + this);
             }
 
-            if (createFileOnly() && // Fail if file already exists
-                fileRestartCounter == 0 &&
+            if (
+                // Fail if file already exists
+                createFileOnly() &&
                 // Ignore if we're just clobbering our own file after a previous
                 // getOutputStream()
-                !file.createNewFile()) {
-                throw new FileExistsException(file);
+                fileRestartCounter == 0) {
+                Files.createFile(path);
             }
             if (tempFileAlreadyExists() &&
-                !(file.exists() && file.canRead() && file.canWrite())) {
-                throw new FileDoesNotExistException(file);
+                !(Files.exists(path) && Files.isReadable(path) && Files.isWritable(path))) {
+                throw new FileNotFoundException(path.toString());
             }
 
-            if (streams != null && !streams.isEmpty()) {
-                logger.error("Streams open on {} while opening an output stream!: {}", this,
-                             streams, new Exception("debug"));
+            if (!streams.isEmpty()) {
+                logger.error(
+                    "Streams open on {} while opening an output stream!: {}",
+                    this,
+                    streams,
+                    new Exception("debug")
+                );
             }
 
             boolean rename = !tempFileAlreadyExists();
-            File tempfile = rename ? getTempfile() : file;
+            var tempFile = rename ? getTempFilePath() : path;
             long streamNumber = ++fileRestartCounter;
 
-            FileBucketOutputStream os = new FileBucketOutputStream(tempfile, streamNumber);
+            var os = new FileBucketOutputStream(tempFile, streamNumber);
 
-            logger.debug("Creating {}", os, new Exception("debug"));
+            logger.debug("Creating Unbuffered FileBucketOutputStream {}", os);
 
             addStream(os);
             return os;
@@ -181,20 +121,26 @@ public abstract class BaseFile implements RandomAccess {
         if (freed) {
             throw new IOException("File already freed: " + this);
         }
-        File file = getFile();
-        if (!file.exists()) {
-            logger.info("File does not exist: {} for {}", file, this);
+
+        var path = getPath();
+        if (!Files.exists(path)) {
+            logger.info("File does not exist: {} for {}", path, this);
             return new NullInputStream();
-        } else {
-            FileBucketInputStream is = new FileBucketInputStream(file);
-            addStream(is);
-            logger.debug("Creating {}", is, new Exception("debug"));
-            return is;
         }
+
+        var is = new FileBucketInputStream(path);
+        addStream(is);
+        logger.debug("Creating Unbuffered FileBucketInputStream {}", is);
+        return is;
     }
 
+    @Override
     public InputStream getInputStream() throws IOException {
-        return new BufferedInputStream(getInputStreamUnbuffered());
+        var is = getInputStreamUnbuffered();
+        if (is == null) {
+            return null;
+        }
+        return new BufferedInputStream(is);
     }
 
     /**
@@ -202,12 +148,16 @@ public abstract class BaseFile implements RandomAccess {
      */
     @Override
     public synchronized String getName() {
-        return getFile().getName();
+        return getPath().getFileName().toString();
     }
 
     @Override
     public synchronized long size() {
-        return getFile().length();
+        try {
+            return Files.size(getPath());
+        } catch (Exception e) {
+            return 0;
+        }
     }
 
     public synchronized Bucket[] split(int splitSize) {
@@ -220,85 +170,62 @@ public abstract class BaseFile implements RandomAccess {
         if (length % splitSize > 0) {
             bucketCount++;
         }
-        Bucket[] buckets = new Bucket[bucketCount];
-        File file = getFile();
-        for (int i = 0; i < buckets.length; i++) {
+        var path = getPath();
+        return Arrays.stream(new int[bucketCount]).mapToObj(i -> {
             long startAt = (long) i * splitSize;
-            long endAt = Math.min(startAt + (long) splitSize, length);
-            long len = endAt - startAt;
-            buckets[i] = new ReadOnlyFileSliceBucket(file, startAt, len);
-        }
-        return buckets;
+            long endAt = Math.min(startAt + splitSize, length);
+            try {
+                return new ReadOnlyFileSlice(path, startAt, endAt - startAt);
+            } catch (IOException e) {
+                throw new IllegalStateException(e);
+            }
+        }).toArray(Bucket[]::new);
+
     }
 
     @Override
-    public void free() {
+    public void close() {
         free(false);
     }
 
     public void free(boolean forceFree) {
-        Closeable[] toClose;
-        logger.info("Freeing {}", this, new Exception("debug"));
+        Set<Closeable> toClose;
+        logger.info("Freeing {}", this);
 
         synchronized (this) {
             if (freed) {
                 return;
             }
             freed = true;
-            toClose = streams == null ? null : streams.toArray(new Closeable[streams.size()]);
-            streams = null;
+            toClose = new HashSet<>(streams);
+            streams.clear();
         }
+        closeStreams(toClose);
 
-        if (toClose != null) {
-            logger.error("Streams open free()ing {} : {}", this, Arrays.toString(toClose),
-                         new Exception("debug"));
-            for (Closeable strm : toClose) {
-                try {
-                    strm.close();
-                } catch (IOException e) {
-                    logger.error("Caught closing stream in free(): {}", e, e);
-                } catch (Throwable t) {
-                    logger.error("Caught closing stream in free(): {}", t, t);
-                }
-            }
-        }
-
-        File file = getFile();
-        if ((deleteOnFree() || forceFree) && file.exists()) {
-            logger.debug("Deleting bucket {}", file, new Exception("debug"));
+        var path = getPath();
+        if ((deleteOnFree() || forceFree) && Files.exists(path)) {
+            logger.debug("Deleting bucket {}", path);
             deleteFile();
-            if (file.exists()) {
-                logger.error("Delete failed on bucket {}", file, new Exception("debug"));
+            if (Files.exists(path)) {
+                logger.error("Delete failed on bucket");
             }
         }
     }
 
     @Override
     public synchronized String toString() {
-        StringBuffer sb = new StringBuffer();
-        sb.append(super.toString());
-        sb.append(':');
-        File f = getFile();
-        if (f != null) {
-            sb.append(f.getPath());
-        } else {
-            sb.append("???");
-        }
-        sb.append(":streams=");
-        sb.append(streams == null ? 0 : streams.size());
-        return sb.toString();
+        return String.format(
+            "%s:%s:streams=%d",
+            super.toString(),
+            Optional.ofNullable(getPath()).map(Path::toString).orElse("???"),
+            streams.isEmpty() ? 0 : streams.size()
+        );
     }
 
     /**
-     * Returns the file object this buckets data is kept in.
+     * Returns the path object this buckets data is kept in.
      */
-    public abstract File getFile();
-
-    // TODO
-    //    @Override
-    //    public void onResume(ClientContext context) throws ResumeFailedException {
-    //        // Do nothing.
-    //    }
+    public abstract Path getPath();
 
     @Override
     public void storeTo(DataOutputStream dos) throws IOException {
@@ -308,7 +235,7 @@ public abstract class BaseFile implements RandomAccess {
     }
 
     @Override
-    public Lockable toRandomAccessBuffer() throws IOException {
+    public RandomAccessBuffer toRandomAccessBuffer() throws IOException {
         if (freed) {
             throw new IOException("Already freed");
         }
@@ -317,26 +244,16 @@ public abstract class BaseFile implements RandomAccess {
         if (size == 0) {
             throw new IOException("Must not be empty");
         }
-        return new PooledFile(getFile(), true, size, null, getPersistentTempID(),
-                              deleteOnFree());
+        return new PooledFile(getPath(), true, size, getPersistentTempID(), deleteOnFree());
+    }
+
+    @Override
+    public void onResume(ResumeContext context) throws ResumeFailedException {
+        // Do nothing.
     }
 
     protected void setDeleteOnExit(File file) {
-        try {
-            file.deleteOnExit();
-        } catch (NullPointerException e) {
-            // TODO
-            //            if (WrapperManager.hasShutdownHookBeenTriggered()) {
-            //                Logger.normal(this,
-            //                              "NullPointerException setting deleteOnExit while
-            //                              shutting down" +
-            //                              " - buggy JVM code: " + e, e);
-            //            } else {
-            //                Logger.error(this, "Caught " + e + " doing deleteOnExit() for
-            //                " + file +
-            //                                   " - JVM bug ????");
-            //            }
-        }
+        file.deleteOnExit();
     }
 
     /**
@@ -352,8 +269,6 @@ public abstract class BaseFile implements RandomAccess {
      */
     protected abstract boolean createFileOnly();
 
-    // determine the temp directory in one of several ways
-
     protected abstract boolean deleteOnExit();
 
     protected abstract boolean deleteOnFree();
@@ -361,14 +276,13 @@ public abstract class BaseFile implements RandomAccess {
     /**
      * Create a temporary file in the same directory as this file.
      */
-    protected File getTempfile() throws IOException {
-        File file = getFile();
-        File f =
-            FileUtil.createTempFile(file.getName(), ".hyphanet-tmp", file.getParentFile());
-        if (deleteOnExit()) {
-            f.deleteOnExit();
-        }
-        return f;
+    protected Path getTempFilePath() throws IOException {
+        var bucketPath = getPath();
+        return FileIoUtil.createTempFile(
+            bucketPath.getFileName().toString(),
+            ".hyphanet-tmp",
+            bucketPath.getParent()
+        );
     }
 
     /**
@@ -376,39 +290,92 @@ public abstract class BaseFile implements RandomAccess {
      * length must still be valid when calling it.
      */
     protected synchronized void deleteFile() {
-        logger.info("Deleting {} for {}", getFile(), this, new Exception("debug"));
+        var path = getPath();
 
-        getFile().delete();
+        logger.info("Deleting {} for {}", path, this);
+
+        try {
+            Files.delete(path);
+        } catch (Exception e) {
+            logger.error("Delete failed on bucket {}", path, e);
+        }
     }
+
+    // determine the temp directory in one of several ways
 
     protected long getPersistentTempID() {
         return -1;
     }
 
-    private void maybeSetDeleteOnExit(boolean deleteOnExit, File file) {
-        if (deleteOnExit) {
-            setDeleteOnExit(file);
+    private void closeStreams(Set<Closeable> toClose) {
+        if (toClose.isEmpty()) {
+            return;
+        }
+
+        logger.info("Streams open free()ing {} : {}", this, toClose);
+        for (Closeable stream : toClose) {
+            try {
+                stream.close();
+            } catch (Exception e) {
+                logger.error("Caught closing stream in free()", e);
+            }
         }
     }
 
-    private synchronized void addStream(Closeable stream) {
-        // BaseFileBucket is a very common object, and often very long lived,
-        // so we need to minimize memory usage even at the cost of frequent allocations.
-        if (streams == null) {
-            streams = new Vector<Closeable>(1, 1);
+    private static Path initializeTempDir() {
+        // Try the Java property first
+        String dir = System.getProperty("java.io.tmpdir");
+        if (dir != null) {
+            return Path.of(dir);
         }
+
+        // Try OS-specific locations
+        Path osSpecificTemp = findOsSpecificTempDir();
+        if (osSpecificTemp != null) {
+            return osSpecificTemp;
+        }
+
+        // Last resort - use current working directory
+        return Path.of(System.getProperty("user.dir"));
+    }
+
+    private static @Nullable Path findOsSpecificTempDir() {
+        String os = System.getProperty("os.name");
+        if (os == null) {
+            return null;
+        }
+
+        String[] candidates = null;
+        if (os.equalsIgnoreCase("Linux") || os.equalsIgnoreCase("FreeBSD")) {
+            candidates = new String[]{"/tmp", "/var/tmp"};
+        } else if (os.equalsIgnoreCase("Windows")) {
+            candidates = new String[]{"C:\\TEMP", "C:\\WINDOWS\\TEMP"};
+        }
+        if (candidates == null) {
+            return null;
+        }
+
+        for (String candidate : candidates) {
+            Path path = Path.of(candidate);
+            if (Files.isDirectory(path) && Files.isWritable(path)) {
+                return path;
+            }
+        }
+        return null;
+    }
+
+    private synchronized void addStream(Closeable stream) {
+        // BaseFileBucket is a very common object, and often very long-lived,
+        // so we need to minimize memory usage even at the cost of frequent allocations.
         streams.add(stream);
     }
 
     private synchronized void removeStream(Closeable stream) {
         // Race condition is possible
-        if (streams == null) {
+        if (streams.isEmpty()) {
             return;
         }
         streams.remove(stream);
-        if (streams.isEmpty()) {
-            streams = null;
-        }
     }
 
     /**
@@ -419,14 +386,26 @@ public abstract class BaseFile implements RandomAccess {
      *
      * @author toad
      */
-    class FileBucketOutputStream extends FileOutputStream {
+    class FileBucketOutputStream extends OutputStream {
 
-        protected FileBucketOutputStream(File tempfile, long restartCount)
-            throws FileNotFoundException {
-            super(tempfile, false);
-            logger.atInfo().setMessage("Writing to {} for {} : {}").addArgument(tempfile)
-                  .addArgument(BaseFile.this::getFile).addArgument(this).log();
-            this.tempfile = tempfile;
+        protected FileBucketOutputStream(Path tempFilePath, long restartCount)
+            throws IOException {
+            super();
+            if (deleteOnExit()) {
+                outputStream = Files.newOutputStream(
+                    tempFilePath,
+                    StandardOpenOption.DELETE_ON_CLOSE
+                );
+            } else {
+                outputStream = Files.newOutputStream(tempFilePath);
+            }
+            logger.atInfo()
+                  .setMessage("Writing to {} for {} : {}")
+                  .addArgument(tempFilePath)
+                  .addArgument(BaseFile.this::getPath)
+                  .addArgument(this)
+                  .log();
+            this.tempFilePath = tempFilePath;
             this.restartCount = restartCount;
             closed = false;
         }
@@ -435,7 +414,7 @@ public abstract class BaseFile implements RandomAccess {
         public void write(byte[] b) throws IOException {
             synchronized (BaseFile.this) {
                 confirmWriteSynchronized();
-                super.write(b);
+                outputStream.write(b);
             }
         }
 
@@ -443,7 +422,7 @@ public abstract class BaseFile implements RandomAccess {
         public void write(byte[] b, int off, int len) throws IOException {
             synchronized (BaseFile.this) {
                 confirmWriteSynchronized();
-                super.write(b, off, len);
+                outputStream.write(b, off, len);
             }
         }
 
@@ -451,19 +430,19 @@ public abstract class BaseFile implements RandomAccess {
         public void write(int b) throws IOException {
             synchronized (BaseFile.this) {
                 confirmWriteSynchronized();
-                super.write(b);
+                outputStream.write(b);
             }
         }
 
         @Override
         public void close() throws IOException {
-            File file;
+            Path path;
             synchronized (this) {
                 if (closed) {
                     return;
                 }
                 closed = true;
-                file = getFile();
+                path = getPath();
             }
             boolean renaming = !tempFileAlreadyExists();
             removeStream(this);
@@ -471,24 +450,22 @@ public abstract class BaseFile implements RandomAccess {
             logger.info("Closing {}", BaseFile.this);
 
             try {
-                super.close();
-            } catch (IOException e) {
-                logger.info("Failed closing {} : {}", BaseFile.this, e, e);
+                outputStream.close();
+            } finally {
                 if (renaming) {
-                    tempfile.delete();
+                    Files.delete(tempFilePath);
                 }
-                throw e;
             }
-            if (renaming) {
+
+            if (renaming && !FileIoUtil.renameTo(tempFilePath, path)) {
                 // getOutputStream() creates the file as a marker, so DON'T check for its
                 // existence,
                 // even if createFileOnly() is true.
-                if (!FileUtil.renameTo(tempfile, file)) {
-                    tempfile.delete();
-                    logger.info("Deleted, cannot rename file for {}", this);
-                    throw new IOException("Cannot rename file");
-                }
+                Files.delete(tempFilePath);
+                logger.info("Deleted, cannot rename file for {}", this);
+                throw new IOException("Cannot rename file");
             }
+
         }
 
         @Override
@@ -512,13 +489,26 @@ public abstract class BaseFile implements RandomAccess {
         }
 
         private final long restartCount;
-        private final File tempfile;
+        private final Path tempFilePath;
+        private final OutputStream outputStream;
         private boolean closed;
     }
 
-    class FileBucketInputStream extends FileInputStream {
-        public FileBucketInputStream(File f) throws IOException {
-            super(f);
+    class FileBucketInputStream extends InputStream {
+
+        public FileBucketInputStream(Path path) throws IOException {
+            super();
+            inputStream = Files.newInputStream(path);
+        }
+
+        @Override
+        public int read() throws IOException {
+            return inputStream.read();
+        }
+
+        @Override
+        public int read(byte[] b, int off, int len) throws IOException {
+            return inputStream.read(b, off, len);
         }
 
         @Override
@@ -538,18 +528,20 @@ public abstract class BaseFile implements RandomAccess {
             return super.toString() + ":" + BaseFile.this;
         }
 
+        private final InputStream inputStream;
         boolean closed;
+
     }
 
-    protected long fileRestartCounter;
-    /**
-     * Has the bucket been freed? If so, no further operations may be done
-     */
-    private boolean freed;
     /**
      * Vector of streams (FileBucketInputStream or FileBucketOutputStream) which are open to
      * this file. So we can be sure they are all closed when we free it. Can be null.
      */
-    private transient Vector<Closeable> streams;
+    private final Set<Closeable> streams = ConcurrentHashMap.newKeySet();
+    protected volatile long fileRestartCounter;
 
+    /**
+     * Has the bucket been freed? If so, no further operations may be done
+     */
+    private volatile boolean freed;
 }

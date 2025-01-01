@@ -28,8 +28,7 @@ public class PooledFileRandomAccessBufferFactory implements LockableRandomAccess
         File file = fg.getFilename(id);
         LockableRandomAccessBuffer ret = null;
         try {
-            ret =
-                new PooledFile(file, false, size, enableCrypto ? seedRandom : null, id, true);
+            ret = new PooledFile(file, false, size, id, true);
             return ret;
         } finally {
             if (ret == null) {
@@ -46,8 +45,7 @@ public class PooledFileRandomAccessBufferFactory implements LockableRandomAccess
         File file = fg.getFilename(id);
         LockableRandomAccessBuffer ret = null;
         try {
-            ret =
-                new PooledFile(file, "rw", initialContents, offset, size, id, true, readOnly);
+            ret = new PooledFile(file, initialContents, offset, size, id, true, readOnly);
             return ret;
         } finally {
             if (ret == null) {

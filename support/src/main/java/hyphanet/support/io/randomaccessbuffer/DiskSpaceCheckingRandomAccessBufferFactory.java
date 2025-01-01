@@ -3,6 +3,7 @@ package hyphanet.support.io.randomaccessbuffer;
 import freenet.support.Logger;
 import freenet.support.api.LockableRandomAccessBuffer;
 import freenet.support.api.LockableRandomAccessBufferFactory;
+import hyphanet.support.io.FileUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -89,7 +90,7 @@ public class DiskSpaceCheckingRandomAccessBufferFactory
             }
             // FIXME ideally we would have separate locks for each filesystem ...
             if (dir.getUsableSpace() > size + minDiskSpace) {
-                ret = new PooledFile(file, false, size, random, -1, true);
+                ret = new PooledFile(file, false, size, -1, true);
                 return ret;
             } else {
                 throw new InsufficientDiskSpaceException();
@@ -105,9 +106,10 @@ public class DiskSpaceCheckingRandomAccessBufferFactory
     @Override
     public boolean checkDiskSpace(File file, int toWrite, int bufferSize) {
         if (!FileUtil.isParent(dir, file)) {
-            Logger.error(this,
-                         "Not checking disk space because " + file + " is not child of " +
-                         dir);
+            Logger.error(
+                this,
+                "Not checking disk space because " + file + " is not child of " + dir
+            );
             return true;
         }
         lock.lock();

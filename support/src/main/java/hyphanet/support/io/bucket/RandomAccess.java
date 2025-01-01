@@ -1,14 +1,13 @@
 package hyphanet.support.io.bucket;
 
-import hyphanet.support.io.randomaccessbuffer.Lockable;
 import hyphanet.support.io.randomaccessbuffer.RandomAccessBuffer;
 
 import java.io.IOException;
 
 /**
  * A specialized {@link Bucket} implementation that supports random access operations. This
- * interface provides functionality to convert a Bucket to a {@link Lockable} random access
- * buffer without data copying.
+ * interface provides functionality to convert a Bucket to a {@link RandomAccessBuffer} random
+ * access buffer without data copying.
  *
  * <p>This interface is particularly useful when dealing with data of uncertain size
  * that will later need random access capabilities. It provides a separate abstraction due to
@@ -25,14 +24,14 @@ import java.io.IOException;
  * </ul>
  *
  * @see Bucket
- * @see Lockable
+ * @see RandomAccessBuffer
  * @see RandomAccessBuffer
  */
 public interface RandomAccess extends Bucket {
 
     /**
-     * Converts this Bucket to a {@link Lockable} random access buffer efficiently without
-     * copying the underlying data.
+     * Converts this Bucket to a {@link RandomAccessBuffer} random access buffer efficiently
+     * without copying the underlying data.
      *
      * <p>After conversion:</p>
      * <ul>
@@ -40,11 +39,11 @@ public interface RandomAccess extends Bucket {
      *   <li>Freeing the original Bucket becomes optional if the returned buffer is freed</li>
      * </ul>
      *
-     * @return A {@link Lockable} random access buffer containing this bucket's data
+     * @return A {@link RandomAccessBuffer} random access buffer containing this bucket's data
      *
      * @throws IOException if the conversion fails due to I/O errors
      */
-    Lockable toRandomAccessBuffer() throws IOException;
+    RandomAccessBuffer toRandomAccessBuffer() throws IOException;
 
     /**
      * {@inheritDoc} Creates a read-only shadow copy of this RandomAccess bucket.

@@ -11,6 +11,7 @@ import java.io.*;
 public class RAFBucket implements Bucket, RandomAccessBucket {
 
     static final int MAGIC = 0x892a708a;
+
     public RAFBucket(LockableRandomAccessBuffer underlying) throws IOException {
         this.underlying = underlying;
         size = underlying.size();
@@ -20,7 +21,7 @@ public class RAFBucket implements Bucket, RandomAccessBucket {
         DataInputStream dis, FilenameGenerator fg,
         PersistentFileTracker persistentFileTracker, MasterSecret masterKey)
         throws IOException, StorageFormatException, ResumeFailedException {
-        underlying = BucketTools.restoreRAFFrom(dis, fg, persistentFileTracker, masterKey);
+        underlying = BucketTools.restoreRabFrom(dis, fg, persistentFileTracker, masterKey);
         size = underlying.size();
     }
 
@@ -89,6 +90,7 @@ public class RAFBucket implements Bucket, RandomAccessBucket {
     public LockableRandomAccessBuffer toRandomAccessBuffer() {
         return underlying;
     }
+
     final long size;
     private final LockableRandomAccessBuffer underlying;
 
