@@ -3,15 +3,25 @@
  * http://www.gnu.org/ for further details of the GPL. */
 package hyphanet.support.io;
 
+import hyphanet.crypt.Global;
 import hyphanet.support.StringValidityChecker;
+import hyphanet.support.io.bucket.BucketTools;
+import hyphanet.support.io.bucket.RegularFile;
 import hyphanet.support.io.stream.LineReadingInputStream;
+import hyphanet.support.io.stream.ZeroInputStream;
+import org.bouncycastle.crypto.BufferedBlockCipher;
+import org.bouncycastle.crypto.engines.AESFastEngine;
 import org.bouncycastle.crypto.io.CipherInputStream;
+import org.bouncycastle.crypto.modes.SICBlockCipher;
+import org.bouncycastle.crypto.params.KeyParameter;
+import org.bouncycastle.crypto.params.ParametersWithIV;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.nio.CharBuffer;
+import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.WritableByteChannel;
 import java.nio.charset.Charset;
@@ -122,7 +132,7 @@ final public class FileUtil {
     // files to
     // be stored in arbitrary places.
     private static final Charset FILE_NAME_CHARSET = getFileEncodingCharset();
-    //    private static final ZeroInputStream zis = new ZeroInputStream();
+    private static final ZeroInputStream zis = new ZeroInputStream();
     private static volatile boolean logMINOR;
     private static CipherInputStream cis;
     private static long cisCounter;
@@ -131,8 +141,7 @@ final public class FileUtil {
      * Gets a reader for the tail portion of a log file.
      *
      * <p><b>Note:</b> The actual number of bytes read may be slightly more than the specified
-     * limit
-     * to ensure the first line is complete.
+     * limit to ensure the first line is complete.
      *
      * @param logfile   The log file to read from
      * @param byteLimit Maximum number of bytes to read from the end of the file
@@ -152,8 +161,7 @@ final public class FileUtil {
      * Gets a reader for the tail portion of a log file.
      *
      * <p><b>Note:</b> The actual number of bytes read may be slightly more than the specified
-     * limit
-     * to ensure the first line is complete.
+     * limit to ensure the first line is complete.
      *
      * @param logfilePath The path to the log file to read
      * @param byteLimit   Maximum number of bytes to read from the end of the file
@@ -309,8 +317,10 @@ final public class FileUtil {
             // Assume 512 byte filename entries, with 100 bytes overhead, for filename
             // overhead (NTFS)
             String filename = path.getFileName().toString();
-            int nameLength = 100 + Math.max(filename.getBytes(StandardCharsets.UTF_16).length,
-                                            filename.getBytes(StandardCharsets.UTF_8).length);
+            int nameLength = 100 + Math.max(
+                filename.getBytes(StandardCharsets.UTF_16).length,
+                filename.getBytes(StandardCharsets.UTF_8).length
+            );
             long filenameUsage = roundup_2n(nameLength, 512);
             // Assume 50 bytes per block tree overhead with 1kB blocks (reiser3 worst case)
             long extra = (roundup_2n(flen, 1024) / 1024) * 50;
@@ -718,15 +728,25 @@ final public class FileUtil {
                 Files.move(source, target, StandardCopyOption.REPLACE_EXISTING);
                 return true;
             } catch (IOException moveError) {
-                logger.error("Failed to rename {} to {}{}{}", source, target,
-                             Files.exists(target) ? " (target exists)" : "",
-                             Files.exists(source) ? " (source exists)" : "", moveError);
+                logger.error(
+                    "Failed to rename {} to {}{}{}",
+                    source,
+                    target,
+                    Files.exists(target) ? " (target exists)" : "",
+                    Files.exists(source) ? " (source exists)" : "",
+                    moveError
+                );
                 return false;
             }
         } catch (IOException e) {
-            logger.error("Failed to rename {} to {}{}{}", source, target,
-                         Files.exists(target) ? " (target exists)" : "",
-                         Files.exists(source) ? " (source exists)" : "", e);
+            logger.error(
+                "Failed to rename {} to {}{}{}",
+                source,
+                target,
+                Files.exists(target) ? " (target exists)" : "",
+                Files.exists(source) ? " (source exists)" : "",
+                e
+            );
             return false;
         }
     }
@@ -756,37 +776,45 @@ final public class FileUtil {
         return renameTo(orig.toPath(), dest.toPath());
     }
 
-    // TODO
-    //    /**
-    //     * Like renameTo(), but can move across filesystems, by copying the data.
-    //     *
-    //     * @param orig
-    //     * @param dest
-    //     * @param overwrite
-    //     */
-    //    public static boolean moveTo(File orig, File dest, boolean overwrite) {
-    //        if (orig.equals(dest)) {
-    //            throw new IllegalArgumentException("Huh? the two file descriptors are the
-    //            same!");
-    //        }
-    //        if (!orig.exists()) {
-    //            throw new IllegalArgumentException("Original doesn't exist!");
-    //        }
-    //        if (dest.exists()) {
-    //            if (overwrite) {
-    //                dest.delete();
-    //            } else {
-    //                System.err.println("Not overwriting " + dest + " - already exists
-    //                moving " + orig);
-    //                return false;
-    //            }
-    //        }
-    //        if (!orig.renameTo(dest)) {
-    //            return copyFile(orig, dest);
-    //        } else {
-    //            return true;
-    //        }
-    //    }
+    /**
+     * Like renameTo(), but can move across filesystems, by copying the data.
+     *
+     * @param orig
+     * @param dest
+     * @param overwrite
+     */
+    public static boolean moveTo(Path orig, Path dest, boolean overwrite) {
+        if (orig.equals(dest)) {
+            throw new IllegalArgumentException("Huh? the two file descriptors are the same!");
+        }
+        if (!Files.exists(orig)) {
+            throw new IllegalArgumentException("Original doesn't exist!");
+        }
+        if (Files.exists(dest)) {
+            if (overwrite) {
+                try {
+                    Files.delete(dest);
+                } catch (IOException e) {
+                    logger.error(
+                        "Not overwriting {} - already exists moving {} and unable to delete " +
+                        "it", dest, orig, e
+                    );
+                    return false;
+                }
+            } else {
+                logger.error("Not overwriting {} - already exists moving {}", dest, orig);
+                return false;
+            }
+        }
+        try {
+            Files.move(orig, dest);
+        } catch (IOException e) {
+            logger.warn("Unable to move {} to {}. Copying instead.", orig, dest, e);
+            return copyFile(orig, dest);
+        }
+
+        return true;
+    }
 
     /**
      * Sanitizes a filename to ensure it is valid for the specified operating system. The
@@ -879,9 +907,8 @@ final public class FileUtil {
      * no extra allowed characters.
      *
      * <p>The method uses the system's detected operating system ({@link #DETECTED_OS}) to
-     * determine
-     * which character restrictions to apply. This ensures the filename will be valid on the
-     * current platform.</p>
+     * determine which character restrictions to apply. This ensures the filename will be valid
+     * on the current platform.</p>
      *
      * @param fileName The filename to sanitize
      *
@@ -901,9 +928,8 @@ final public class FileUtil {
      * to {@link #sanitizeFileName(String, OperatingSystem, String)}.
      *
      * <p>This method extends the basic sanitization by allowing specific characters to be
-     * preserved
-     * in the filename. This is useful when certain special characters are known to be safe in
-     * a particular context.</p>
+     * preserved in the filename. This is useful when certain special characters are known to
+     * be safe in a particular context.</p>
      *
      * <p>Example usage:</p>
      * <pre>
@@ -1087,9 +1113,8 @@ final public class FileUtil {
      * Recursively deletes a directory and all its contents. This method should be used with
      * extreme caution as it permanently deletes all files and subdirectories.
      *
-     * <p><strong>Warning:</strong> This is a destructive operation that cannot be undone. Only
-     * use
-     * this method when absolutely certain that all data in the directory is safe to
+     * <p><strong>Warning:</strong> This is a destructive operation that cannot be undone.
+     * Only use this method when absolutely certain that all data in the directory is safe to
      * delete.</p>
      *
      * <p>The deletion process:</p>
@@ -1124,14 +1149,14 @@ final public class FileUtil {
      * @see Files#walk(Path, FileVisitOption...)
      * @see Files#deleteIfExists(Path)
      */
-    public static boolean removeAll(File wd) {
+    public static boolean removeAll(Path wd) {
         try {
-            if (!wd.isDirectory()) {
-                return Files.deleteIfExists(wd.toPath());
+            if (!Files.isDirectory(wd)) {
+                return Files.deleteIfExists(wd);
             }
 
             AtomicBoolean success = new AtomicBoolean(true);
-            try (var files = Files.walk(wd.toPath())) {
+            try (var files = Files.walk(wd)) {
                 files.sorted(Comparator.reverseOrder()).forEach(path -> {
                     try {
                         if (!Files.deleteIfExists(path)) {
@@ -1151,28 +1176,32 @@ final public class FileUtil {
         }
     }
 
-    // TODO
-    //    public static boolean secureDeleteAll(File wd) throws IOException {
-    //        if (!wd.isDirectory()) {
-    //            System.err.println("DELETING FILE " + wd);
-    //            try {
-    //                secureDelete(wd);
-    //            } catch (IOException e) {
-    //                Logger.error(FileUtil.class, "Could not delete file: " + wd, e);
-    //                return false;
-    //            }
-    //        } else {
-    //            for (File subfile : wd.listFiles()) {
-    //                if (!removeAll(subfile)) {
-    //                    return false;
-    //                }
-    //            }
-    //            if (!wd.delete()) {
-    //                Logger.error(FileUtil.class, "Could not delete directory: " + wd);
-    //            }
-    //        }
-    //        return true;
-    //    }
+    public static boolean secureDeleteAll(Path wd) throws IOException {
+        if (!Files.isDirectory(wd)) {
+            logger.info("DELETING FILE {}", wd);
+            try {
+                secureDelete(wd);
+            } catch (IOException e) {
+                logger.error("Could not delete file: {}", wd, e);
+                return false;
+            }
+        } else {
+            try (var files = Files.list(wd)) {
+                boolean success = files.allMatch(FileUtil::removeAll);
+
+                if (!success) {
+                    return false;
+                }
+
+                try {
+                    Files.delete(wd);
+                } catch (IOException e) {
+                    logger.warn("Could not delete directory: {}", wd);
+                }
+            }
+        }
+        return true;
+    }
 
     /**
      * Sets read and write permissions for the owner only on the specified file. This is a
@@ -1224,40 +1253,26 @@ final public class FileUtil {
         return setOwnerPerm(f, true, true, true);
     }
 
-    // TODO
-    //    public static void secureDelete(File file) throws IOException {
-    //        // FIXME somebody who understands these things should have a look at this...
-    //        if (!file.exists()) {
-    //            return;
-    //        }
-    //        long size = file.length();
-    //        if (size > 0) {
-    //            RandomAccessFile raf = null;
-    //            try {
-    //                System.out.println(
-    //                    "Securely deleting " + file + " which is of length " + size + "
-    //                    bytes...");
-    //                raf = new RandomAccessFile(file, "rw");
-    //                // Random data first.
-    //                raf.seek(0);
-    //                fill(new RandomAccessFileOutputStream(raf), size);
-    //                raf.getFD().sync();
-    //                raf.close();
-    //                raf = null;
-    //            } finally {
-    //                Closer.close(raf);
-    //            }
-    //        }
-    //        if ((!file.delete()) && file.exists()) {
-    //            throw new IOException("Unable to delete file " + file);
-    //        }
-    //    }
-
-    // TODO
-    //    @Deprecated
-    //    public static void secureDelete(File file, Random random) throws IOException {
-    //        secureDelete(file);
-    //    }
+    public static void secureDelete(Path path) throws IOException {
+        if (!Files.exists(path)) {
+            return;
+        }
+        long size = Files.size(path);
+        if (size > 0) {
+            try (var channel = FileChannel.open(
+                path,
+                StandardOpenOption.READ,
+                StandardOpenOption.WRITE
+            )) {
+                logger.info("Securely deleting {} which is of length {}bytes...", path, size);
+                channel.position(0);
+                // Random data first.
+                fill(Channels.newOutputStream(channel), size);
+                channel.force(false);
+            }
+        }
+        Files.delete(path);
+    }
 
     /**
      * Sets specific owner-only permissions on the specified file or directory. This is a
@@ -1483,82 +1498,86 @@ final public class FileUtil {
         return createTempFile(prefix, suffix, directory.toPath()).toFile();
     }
 
-    // TODO
-    //    public static boolean copyFile(File copyFrom, File copyTo) {
-    //        copyTo.delete();
-    //        boolean executable = copyFrom.canExecute();
-    //        FileBucket outBucket = new FileBucket(copyTo, false, true, false, false);
-    //        FileBucket inBucket = new FileBucket(copyFrom, true, false, false, false);
-    //        try {
-    //            BucketTools.copy(inBucket, outBucket);
-    //            if (executable) {
-    //                if (!(copyTo.setExecutable(true) || copyTo.canExecute())) {
-    //                    System.err.println("Unable to preserve executable bit when copying
-    //                    " +
-    //                    copyFrom + " to " + copyTo + " - you may need to make it
-    //                    executable!");
-    //                    // return false; ??? FIXME debatable.
-    //                }
-    //            }
-    //            return true;
-    //        } catch (IOException e) {
-    //            System.err.println("Unable to copy from " + copyFrom + " to " + copyTo);
-    //            return false;
-    //        }
-    //    }
+    public static boolean copyFile(Path copyFrom, Path copyTo) {
+        try {
+            Files.deleteIfExists(copyTo);
+        } catch (IOException e) {
+            logger.error("Failed to delete existing file {}", copyTo, e);
+        }
+        boolean copyFromExecutable = Files.isExecutable(copyFrom);
+        var outBucket = new RegularFile(copyTo, false, true, false, false);
+        var inBucket = new RegularFile(copyFrom, true, false, false, false);
+        try {
+            BucketTools.copy(inBucket, outBucket);
+        } catch (IOException e) {
+            logger.error("Unable to copy from {} to {}", copyFrom, copyTo);
+            return false;
+        }
+        if (copyFromExecutable && !Files.isExecutable(copyTo)) {
+            try {
+                var perms = Files.getPosixFilePermissions(copyTo);
+                perms.add(PosixFilePermission.OWNER_EXECUTE);
+                Files.setPosixFilePermissions(copyTo, perms);
+            } catch (IOException | UnsupportedOperationException e) {
+                logger.error(
+                    "Unable to preserve executable bit when copying{} to {} - you " +
+                    "may need to make itexecutable!", copyFrom, copyTo
+                );
+                // return false; ??? FIXME debatable.
+            }
+        }
+        return true;
+    }
 
-    // TODO
-    //    /**
-    //     * Write hard to identify random data to the OutputStream. Does not drain the
-    //     global secure
-    //     random
-    //     * number generator, and is significantly faster than it.
-    //     *
-    //     * @param os     The stream to write to.
-    //     * @param length The number of bytes to write.
-    //     *
-    //     * @throws IOException If unable to write to the stream.
-    //     */
-    //    public static void fill(OutputStream os, long length) throws IOException {
-    //        long remaining = length;
-    //        byte[] buffer = new byte[BUFFER_SIZE];
-    //        int read = 0;
-    //        while ((remaining == -1) || (remaining > 0)) {
-    //            synchronized (FileUtil.class) {
-    //                if (cis == null || cisCounter > Long.MAX_VALUE / 2) {
-    //                    // Reset it well before the birthday paradox (note this is
-    //                    actually counting
-    //                    bytes).
-    //                    byte[] key = new byte[16];
-    //                    byte[] iv = new byte[16];
-    //                    SecureRandom rng = NodeStarter.getGlobalSecureRandom();
-    //                    rng.nextBytes(key);
-    //                    rng.nextBytes(iv);
-    //                    AESFastEngine e = new AESFastEngine();
-    //                    SICBlockCipher ctr = new SICBlockCipher(e);
-    //                    ctr.init(true, new ParametersWithIV(new KeyParameter(key), iv));
-    //                    cis = new CipherInputStream(zis, new BufferedBlockCipher(ctr));
-    //                    cisCounter = 0;
-    //                }
-    //                read = cis.read(buffer, 0,
-    //                                ((remaining > BUFFER_SIZE) || (remaining == -1)) ?
-    //                                BUFFER_SIZE :
-    //                                    (int) remaining);
-    //                cisCounter += read;
-    //            }
-    //            if (read == -1) {
-    //                if (length == -1) {
-    //                    return;
-    //                }
-    //                throw new EOFException("stream reached eof");
-    //            }
-    //            os.write(buffer, 0, read);
-    //            if (remaining > 0) {
-    //                remaining -= read;
-    //            }
-    //        }
-    //
-    //    }
+    /**
+     * Write hard to identify random data to the OutputStream. Does not drain the global secure
+     * random number generator, and is significantly faster than it.
+     *
+     * @param os     The stream to write to.
+     * @param length The number of bytes to write.
+     *
+     * @throws IOException If unable to write to the stream.
+     */
+    public static void fill(OutputStream os, long length) throws IOException {
+        long remaining = length;
+        byte[] buffer = new byte[BUFFER_SIZE];
+        int read = 0;
+        while ((remaining == -1) || (remaining > 0)) {
+            synchronized (FileUtil.class) {
+                if (cis == null || cisCounter > Long.MAX_VALUE / 2) {
+                    // Reset it well before the birthday paradox (note this is actually
+                    // counting bytes).
+                    byte[] key = new byte[16];
+                    byte[] iv = new byte[16];
+                    Global.SECURE_RANDOM.nextBytes(key);
+                    Global.SECURE_RANDOM.nextBytes(iv);
+                    AESFastEngine e = new AESFastEngine();
+                    SICBlockCipher ctr = new SICBlockCipher(e);
+                    ctr.init(true, new ParametersWithIV(new KeyParameter(key), iv));
+                    cis = new CipherInputStream(zis, new BufferedBlockCipher(ctr));
+                    cisCounter = 0;
+                }
+                read = cis.read(
+                    buffer,
+                    0,
+                    ((remaining > BUFFER_SIZE) || (remaining == -1)) ? BUFFER_SIZE :
+                        (int) remaining
+                );
+                cisCounter += read;
+            }
+            if (read == -1) {
+                if (length == -1) {
+                    return;
+                }
+                throw new EOFException("stream reached eof");
+            }
+            os.write(buffer, 0, read);
+            if (remaining > 0) {
+                remaining -= read;
+            }
+        }
+
+    }
 
     /**
      * Creates a temporary file with the specified prefix and suffix in the given directory.
@@ -1619,9 +1638,13 @@ final public class FileUtil {
             }
 
             // Create temp file with restricted permissions
-            return Files.createTempFile(directory, prefix, suffix,
-                                        PosixFilePermissions.asFileAttribute(
-                                            PosixFilePermissions.fromString("rw-------")));
+            return Files.createTempFile(
+                directory,
+                prefix,
+                suffix,
+                PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString(
+                    "rw-------"))
+            );
 
         } catch (UnsupportedOperationException e) {
             // Fall back to basic temp file creation on non-POSIX systems
@@ -1685,8 +1708,10 @@ final public class FileUtil {
              var bufferedB = new BufferedInputStream(b)) {
 
             // Use larger buffer for better performance with large files
-            byte[] bufferA =
-                new byte[Math.min(BUFFER_SIZE, Math.max(8192, (int) (size / 1024)))];
+            byte[] bufferA = new byte[Math.min(
+                BUFFER_SIZE,
+                Math.max(8192, (int) (size / 1024))
+            )];
             byte[] bufferB = new byte[bufferA.length];
 
             long remaining = size;
@@ -1707,8 +1732,10 @@ final public class FileUtil {
                 }
 
                 // Compare chunks using constant-time comparison
-                if (!MessageDigest.isEqual(Arrays.copyOfRange(bufferA, 0, readA),
-                                           Arrays.copyOfRange(bufferB, 0, readB))) {
+                if (!MessageDigest.isEqual(
+                    Arrays.copyOfRange(bufferA, 0, readA),
+                    Arrays.copyOfRange(bufferB, 0, readB)
+                )) {
                     return false;
                 }
 
@@ -1724,8 +1751,7 @@ final public class FileUtil {
      * system rules.
      *
      * <p>This method evaluates a single character against platform-specific filename
-     * restrictions
-     * and custom validation rules.</p>
+     * restrictions and custom validation rules.</p>
      *
      * <h3>Operating System Rules:</h3>
      * <ul>
@@ -1772,19 +1798,15 @@ final public class FileUtil {
         // Check OS-specific restrictions
         return switch (targetOS) {
             case WINDOWS -> c < 32 ||
-                            StringValidityChecker.isWindowsReservedPrintableFilenameCharacter(
-                                (char) c);
+                            StringValidityChecker.isWindowsReservedPrintableFilenameCharacter((char) c);
             case MACOS ->
                 StringValidityChecker.isMacOSReservedPrintableFilenameCharacter((char) c);
             case LINUX, FREEBSD, GENERIC_UNIX ->
                 StringValidityChecker.isUnixReservedPrintableFilenameCharacter((char) c);
             case UNKNOWN -> c < 32 ||
-                            StringValidityChecker.isWindowsReservedPrintableFilenameCharacter(
-                                (char) c) ||
-                            StringValidityChecker.isMacOSReservedPrintableFilenameCharacter(
-                                (char) c) ||
-                            StringValidityChecker.isUnixReservedPrintableFilenameCharacter(
-                                (char) c);
+                            StringValidityChecker.isWindowsReservedPrintableFilenameCharacter((char) c) ||
+                            StringValidityChecker.isMacOSReservedPrintableFilenameCharacter((char) c) ||
+                            StringValidityChecker.isUnixReservedPrintableFilenameCharacter((char) c);
         };
     }
 
@@ -1900,8 +1922,10 @@ final public class FileUtil {
             default -> {
                 // Generic Unix-like systems (ext4, etc.)
                 int baseLength = 100; // Conservative estimate for inode overhead
-                yield baseLength + Math.max(filename.getBytes(StandardCharsets.UTF_16).length,
-                                            filename.getBytes(StandardCharsets.UTF_8).length);
+                yield baseLength + Math.max(
+                    filename.getBytes(StandardCharsets.UTF_16).length,
+                    filename.getBytes(StandardCharsets.UTF_8).length
+                );
             }
         };
 
