@@ -16,6 +16,26 @@ import java.nio.file.attribute.PosixFilePermissions;
 import java.util.Comparator;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+/**
+ * A utility class providing enhanced file system operations beyond standard Java APIs. This
+ * class offers robust methods for file operations such as secure deletion, cross-filesystem
+ * moves, and temporary file creation with proper permissions.
+ *
+ * <p>Key features include:</p>
+ * <ul>
+ *   <li>Cross-filesystem file moving with fallback copying</li>
+ *   <li>Secure file deletion with data overwriting</li>
+ *   <li>Recursive directory deletion</li>
+ *   <li>Temporary file creation with proper permissions</li>
+ *   <li>Atomic file operations where supported</li>
+ * </ul>
+ *
+ * <p>All methods in this class are stateless and thread-safe. The class uses NIO.2
+ * APIs for improved performance and security.</p>
+ *
+ * @see java.nio.file.Files
+ * @see java.nio.file.Path
+ */
 public final class FileSystem {
 
     private static final Logger logger = LoggerFactory.getLogger(FileSystem.class);
@@ -25,11 +45,20 @@ public final class FileSystem {
     }
 
     /**
-     * Like renameTo(), but can move across filesystems, by copying the data.
+     * Moves a file from the original path to the destination path. This method behaves like
+     * {@link File#renameTo(File)} but can also move files across different file systems by
+     * copying the data if a direct move is not possible.
      *
-     * @param orig
-     * @param dest
-     * @param overwrite
+     * @param orig      The original path of the file to move.
+     * @param dest      The destination path where the file should be moved.
+     * @param overwrite If {@code true}, an existing file at the destination will be
+     *                  overwritten. If {@code false}, the operation will fail if the
+     *                  destination exists.
+     *
+     * @return {@code true} if the move was successful, {@code false} otherwise.
+     *
+     * @throws IllegalArgumentException if the original and destination paths are the same or
+     *                                  if the original file does not exist.
      */
     public static boolean moveTo(Path orig, Path dest, boolean overwrite) {
         if (orig.equals(dest)) {
@@ -66,41 +95,50 @@ public final class FileSystem {
 
     /**
      * Recursively deletes a directory and all its contents. This method should be used with
-     * extreme caution as it permanently deletes all files and subdirectories.
+     * extreme caution as it permanently deletes data.
      *
-     * <p><strong>Warning:</strong> This is a destructive operation that cannot be undone.
+     * <p>
+     * <strong>Warning:</strong> This is a destructive operation that cannot be undone.
      * Only use this method when absolutely certain that all data in the directory is safe to
-     * delete.</p>
+     * delete.
+     * </p>
      *
-     * <p>The deletion process:</p>
+     * <p>
+     * The deletion process includes:
+     * </p>
      * <ul>
-     *   <li>For regular files: Directly deletes the file</li>
-     *   <li>For directories: Walks the directory tree in reverse order (bottom-up)</li>
-     *   <li>Handles symbolic links without following them</li>
-     *   <li>Attempts to delete each file/directory only once</li>
+     *   <li>Deleting regular files directly.</li>
+     *   <li>Walking the directory tree in reverse order (bottom-up) for directories.</li>
+     *   <li>Handling symbolic links without following them.</li>
+     *   <li>Attempting to delete each file/directory only once.</li>
      * </ul>
      *
-     * <p>Error handling:</p>
+     * <p>
+     * Error handling includes:
+     * </p>
      * <ul>
-     *   <li>Logs individual file deletion failures but continues processing</li>
-     *   <li>Returns false if any deletion operation fails</li>
-     *   <li>Ensures cleanup of resources using try-with-resources</li>
+     *   <li>Logging individual file deletion failures but continuing the process.</li>
+     *   <li>Returning {@code false} if any deletion operation fails.</li>
+     *   <li>Ensuring resource cleanup using try-with-resources.</li>
      * </ul>
      *
-     * <p>Security considerations:</p>
+     * <p>
+     * Security considerations:
+     * </p>
      * <ul>
-     *   <li>Does not follow symbolic links to prevent deletion outside target directory</li>
-     *   <li>Uses NIO.2 APIs for secure file operations</li>
-     *   <li>Requires appropriate filesystem permissions for all operations</li>
+     *   <li>Does not follow symbolic links to prevent deletion outside the target directory
+     *   .</li>
+     *   <li>Uses NIO.2 APIs for secure file operations.</li>
+     *   <li>Requires appropriate file system permissions for all operations.</li>
      * </ul>
      *
-     * @param wd The directory or file to delete. If it's a directory, all contents will be
-     *           deleted
+     * @param wd The directory or file to delete. If it's a directory, all its contents will be
+     *           deleted.
      *
      * @return {@code true} if all deletions were successful, {@code false} if any deletion
-     * failed
+     * failed.
      *
-     * @throws SecurityException if the security manager denies access to the files
+     * @throws SecurityException if the security manager denies access to the files.
      * @see Files#walk(Path, FileVisitOption...)
      * @see Files#deleteIfExists(Path)
      */
@@ -131,6 +169,18 @@ public final class FileSystem {
         }
     }
 
+    /**
+     * Securely deletes a file or directory and its contents. For files, it overwrites the
+     * content with random data before deletion to prevent recovery. For directories, it
+     * recursively deletes all contained files and subdirectories before deleting the directory
+     * itself.
+     *
+     * @param wd The path to the file or directory to be securely deleted.
+     *
+     * @return {@code true} if the deletion was successful, {@code false} otherwise.
+     *
+     * @throws IOException If an I/O error occurs during the deletion process.
+     */
     public static boolean secureDeleteAll(Path wd) throws IOException {
         if (!Files.isDirectory(wd)) {
             logger.info("DELETING FILE {}", wd);
@@ -158,6 +208,14 @@ public final class FileSystem {
         return true;
     }
 
+    /**
+     * Securely deletes a file by overwriting its content with random data before deleting it.
+     * This method aims to prevent the recovery of the file's contents.
+     *
+     * @param path The path to the file to be securely deleted.
+     *
+     * @throws IOException If an I/O error occurs during the deletion process.
+     */
     public static void secureDelete(Path path) throws IOException {
         if (!Files.exists(path)) {
             return;
@@ -217,6 +275,16 @@ public final class FileSystem {
         return createTempFile(prefix, suffix, directory.toPath()).toFile();
     }
 
+    /**
+     * Copies a file from the source path to the destination path. If the destination file
+     * exists, it will be deleted before copying. Preserves the executable permission of the
+     * source file if possible.
+     *
+     * @param copyFrom The path of the file to be copied.
+     * @param copyTo   The path where the file should be copied to.
+     *
+     * @return {@code true} if the copy was successful, {@code false} otherwise.
+     */
     public static boolean copyFile(Path copyFrom, Path copyTo) {
         try {
             Files.deleteIfExists(copyTo);
