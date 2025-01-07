@@ -12,4 +12,5 @@ module hyphanet.support {
     exports hyphanet.support.io.bucket;
     exports hyphanet.support.io.randomaccessbuffer;
     exports hyphanet.support.io.stream;
+    exports hyphanet.support.io.util;
 }
