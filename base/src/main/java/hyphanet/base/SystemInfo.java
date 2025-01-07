@@ -24,7 +24,7 @@ public final class SystemInfo {
      * @see #detectOperatingSystem()
      */
     public static final OperatingSystem DETECTED_OS = detectOperatingSystem();
-    
+
     /**
      * The detected CPU architecture for the current environment.
      *
@@ -203,7 +203,7 @@ public final class SystemInfo {
      */
     private static CPUArchitecture detectCPUArchitecture() {
         return switch (System.getProperty("os.arch").toLowerCase()) {
-            case String s when s.matches("x86|i386|i[3-9]86") -> CPUArchitecture.X86_32;
+            case String s when s.matches("x86|i[3-9]86") -> CPUArchitecture.X86_32;
             case String s when s.matches("amd64|x86[-_]?64|em64t") -> CPUArchitecture.X86_64;
             case "aarch64" -> CPUArchitecture.ARM_64;
             case String s when s.startsWith("arm") -> CPUArchitecture.ARM_32;
