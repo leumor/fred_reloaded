@@ -5,8 +5,6 @@ package hyphanet.support.io.bucket;
 
 import hyphanet.support.io.StorageFormatException;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.nio.file.Path;
@@ -21,13 +19,14 @@ public class RegularFile extends BaseFile implements Bucket, Serializable {
 
     public static final int MAGIC = 0x8fe6e41b;
     static final int VERSION = 1;
+
+    @Serial
     private static final long serialVersionUID = 1L;
-    private static final Logger logger = LoggerFactory.getLogger(RegularFile.class);
 
     /**
      * Creates a new FileBucket.
      *
-     * @param file           The File to read and write to.
+     * @param path           The File to read and write to.
      * @param readOnly       If true, any attempt to write to the bucket will result in an
      *                       IOException. Can be set later. Irreversible. @see isReadOnly(),
      *                       setReadOnly()
@@ -62,6 +61,7 @@ public class RegularFile extends BaseFile implements Bucket, Serializable {
     // JVM caches File.size() and there is no way to flush the cache, so we
     // need to track it ourselves
 
+    @SuppressWarnings("unused")
     protected RegularFile() {
         // For serialization.
         super();
