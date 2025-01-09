@@ -1,10 +1,10 @@
 package hyphanet.support.io.bucket;
 
-import hyphanet.support.io.ResumeFailedException;
 import hyphanet.support.io.StorageFormatException;
 import hyphanet.support.io.randomaccessbuffer.PooledFile;
 import hyphanet.support.io.randomaccessbuffer.RandomAccessBuffer;
 import hyphanet.support.io.stream.NullInputStream;
+import hyphanet.support.io.util.FileSystem;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,16 +19,52 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Base class for file-based buckets.
+ * <p>
+ * This class provides common functionality for managing file-based buckets, including handling
+ * temporary files, managing input/output streams, and performing basic file operations.
+ * </p>
+ */
 public abstract class BaseFile implements RandomAccess {
+    /**
+     * Magic number to identify the file type.
+     */
     public static final int MAGIC = 0xc4b7533d;
+
+    /**
+     * Version number of the file format.
+     */
     static final int VERSION = 1;
+
     private static final Logger logger = LoggerFactory.getLogger(BaseFile.class);
+
+    /**
+     * The temporary directory used for storing temporary files. Initialized lazily by
+     * {@link #initializeTempDir()}.
+     */
     private static @Nullable Path tempDir = initializeTempDir();
 
+    /**
+     * Default constructor for BaseFile.
+     *
+     * @throws AssertionError if {@link #createFileOnly()} and {@link #tempFileAlreadyExists()}
+     *                        are both true.
+     */
     protected BaseFile() {
         assert (!(createFileOnly() && tempFileAlreadyExists())); // Mutually incompatible!
     }
 
+    /**
+     * Constructor for BaseFile that reads data from a DataInputStream.
+     *
+     * <p>Reads and validates the magic number and version information from the stream.</p>
+     *
+     * @param dis the DataInputStream to read from.
+     *
+     * @throws IOException            if an I/O error occurs.
+     * @throws StorageFormatException if the data in the stream is not in the expected format.
+     */
     protected BaseFile(DataInputStream dis) throws IOException, StorageFormatException {
         // Not constructed directly, so we DO need to read the magic value.
         int magic = dis.readInt();
@@ -42,8 +78,11 @@ public abstract class BaseFile implements RandomAccess {
         freed = dis.readBoolean();
     }
 
+
     /**
-     * Return directory used for temp files.
+     * Returns the directory used for temporary files.
+     *
+     * @return The temporary directory path as a String, or an empty string if not set.
      */
     public static synchronized String getTempDir() {
         if (tempDir == null) {
@@ -53,9 +92,12 @@ public abstract class BaseFile implements RandomAccess {
     }
 
     /**
-     * Set temp file directory.
-     * <p>
-     * The directory must exist.
+     * Sets the temporary file directory.
+     *
+     * @param dirName the path to the temporary directory.
+     *
+     * @throws IllegalArgumentException if the specified directory does not exist or is not
+     *                                  writable.
      */
     public static synchronized void setTempDir(String dirName) {
         Path dir = Path.of(dirName);
@@ -65,6 +107,29 @@ public abstract class BaseFile implements RandomAccess {
         tempDir = dir;
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Returns an unbuffered output stream to the underlying file.
+     * </p>
+     * <p>
+     * If {@link #createFileOnly()} is true and the file does not already exist, a new file is
+     * created. If {@link #tempFileAlreadyExists()} is true and the file does not exist or is
+     * not accessible, a {@link FileNotFoundException} is thrown.
+     * </p>
+     * <p>
+     * If there are open streams on this bucket, a warning is logged.
+     * </p>
+     * <p>
+     * If {@link #tempFileAlreadyExists()} is false, the data is written to a temporary file
+     * first and then renamed to the target file on close.
+     * </p>
+     *
+     * @return An unbuffered output stream to the underlying file.
+     *
+     * @throws IOException if an I/O error occurs or if the bucket is read-only or already
+     *                     freed.
+     */
     @Override
     public OutputStream getOutputStreamUnbuffered() throws IOException {
         synchronized (this) {
@@ -111,11 +176,35 @@ public abstract class BaseFile implements RandomAccess {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Returns a buffered output stream to the underlying file.
+     * </p>
+     *
+     * @return A buffered output stream to the underlying file.
+     *
+     * @throws IOException if an I/O error occurs.
+     */
     @Override
     public OutputStream getOutputStream() throws IOException {
         return new BufferedOutputStream(getOutputStreamUnbuffered());
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Returns an unbuffered input stream to the underlying file.
+     * </p>
+     * <p>
+     * If the file does not exist, a {@link NullInputStream} is returned.
+     * </p>
+     *
+     * @return An unbuffered input stream to the underlying file, or a {@link NullInputStream}
+     * if the file does not exist.
+     *
+     * @throws IOException if an I/O error occurs or if the bucket is already freed.
+     */
     @Override
     public synchronized InputStream getInputStreamUnbuffered() throws IOException {
         if (freed) {
@@ -134,6 +223,17 @@ public abstract class BaseFile implements RandomAccess {
         return is;
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Returns a buffered input stream to the underlying file.
+     * </p>
+     *
+     * @return A buffered input stream to the underlying file, or null if the file does not
+     * exist.
+     *
+     * @throws IOException if an I/O error occurs.
+     */
     @Override
     public InputStream getInputStream() throws IOException {
         var is = getInputStreamUnbuffered();
@@ -144,6 +244,8 @@ public abstract class BaseFile implements RandomAccess {
     }
 
     /**
+     * {@inheritDoc}
+     *
      * @return the name of the file.
      */
     @Override
@@ -151,6 +253,14 @@ public abstract class BaseFile implements RandomAccess {
         return getPath().getFileName().toString();
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Returns the size of the underlying file.
+     * </p>
+     *
+     * @return The size of the file in bytes, or 0 if an error occurs.
+     */
     @Override
     public synchronized long size() {
         try {
@@ -160,6 +270,17 @@ public abstract class BaseFile implements RandomAccess {
         }
     }
 
+
+    /**
+     * Splits the bucket into multiple read-only buckets of a specified size.
+     *
+     * @param splitSize the size of each split bucket.
+     *
+     * @return An array of read-only buckets.
+     *
+     * @throws IllegalArgumentException if the total size is too large for the specified split
+     *                                  size.
+     */
     public synchronized Bucket[] split(int splitSize) {
         long length = size();
         if (length > ((long) Integer.MAX_VALUE) * splitSize) {
@@ -183,11 +304,26 @@ public abstract class BaseFile implements RandomAccess {
 
     }
 
+    /**
+     * Closes the bucket and releases any associated resources.
+     * <p>
+     * This method is equivalent to calling {@link #free(boolean)} with <code>false</code>.
+     * </p>
+     */
     @Override
     public void close() {
         free(false);
     }
 
+    /**
+     * Frees the bucket and releases any associated resources.
+     * <p>
+     * Closes all open streams and optionally deletes the underlying file.
+     * </p>
+     *
+     * @param forceFree if true, the underlying file will be deleted even if
+     *                  {@link #deleteOnFree()} is false.
+     */
     public void free(boolean forceFree) {
         Set<Closeable> toClose;
         logger.info("Freeing {}", this);
@@ -212,6 +348,11 @@ public abstract class BaseFile implements RandomAccess {
         }
     }
 
+    /**
+     * Returns a string representation of the BaseFile object.
+     *
+     * @return A string representation of the object.
+     */
     @Override
     public synchronized String toString() {
         return String.format(
@@ -224,9 +365,21 @@ public abstract class BaseFile implements RandomAccess {
 
     /**
      * Returns the path object this buckets data is kept in.
+     *
+     * @return The path object.
      */
     public abstract Path getPath();
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Stores the bucket's metadata to the specified DataOutputStream.
+     * </p>
+     *
+     * @param dos the DataOutputStream to write to.
+     *
+     * @throws IOException if an I/O error occurs.
+     */
     @Override
     public void storeTo(DataOutputStream dos) throws IOException {
         dos.writeInt(MAGIC);
@@ -234,6 +387,20 @@ public abstract class BaseFile implements RandomAccess {
         dos.writeBoolean(freed);
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Converts the bucket to a RandomAccessBuffer.
+     * </p>
+     * <p>
+     * The bucket must not be empty and will be set to read-only after this operation.
+     * </p>
+     *
+     * @return A RandomAccessBuffer representing the bucket's data.
+     *
+     * @throws IOException if an I/O error occurs, if the bucket is already freed, or if the
+     *                     bucket is empty.
+     */
     @Override
     public RandomAccessBuffer toRandomAccessBuffer() throws IOException {
         if (freed) {
@@ -247,38 +414,56 @@ public abstract class BaseFile implements RandomAccess {
         return new PooledFile(getPath(), true, size, getPersistentTempID(), deleteOnFree());
     }
 
-    @Override
-    public void onResume(ResumeContext context) throws ResumeFailedException {
-        // Do nothing.
-    }
-
+    /**
+     * Sets the deleteOnExit flag for the specified file.
+     *
+     * @param file the file to set the flag for.
+     */
     protected void setDeleteOnExit(File file) {
         file.deleteOnExit();
     }
 
     /**
      * If true, then the file is temporary and must already exist, so we will just open it.
-     * Otherwise we will create a temporary file and then rename it over the target.
+     * Otherwise, we will create a temporary file and then rename it over the target.
      * Incompatible with createFileOnly()!
+     *
+     * @return True if the file is temporary and must already exist, false otherwise.
      */
     protected abstract boolean tempFileAlreadyExists();
 
     /**
      * If true, we will fail if the file already exist. Incompatible with
      * tempFileAlreadyExists()!
+     *
+     * @return True if the file must not already exist, false otherwise.
      */
     protected abstract boolean createFileOnly();
 
+    /**
+     * Returns whether the underlying file should be deleted on JVM exit.
+     *
+     * @return True if the file should be deleted on exit, false otherwise.
+     */
     protected abstract boolean deleteOnExit();
 
+    /**
+     * Returns whether the underlying file should be deleted when the bucket is freed.
+     *
+     * @return True if the file should be deleted on free, false otherwise.
+     */
     protected abstract boolean deleteOnFree();
 
     /**
-     * Create a temporary file in the same directory as this file.
+     * Creates a temporary file in the same directory as this file.
+     *
+     * @return The path to the temporary file.
+     *
+     * @throws IOException if an I/O error occurs.
      */
     protected Path getTempFilePath() throws IOException {
         var bucketPath = getPath();
-        return FileIoUtil.createTempFile(
+        return FileSystem.createTempFile(
             bucketPath.getFileName().toString(),
             ".hyphanet-tmp",
             bucketPath.getParent()
@@ -301,12 +486,23 @@ public abstract class BaseFile implements RandomAccess {
         }
     }
 
-    // determine the temp directory in one of several ways
-
+    /**
+     * Returns a persistent temporary ID for the bucket.
+     * <p>
+     * Default implementation returns -1.
+     * </p>
+     *
+     * @return The persistent temporary ID.
+     */
     protected long getPersistentTempID() {
         return -1;
     }
 
+    /**
+     * Closes the specified set of streams.
+     *
+     * @param toClose the set of streams to close.
+     */
     private void closeStreams(Set<Closeable> toClose) {
         if (toClose.isEmpty()) {
             return;
@@ -322,6 +518,19 @@ public abstract class BaseFile implements RandomAccess {
         }
     }
 
+    /**
+     * Initializes the temporary directory.
+     * <p>
+     * Tries the following locations in order:
+     * <ol>
+     *   <li>The directory specified by the <code>java.io.tmpdir</code> system property.</li>
+     *   <li>OS-specific temporary directories (e.g., /tmp, /var/tmp on Linux/FreeBSD,
+     *   C:\TEMP, C:\WINDOWS\TEMP on Windows).</li>
+     *   <li>The current working directory.</li>
+     * </ol>
+     *
+     * @return The initialized temporary directory path.
+     */
     private static Path initializeTempDir() {
         // Try the Java property first
         String dir = System.getProperty("java.io.tmpdir");
@@ -339,6 +548,11 @@ public abstract class BaseFile implements RandomAccess {
         return Path.of(System.getProperty("user.dir"));
     }
 
+    /**
+     * Finds an OS-specific temporary directory.
+     *
+     * @return The path to an OS-specific temporary directory, or null if none is found.
+     */
     private static @Nullable Path findOsSpecificTempDir() {
         String os = System.getProperty("os.name");
         if (os == null) {
@@ -364,12 +578,22 @@ public abstract class BaseFile implements RandomAccess {
         return null;
     }
 
+    /**
+     * Adds a stream to the set of open streams for this bucket.
+     *
+     * @param stream the stream to add.
+     */
     private synchronized void addStream(Closeable stream) {
         // BaseFileBucket is a very common object, and often very long-lived,
         // so we need to minimize memory usage even at the cost of frequent allocations.
         streams.add(stream);
     }
 
+    /**
+     * Removes a stream from the set of open streams for this bucket.
+     *
+     * @param stream the stream to remove.
+     */
     private synchronized void removeStream(Closeable stream) {
         // Race condition is possible
         if (streams.isEmpty()) {
@@ -379,15 +603,24 @@ public abstract class BaseFile implements RandomAccess {
     }
 
     /**
-     * Internal OutputStream impl. If createFileOnly is set, we won't overwrite an existing
-     * file, and we write to a temp file then rename over the target. Note that we can't use
-     * createNewFile then new FOS() because while createNewFile is atomic, the combination is
-     * not, so if we do it we are vulnerable to symlink attacks.
-     *
-     * @author toad
+     * Internal OutputStream implementation for BaseFile.
+     * <p>
+     * If createFileOnly is set, we won't overwrite an existing file, and we write to a temp
+     * file then rename over the target. Note that we can't use createNewFile then new FOS()
+     * because while createNewFile is atomic, the combination is not, so if we do it we are
+     * vulnerable to symlink attacks.
+     * </p>
      */
     class FileBucketOutputStream extends OutputStream {
 
+        /**
+         * Constructs a new FileBucketOutputStream.
+         *
+         * @param tempFilePath the path to the temporary file.
+         * @param restartCount the restart counter value.
+         *
+         * @throws IOException if an I/O error occurs.
+         */
         protected FileBucketOutputStream(Path tempFilePath, long restartCount)
             throws IOException {
             super();
@@ -410,6 +643,16 @@ public abstract class BaseFile implements RandomAccess {
             closed = false;
         }
 
+        /**
+         * {@inheritDoc}
+         * <p>
+         * Writes the specified byte array to the output stream.
+         * </p>
+         *
+         * @param b the byte array to write.
+         *
+         * @throws IOException if an I/O error occurs.
+         */
         @Override
         public void write(byte[] b) throws IOException {
             synchronized (BaseFile.this) {
@@ -418,6 +661,18 @@ public abstract class BaseFile implements RandomAccess {
             }
         }
 
+        /**
+         * {@inheritDoc}
+         * <p>
+         * Writes a portion of the specified byte array to the output stream.
+         * </p>
+         *
+         * @param b   the byte array to write.
+         * @param off the offset in the byte array.
+         * @param len the number of bytes to write.
+         *
+         * @throws IOException if an I/O error occurs.
+         */
         @Override
         public void write(byte[] b, int off, int len) throws IOException {
             synchronized (BaseFile.this) {
@@ -426,6 +681,16 @@ public abstract class BaseFile implements RandomAccess {
             }
         }
 
+        /**
+         * {@inheritDoc}
+         * <p>
+         * Writes the specified byte to the output stream.
+         * </p>
+         *
+         * @param b the byte to write.
+         *
+         * @throws IOException if an I/O error occurs.
+         */
         @Override
         public void write(int b) throws IOException {
             synchronized (BaseFile.this) {
@@ -434,6 +699,15 @@ public abstract class BaseFile implements RandomAccess {
             }
         }
 
+        /**
+         * Closes the output stream.
+         * <p>
+         * If {@link #tempFileAlreadyExists()} is false, the temporary file is renamed to the
+         * target file.
+         * </p>
+         *
+         * @throws IOException if an I/O error occurs or if the rename operation fails.
+         */
         @Override
         public void close() throws IOException {
             Path path;
@@ -457,7 +731,7 @@ public abstract class BaseFile implements RandomAccess {
                 }
             }
 
-            if (renaming && !FileIoUtil.renameTo(tempFilePath, path)) {
+            if (renaming && !FileSystem.renameTo(tempFilePath, path)) {
                 // getOutputStream() creates the file as a marker, so DON'T check for its
                 // existence,
                 // even if createFileOnly() is true.
@@ -468,11 +742,22 @@ public abstract class BaseFile implements RandomAccess {
 
         }
 
+        /**
+         * Returns a string representation of the FileBucketOutputStream.
+         *
+         * @return A string representation of the object.
+         */
         @Override
         public String toString() {
             return super.toString() + ":" + BaseFile.this;
         }
 
+        /**
+         * Confirms that a write operation is allowed.
+         *
+         * @throws IOException           if the bucket is read-only or already freed.
+         * @throws IllegalStateException if writing to the file after a restart.
+         */
         protected void confirmWriteSynchronized() throws IOException {
             synchronized (BaseFile.this) {
                 if (fileRestartCounter > restartCount) {
@@ -488,29 +773,78 @@ public abstract class BaseFile implements RandomAccess {
 
         }
 
+        /**
+         * The restart counter value at the time the stream was created.
+         */
         private final long restartCount;
+
+        /**
+         * The path to the temporary file.
+         */
         private final Path tempFilePath;
+
+        /**
+         * The underlying output stream.
+         */
         private final OutputStream outputStream;
+
+        /**
+         * Flag indicating whether the stream has been closed.
+         */
         private boolean closed;
     }
 
+    /**
+     * Internal InputStream implementation for BaseFile.
+     */
     class FileBucketInputStream extends InputStream {
 
+        /**
+         * Constructs a new FileBucketInputStream.
+         *
+         * @param path the path to the file.
+         *
+         * @throws IOException if an I/O error occurs.
+         */
         public FileBucketInputStream(Path path) throws IOException {
             super();
             inputStream = Files.newInputStream(path);
         }
 
+        /**
+         * {@inheritDoc}
+         *
+         * @return The next byte of data, or -1 if the end of the stream is reached.
+         *
+         * @throws IOException if an I/O error occurs.
+         */
         @Override
         public int read() throws IOException {
             return inputStream.read();
         }
 
+        /**
+         * {@inheritDoc}
+         *
+         * @param b   The buffer into which the data is read.
+         * @param off The start offset in array b at which the data is written.
+         * @param len The maximum number of bytes to read.
+         *
+         * @return The total number of bytes read into the buffer, or -1 if there is no more
+         * data because the end of the stream has been reached.
+         *
+         * @throws IOException if an I/O error occurs.
+         */
         @Override
         public int read(byte[] b, int off, int len) throws IOException {
             return inputStream.read(b, off, len);
         }
 
+        /**
+         * Closes the input stream.
+         *
+         * @throws IOException if an I/O error occurs.
+         */
         @Override
         public void close() throws IOException {
             synchronized (this) {
@@ -523,21 +857,38 @@ public abstract class BaseFile implements RandomAccess {
             super.close();
         }
 
+        /**
+         * Returns a string representation of the FileBucketInputStream.
+         *
+         * @return A string representation of the object.
+         */
         @Override
         public String toString() {
             return super.toString() + ":" + BaseFile.this;
         }
 
+        /**
+         * The underlying input stream.
+         */
         private final InputStream inputStream;
+
+        /**
+         * Flag indicating whether the stream has been closed.
+         */
         boolean closed;
 
     }
 
     /**
-     * Vector of streams (FileBucketInputStream or FileBucketOutputStream) which are open to
-     * this file. So we can be sure they are all closed when we free it. Can be null.
+     * Vector of streams ({@link FileBucketInputStream} or {@link FileBucketOutputStream})
+     * which are open to this file. So we can be sure they are all closed when we free it. Can
+     * be null.
      */
     private final Set<Closeable> streams = ConcurrentHashMap.newKeySet();
+
+    /**
+     * Counter for output stream restarts. Incremented each time getOutputStream() is called.
+     */
     protected volatile long fileRestartCounter;
 
     /**
