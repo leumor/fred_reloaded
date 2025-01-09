@@ -132,7 +132,9 @@ public interface Bucket extends AutoCloseable {
      *                               Bucket cannot be properly initialized.
      * @see ResumeContext
      */
-    void onResume(ResumeContext context) throws ResumeFailedException;
+    default void onResume(ResumeContext context) throws ResumeFailedException {
+        // Do nothing
+    }
 
     /**
      * Stores the Bucket's reconstruction data to the provided output stream.
