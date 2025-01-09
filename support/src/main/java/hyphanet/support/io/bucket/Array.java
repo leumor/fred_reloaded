@@ -153,7 +153,7 @@ public class Array implements Bucket, Serializable, RandomAccess {
     @Override
     public void storeTo(DataOutputStream dos) {
         // Should not be used for persistent requests.
-        throw new UnsupportedOperationException("Storage not supported for Array Bucket");
+        throw new UnsupportedOperationException("Serialization not supported");
     }
 
     @Override
