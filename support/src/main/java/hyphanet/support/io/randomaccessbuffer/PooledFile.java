@@ -45,12 +45,12 @@ public class PooledFile implements RandomAccessBuffer, Serializable {
     /**
      * Magic number for serialization validation
      */
-    static final int MAGIC = 0x297c550a;
+    public static final int MAGIC = 0x297c550a;
 
     /**
      * Version number for serialization format
      */
-    static final int VERSION = 1;
+    public static final int VERSION = 1;
 
     @Serial
     private static final long serialVersionUID = 1L;
@@ -75,8 +75,12 @@ public class PooledFile implements RandomAccessBuffer, Serializable {
      * @throws IOException If file operations fail
      */
     public PooledFile(
-        Path path, boolean readOnly, long forceLength, long persistentTempID,
-        boolean deleteOnFree) throws IOException {
+        Path path,
+        boolean readOnly,
+        long forceLength,
+        long persistentTempID,
+        boolean deleteOnFree
+    ) throws IOException {
         this(path, readOnly, forceLength, persistentTempID, deleteOnFree, DEFAULT_FDTRACKER);
     }
 
@@ -94,9 +98,14 @@ public class PooledFile implements RandomAccessBuffer, Serializable {
      * @throws IOException If file operations fail
      */
     public PooledFile(
-        Path path, byte[] initialContents, int offset, int size,
-        long persistentTempID, boolean deleteOnFree, boolean readOnly)
-        throws IOException {
+        Path path,
+        byte[] initialContents,
+        int offset,
+        int size,
+        long persistentTempID,
+        boolean deleteOnFree,
+        boolean readOnly
+    ) throws IOException {
         this.path = path;
         this.readOnly = readOnly;
         this.length = size;
@@ -117,6 +126,59 @@ public class PooledFile implements RandomAccessBuffer, Serializable {
     }
 
     /**
+     * Constructor used during resumption of stored files.
+     *
+     * @param dis                   Data input stream containing serialized data
+     * @param fg                    Filename generator for temporary files
+     * @param persistentFileTracker Tracker for persistent files
+     *
+     * @throws StorageFormatException If the stored format is invalid
+     * @throws IOException            If I/O operations fail
+     * @throws ResumeFailedException  If resumption fails
+     */
+    public PooledFile(
+        DataInputStream dis,
+        FilenameGenerator fg,
+        PersistentFileTracker persistentFileTracker
+    ) throws StorageFormatException, IOException, ResumeFailedException {
+        int version = dis.readInt();
+        if (version != VERSION) {
+            throw new StorageFormatException("Bad version");
+        }
+        var tmpPath = Path.of(dis.readUTF());
+        readOnly = dis.readBoolean();
+        length = dis.readLong();
+        persistentTempID = dis.readLong();
+        deleteOnFree = dis.readBoolean();
+        secureDelete = deleteOnFree && dis.readBoolean();
+        fds = DEFAULT_FDTRACKER;
+        if (length < 0) {
+            throw new StorageFormatException("Bad length");
+        }
+        if (persistentTempID != -1) {
+            // File must exist!
+            if (!Files.exists(tmpPath)) {
+                // Maybe moved after the last checkpoint?
+                tmpPath = fg.getPath(persistentTempID);
+                if (Files.exists(tmpPath)) {
+                    persistentFileTracker.register(tmpPath);
+                    this.path = tmpPath;
+                    return;
+                }
+            }
+            this.path = fg.maybeMove(tmpPath, persistentTempID);
+            if (!Files.exists(tmpPath)) {
+                throw new ResumeFailedException("Persistent tempfile lost " + tmpPath);
+            }
+        } else {
+            this.path = tmpPath;
+            if (!Files.exists(tmpPath)) {
+                throw new ResumeFailedException("Lost file " + tmpPath);
+            }
+        }
+    }
+
+    /**
      * Creates a new PooledFile with a custom FdTracker.
      *
      * @param path             The file path
@@ -129,8 +191,13 @@ public class PooledFile implements RandomAccessBuffer, Serializable {
      * @throws IOException If file operations fail
      */
     PooledFile(
-        Path path, boolean readOnly, long forceLength, long persistentTempID,
-        boolean deleteOnFree, FdTracker fds) throws IOException {
+        Path path,
+        boolean readOnly,
+        long forceLength,
+        long persistentTempID,
+        boolean deleteOnFree,
+        FdTracker fds
+    ) throws IOException {
         this.path = path;
         this.readOnly = readOnly;
         this.persistentTempID = persistentTempID;
@@ -183,57 +250,6 @@ public class PooledFile implements RandomAccessBuffer, Serializable {
     }
 
     /**
-     * Constructor used during resumption of stored files.
-     *
-     * @param dis                   Data input stream containing serialized data
-     * @param fg                    Filename generator for temporary files
-     * @param persistentFileTracker Tracker for persistent files
-     *
-     * @throws StorageFormatException If the stored format is invalid
-     * @throws IOException            If I/O operations fail
-     * @throws ResumeFailedException  If resumption fails
-     */
-    PooledFile(
-        DataInputStream dis, FilenameGenerator fg, PersistentFileTracker persistentFileTracker)
-        throws StorageFormatException, IOException, ResumeFailedException {
-        int version = dis.readInt();
-        if (version != VERSION) {
-            throw new StorageFormatException("Bad version");
-        }
-        var tmpPath = Path.of(dis.readUTF());
-        readOnly = dis.readBoolean();
-        length = dis.readLong();
-        persistentTempID = dis.readLong();
-        deleteOnFree = dis.readBoolean();
-        secureDelete = deleteOnFree && dis.readBoolean();
-        fds = DEFAULT_FDTRACKER;
-        if (length < 0) {
-            throw new StorageFormatException("Bad length");
-        }
-        if (persistentTempID != -1) {
-            // File must exist!
-            if (!Files.exists(tmpPath)) {
-                // Maybe moved after the last checkpoint?
-                tmpPath = fg.getPath(persistentTempID);
-                if (Files.exists(tmpPath)) {
-                    persistentFileTracker.register(tmpPath);
-                    this.path = tmpPath;
-                    return;
-                }
-            }
-            this.path = fg.maybeMove(tmpPath, persistentTempID);
-            if (!Files.exists(tmpPath)) {
-                throw new ResumeFailedException("Persistent tempfile lost " + tmpPath);
-            }
-        } else {
-            this.path = tmpPath;
-            if (!Files.exists(tmpPath)) {
-                throw new ResumeFailedException("Lost file " + tmpPath);
-            }
-        }
-    }
-
-    /**
      * Gets the size of this file in bytes.
      *
      * @return the total size of the file in bytes
@@ -277,14 +293,11 @@ public class PooledFile implements RandomAccessBuffer, Serializable {
             // FIXME: If two PooledFile's are reading from and writing to the same file, the
             //  data might be corrupted, as they're using different channels. The synchronized
             //  block below only synchronizes on the same channel object.
-            synchronized (this) {
-                channel.position(fileOffset);
-                var byteBuffer = ByteBuffer.wrap(buf, bufOffset, readLength);
-                while (byteBuffer.hasRemaining()) {
-                    var bytesRead = channel.read(byteBuffer);
-                    if (bytesRead < 0) {
-                        throw new IOException("Unexpected end of file");
-                    }
+            var byteBuffer = ByteBuffer.wrap(buf, bufOffset, readLength);
+            while (byteBuffer.hasRemaining()) {
+                var bytesRead = channel.read(byteBuffer, fileOffset + byteBuffer.position());
+                if (bytesRead < 0) {
+                    throw new IOException("Unexpected end of file");
                 }
             }
         } finally {
@@ -329,14 +342,14 @@ public class PooledFile implements RandomAccessBuffer, Serializable {
             // FIXME: If two PooledFile's are reading from and writing to the same file, the
             //  data might be corrupted, as they're using different channels. The synchronized
             //  block below only synchronizes on the same channel object.
-            synchronized (this) {
-                channel.position(fileOffset);
-                var byteBuffer = ByteBuffer.wrap(buf, bufOffset, writeLength);
-                while (byteBuffer.hasRemaining()) {
-                    var bytesWritten = channel.write(byteBuffer);
-                    if (bytesWritten == 0) {
-                        throw new IOException("Failed to write to file. Should not happen.");
-                    }
+            var byteBuffer = ByteBuffer.wrap(buf, bufOffset, writeLength);
+            while (byteBuffer.hasRemaining()) {
+                var bytesWritten = channel.write(
+                    byteBuffer,
+                    fileOffset + byteBuffer.position()
+                );
+                if (bytesWritten == 0) {
+                    throw new IOException("Failed to write to file. Should not happen.");
                 }
             }
         } finally {
