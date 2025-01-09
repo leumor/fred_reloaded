@@ -1,6 +1,8 @@
 package hyphanet.support.io;
 
 import hyphanet.base.TimeUtil;
+import hyphanet.support.io.util.FilePath;
+import hyphanet.support.io.util.FileSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -12,12 +14,23 @@ import java.util.Random;
 import java.util.stream.Stream;
 
 /**
- * Tracks the current temporary files settings (dir and prefix), and translates between ID's
- * and filenames. Also provides functions for creating tempfiles (which should be safe against
- * symlink attacks and race conditions). FIXME Consider using File.createTempFile(). Note that
- * using our own code could actually be more secure if we use a better PRNG than they do (they
- * use "new Random()" IIRC, but maybe that's fixed now?). If we do change to using
- * File.createTempFile(), we will need to change TempFileBucket accordingly.
+ * The {@code FilenameGenerator} class provides utility methods for generating and managing
+ * temporary filenames. It ensures that generated filenames are unique and handles the creation
+ * of temporary files in a specified directory. This class is designed to be secure against
+ * symlink attacks and race conditions when creating temporary files.
+ * <p>
+ * It tracks the current temporary files settings, including the directory and prefix, and
+ * provides methods to translate between IDs and filenames. Additionally, it offers functions
+ * for creating temp files, which should be safe against symlink attacks and race conditions.
+ * </p>
+ * <p>
+ * <b>Note:</b> Consider using
+ * {@link java.io.File#createTempFile(String, String, java.io.File)} as an alternative.
+ * However, using custom code might offer enhanced security if a better pseudo-random number
+ * generator (PRNG) than the default one is employed. If a change to
+ * {@code File.createTempFile()} is made, corresponding changes will be required in the
+ * {@code TempFileBucket} class.
+ * </p>
  *
  * @author toad
  */
@@ -26,12 +39,18 @@ public class FilenameGenerator {
     private static final Logger logger = LoggerFactory.getLogger(FilenameGenerator.class);
 
     /**
-     * @param random
-     * @param wipeFiles
-     * @param dir       if <code>null</code> then use the default temporary directory
-     * @param prefix
+     * Constructs a new {@code FilenameGenerator} with the specified parameters. Initializes
+     * the temporary directory and optionally wipes existing files in the directory.
      *
-     * @throws IOException
+     * @param random    the random number generator to use for generating filenames
+     * @param wipeFiles {@code true} to wipe existing files in the temporary directory,
+     *                  {@code false} otherwise
+     * @param dir       the temporary directory to use. If {@code null}, the default temporary
+     *                  directory is used, retrieved via the system property "java.io.tmpdir"
+     * @param prefix    the prefix to use for generated filenames
+     *
+     * @throws IOException if an I/O error occurs during directory initialization or file
+     *                     wiping
      */
     public FilenameGenerator(Random random, boolean wipeFiles, Path dir, String prefix)
         throws IOException {
@@ -44,6 +63,14 @@ public class FilenameGenerator {
         }
     }
 
+    /**
+     * Generates a random filename and returns its corresponding ID. The generated filename is
+     * guaranteed to be unique within the temporary directory.
+     *
+     * @return the ID corresponding to the generated random filename
+     *
+     * @throws IOException if an I/O error occurs while creating the file
+     */
     public long makeRandomFilename() throws IOException {
         while (true) {
             long randomFilename = random.nextLong();
@@ -63,25 +90,59 @@ public class FilenameGenerator {
         }
     }
 
+    /**
+     * Returns the {@link Path} corresponding to the given ID. The ID is used to construct the
+     * filename within the temporary directory.
+     *
+     * @param id the ID to get the path for
+     *
+     * @return the {@link Path} corresponding to the ID
+     */
     public Path getPath(long id) {
         return tmpDir.resolve(prefix + Long.toHexString(id));
     }
 
+    /**
+     * Creates a new random file and returns its {@link Path}. This method combines
+     * {@link #makeRandomFilename()} and {@link #getPath(long)} to provide a convenient way to
+     * create a new temporary file.
+     *
+     * @return the {@link Path} of the newly created random file
+     *
+     * @throws IOException if an I/O error occurs while creating the file
+     */
     public Path makeRandomFile() throws IOException {
         return getPath(makeRandomFilename());
     }
 
+    /**
+     * Returns the temporary directory used by this {@code FilenameGenerator}.
+     *
+     * @return the temporary directory as a {@link Path}
+     */
     public Path getDir() {
         return tmpDir;
     }
 
+    /**
+     * Moves the file at the given {@code path} to a new location specified by the given
+     * {@code id} if it matches the current configuration (i.e., it is in the temporary
+     * directory and starts with the correct prefix). If the file does not match, it is
+     * returned as-is.
+     *
+     * @param path the path of the file to move
+     * @param id   the ID to use for the new filename
+     *
+     * @return the {@link Path} of the moved file, or the original {@code path} if it was not
+     * moved
+     */
     public Path maybeMove(Path path, long id) {
         if (matches(path)) {
             return path;
         }
         Path newPath = getPath(id);
         logger.info("Moving tempfile {} to {}", path, newPath);
-        if (FileIoUtil.moveTo(path, newPath, false)) {
+        if (FileSystem.moveTo(path, newPath, false)) {
             return newPath;
         } else {
             logger.error("Unable to move old temporary file {} to {}", path, newPath);
@@ -89,15 +150,37 @@ public class FilenameGenerator {
         }
     }
 
+    /**
+     * Checks if the given {@code path} matches the current configuration, i.e., it is in the
+     * temporary directory and its filename starts with the correct prefix.
+     *
+     * @param path the path to check
+     *
+     * @return {@code true} if the path matches the current configuration, {@code false}
+     * otherwise
+     */
     protected boolean matches(Path path) {
-        return FileIoUtil.equals(path.getParent(), tmpDir) &&
+        return FilePath.equals(path.getParent(), tmpDir) &&
                path.getFileName().toString().startsWith(prefix);
     }
 
+
+    /**
+     * Initializes the temporary directory. If the specified directory is {@code null}, the
+     * default temporary directory is used. The directory is created if it does not exist, and
+     * its permissions are checked.
+     *
+     * @param dir the temporary directory to use, or {@code null} to use the default
+     *
+     * @return the initialized temporary directory as a {@link Path}
+     *
+     * @throws IOException if an I/O error occurs, such as if the directory cannot be created
+     *                     or if it does not have the necessary read/write permissions
+     */
     private Path initializeDirectory(Path dir) throws IOException {
         Path resolvedDir =
-            (dir == null) ? FileUtil.getCanonicalFile(Path.of(System.getProperty(
-                "java.io.tmpdir"))) : FileUtil.getCanonicalFile(dir);
+            (dir == null) ? FilePath.getCanonicalFile(Path.of(System.getProperty(
+                "java.io.tmpdir"))) : FilePath.getCanonicalFile(dir);
 
         Files.createDirectories(resolvedDir);
 
@@ -109,6 +192,12 @@ public class FilenameGenerator {
         return resolvedDir;
     }
 
+    /**
+     * Wipes all existing files in the temporary directory that match the current prefix. Logs
+     * statistics about the number of files wiped and the time taken.
+     *
+     * @throws IOException if an I/O error occurs while listing or deleting files
+     */
     private void wipeExistingFiles() throws IOException {
         long startWipe = System.currentTimeMillis();
         var stats = new WipeStats();
@@ -126,6 +215,13 @@ public class FilenameGenerator {
 
     }
 
+    /**
+     * Processes a single file during the wiping process. Deletes the file if it matches the
+     * prefix and updates the provided statistics.
+     *
+     * @param path  the path of the file to process
+     * @param stats the statistics to update
+     */
     private void processFile(Path path, WipeStats stats) {
         if (stats.count % 1000 == 0 && stats.count > 0) {
             // User may want some feedback during startup
@@ -158,35 +254,79 @@ public class FilenameGenerator {
     }
 
 
+    /**
+     * Helper class to keep track of file wiping statistics.
+     */
     private static class WipeStats {
+        /**
+         * Constructs a new {@code WipeStats} with zero wiped and wipeable file counts.
+         */
         WipeStats() {
             this(0, 0);
         }
 
+        /**
+         * Constructs a new {@code WipeStats} with the specified wiped and wipeable file
+         * counts.
+         *
+         * @param wipedFiles    the initial number of wiped files
+         * @param wipeableFiles the initial number of wipeable files
+         */
         WipeStats(long wipedFiles, long wipeableFiles) {
             this.wipedFiles = wipedFiles;
             this.wipeableFiles = wipeableFiles;
         }
 
+        /**
+         * Increments the count of wipeable files.
+         */
         void incrementWipeable() {
             wipeableFiles++;
         }
 
+        /**
+         * Increments the count of wiped files.
+         */
         void incrementWiped() {
             wipedFiles++;
         }
 
+        /**
+         * Increments the total file count.
+         */
         void incrementCount() {
             count++;
         }
 
+        /**
+         * The number of files that have been successfully wiped.
+         */
         long wipedFiles;
+
+        /**
+         * The number of files that are considered wipeable (i.e., match the prefix).
+         */
         long wipeableFiles;
+
+        /**
+         * The total number of files encountered.
+         */
         long count = 0;
     }
 
+    /**
+     * The random number generator used for generating filenames.
+     */
     private final Random random;
+
+    /**
+     * The prefix used for generated filenames.
+     */
     private final String prefix;
+
+    /**
+     * The temporary directory used by this {@code FilenameGenerator}.
+     */
     private final Path tmpDir;
 
 }
