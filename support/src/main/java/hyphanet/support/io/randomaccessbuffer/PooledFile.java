@@ -1,6 +1,7 @@
 package hyphanet.support.io.randomaccessbuffer;
 
 import hyphanet.support.io.*;
+import hyphanet.support.io.util.FileSystem;
 import org.apache.commons.lang3.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -404,7 +405,7 @@ public class PooledFile implements RandomAccessBuffer, Serializable {
         }
         try {
             if (secureDelete) {
-                FileIoUtil.secureDelete(path);
+                FileSystem.secureDelete(path);
             } else {
                 Files.delete(path);
             }
