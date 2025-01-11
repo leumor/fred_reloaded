@@ -1,6 +1,7 @@
 package hyphanet.support.io.randomaccessbuffer;
 
 import hyphanet.support.io.PersistentFileTracker;
+import hyphanet.support.io.bucket.PersistentTempBucketFactory;
 
 /**
  * Defines the context required by a {@link RandomAccessBuffer} access buffer to perform
@@ -15,4 +16,6 @@ import hyphanet.support.io.PersistentFileTracker;
  */
 public interface ResumeContext {
     PersistentFileTracker getPersistentFileTracker();
+
+    PersistentTempBucketFactory getPersistentTempBucketFactory();
 }
