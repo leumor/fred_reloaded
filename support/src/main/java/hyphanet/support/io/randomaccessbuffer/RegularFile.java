@@ -32,12 +32,12 @@ public class RegularFile implements RandomAccessBuffer, Serializable {
     /**
      * Magic number used to identify serialized {@link RegularFile} objects.
      */
-    static final int MAGIC = 0xdd0f4ab2;
+    public static final int MAGIC = 0xdd0f4ab2;
 
     /**
      * Version number of the serialized format.
      */
-    static final int VERSION = 1;
+    public static final int VERSION = 1;
 
     @Serial
     private static final long serialVersionUID = 1L;
