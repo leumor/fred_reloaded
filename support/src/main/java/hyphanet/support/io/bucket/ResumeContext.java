@@ -11,4 +11,5 @@ package hyphanet.support.io.bucket;
  * tracker.
  */
 public interface ResumeContext {
+    PersistentTempBucketFactory getPersistentBucketFactory();
 }

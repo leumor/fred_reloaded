@@ -1,10 +1,7 @@
 package hyphanet.support.io.randomaccessbuffer;
 
 import hyphanet.crypt.key.MasterSecret;
-import hyphanet.support.io.FilenameGenerator;
-import hyphanet.support.io.PersistentFileTracker;
-import hyphanet.support.io.ResumeFailedException;
-import hyphanet.support.io.StorageFormatException;
+import hyphanet.support.io.*;
 import hyphanet.support.io.bucket.BucketTools;
 
 import java.io.*;
@@ -19,10 +16,9 @@ import java.io.*;
  * </p>
  *
  * @see RandomAccessBuffer
- * @see hyphanet.support.io.DelayedDispose
+ * @see DelayedDisposable
  */
-public class DelayedDispose
-    implements RandomAccessBuffer, Serializable, hyphanet.support.io.DelayedDispose {
+public class DelayedDispose implements RandomAccessBuffer, Serializable, DelayedDisposable {
 
     /**
      * Magic number for serialization verification
@@ -121,7 +117,7 @@ public class DelayedDispose
             }
             disposed = true;
         }
-        this.factory.delayedFree(this, createdCommitID);
+        this.factory.delayedDispose(this, createdCommitID);
     }
 
     /**

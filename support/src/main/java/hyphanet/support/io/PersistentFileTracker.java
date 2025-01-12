@@ -42,12 +42,12 @@ public interface PersistentFileTracker extends DiskSpaceChecker {
     /**
      * Schedules a bucket for disposal after the next disk serialization.
      *
-     * @param bucket          the {@link DelayedDispose} bucket to be disposed
+     * @param bucket          the {@link DelayedDisposable} bucket to be disposed
      * @param createdCommitID the commit ID when the bucket was created. Use 0 for buckets
      *                        created before the last node restart. If no commit has occurred
      *                        since creation, the bucket can be disposed immediately
      */
-    void delayedDispose(DelayedDispose bucket, long createdCommitID);
+    void delayedDispose(DelayedDisposable bucket, long createdCommitID);
 
     /**
      * Retrieves the directory path for persistent temporary files.

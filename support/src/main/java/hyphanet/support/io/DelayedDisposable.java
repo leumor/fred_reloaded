@@ -8,7 +8,7 @@ package hyphanet.support.io;
  * cleanup while maintaining proper resource management.
  * </p>
  */
-public interface DelayedDispose {
+public interface DelayedDisposable {
 
     /**
      * Checks if this resource is marked for disposal.

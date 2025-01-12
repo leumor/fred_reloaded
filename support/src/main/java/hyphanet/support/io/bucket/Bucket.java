@@ -149,4 +149,26 @@ public interface Bucket extends AutoCloseable {
      */
     void storeTo(DataOutputStream dos) throws IOException;
 
+
+    /**
+     * Closes this bucket and releases any system resources associated with it.
+     * <p>
+     * Once closed, further read or write operations will throw an {@link IOException}.
+     * </p>
+     */
+    @Override
+    void close();
+
+    /**
+     * Releases the underlying resources and securely deletes data associated with this
+     * bucket.
+     * <p>
+     * This method may perform no operation in some implementations. Callers should ensure that
+     * the object becomes eligible for garbage collection after calling this method.
+     * </p>
+     */
+    default void dispose() {
+        close();
+    }
+
 }
