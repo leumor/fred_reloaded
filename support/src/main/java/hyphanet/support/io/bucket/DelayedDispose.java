@@ -317,14 +317,14 @@ public class DelayedDispose implements Bucket, Serializable, DelayedDisposable {
      */
     private boolean disposed;
     /**
-     * Indicates whether the underlying {@code Bucket} has been migrated to a
-     * {@code RandomAccessable} implementation. Once migrated, the original bucket becomes
+     * Indicates whether the underlying {@link Bucket} has been migrated to a
+     * {@link RandomAccessible} implementation. Once migrated, the original bucket becomes
      * invalid for further I/O operations and should not be disposed again.
      */
     private boolean migrated;
 
     /**
-     * Records the commit ID active when this {@code DelayedDispose} was created. Used to
+     * Records the commit ID active when this {@link DelayedDispose} was created. Used to
      * ensure consistency for delayed disposal operations.
      */
     private transient long createdCommitID;
