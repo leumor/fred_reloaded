@@ -26,7 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * temporary files, managing input/output streams, and performing basic file operations.
  * </p>
  */
-public abstract class BaseFile implements RandomAccess {
+public abstract class BaseFile implements RandomAccessable {
     /**
      * Magic number to identify the file type.
      */

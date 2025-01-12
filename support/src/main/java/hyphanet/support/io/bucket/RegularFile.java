@@ -43,8 +43,12 @@ public class RegularFile extends BaseFile implements Bucket, Serializable {
      * @param deleteOnFree   If true, delete the file on finalization. Reversible.
      */
     public RegularFile(
-        Path path, boolean readOnly, boolean createFileOnly, boolean deleteOnExit,
-        boolean deleteOnFree) {
+        Path path,
+        boolean readOnly,
+        boolean createFileOnly,
+        boolean deleteOnExit,
+        boolean deleteOnFree
+    ) {
         super();
 
         this.readOnly = readOnly;
@@ -102,7 +106,7 @@ public class RegularFile extends BaseFile implements Bucket, Serializable {
     }
 
     @Override
-    public RandomAccess createShadow() {
+    public RandomAccessable createShadow() {
         return new RegularFile(getPath(), true, false, false, false);
     }
 
