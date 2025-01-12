@@ -20,7 +20,7 @@ import java.io.IOException;
  *
  * @see Factory
  * @see Array
- * @see RandomAccessable
+ * @see RandomAccessible
  */
 public class ArrayFactory implements Factory {
 
@@ -32,12 +32,12 @@ public class ArrayFactory implements Factory {
      *
      * @param size Not used in this implementation
      *
-     * @return A new {@link RandomAccessable} bucket instance
+     * @return A new {@link RandomAccessible} bucket instance
      *
      * @throws IOException If there is an error creating the bucket
      */
     @Override
-    public RandomAccessable makeBucket(long size) throws IOException {
+    public RandomAccessible makeBucket(long size) throws IOException {
         return new Array();
     }
 

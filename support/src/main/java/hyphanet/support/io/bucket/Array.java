@@ -19,7 +19,7 @@ import java.util.Arrays;
  *
  * @author oskar
  */
-public class Array implements Bucket, Serializable, RandomAccessable {
+public class Array implements Bucket, Serializable, RandomAccessible {
     @Serial
     private static final long serialVersionUID = 1L;
 
@@ -136,7 +136,7 @@ public class Array implements Bucket, Serializable, RandomAccessable {
     }
 
     @Override
-    public RandomAccessable createShadow() {
+    public RandomAccessible createShadow() {
         return null;
     }
 

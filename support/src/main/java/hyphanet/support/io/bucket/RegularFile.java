@@ -106,7 +106,7 @@ public class RegularFile extends BaseFile implements Bucket, Serializable {
     }
 
     @Override
-    public RandomAccessable createShadow() {
+    public RandomAccessible createShadow() {
         return new RegularFile(getPath(), true, false, false, false);
     }
 

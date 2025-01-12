@@ -23,7 +23,7 @@ import java.io.IOException;
  * </pre>
  *
  * @see Bucket
- * @see RandomAccessable
+ * @see RandomAccessible
  */
 public interface Factory {
     /**
@@ -36,12 +36,12 @@ public interface Factory {
      * @param size The suggested maximum size of the data in bytes. Use -1 or
      *             {@link Long#MAX_VALUE} if the size is unknown
      *
-     * @return A new {@link RandomAccessable} bucket instance
+     * @return A new {@link RandomAccessible} bucket instance
      *
      * @throws IOException If there is an error creating the bucket or if the requested size
      *                     cannot be accommodated
      */
-    RandomAccessable makeBucket(long size) throws IOException;
+    RandomAccessible makeBucket(long size) throws IOException;
 
 }
 

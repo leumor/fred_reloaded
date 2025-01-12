@@ -27,7 +27,7 @@ import java.io.IOException;
  * @see RandomAccessBuffer
  * @see RandomAccessBuffer
  */
-public interface RandomAccessable extends Bucket {
+public interface RandomAccessible extends Bucket {
 
     /**
      * Converts this Bucket to a {@link RandomAccessBuffer} random access buffer efficiently
@@ -51,6 +51,6 @@ public interface RandomAccessable extends Bucket {
      * @return A new RandomAccess instance sharing the same underlying storage
      */
     @Override
-    RandomAccessable createShadow();
+    RandomAccessible createShadow();
 
 }
