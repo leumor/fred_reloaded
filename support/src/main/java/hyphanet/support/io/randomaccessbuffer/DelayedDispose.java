@@ -23,7 +23,7 @@ public class DelayedDispose implements RandomAccessBuffer, Serializable, Delayed
     /**
      * Magic number for serialization verification
      */
-    static final int MAGIC = 0x3fb645de;
+    public static final int MAGIC = 0x3fb645de;
 
     @Serial
     private static final long serialVersionUID = 1L;
