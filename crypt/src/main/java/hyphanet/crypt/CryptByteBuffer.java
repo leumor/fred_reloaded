@@ -5,6 +5,7 @@ package hyphanet.crypt;
 
 import hyphanet.base.Fields;
 import hyphanet.crypt.key.KeyGenUtil;
+import hyphanet.crypt.key.KeyType;
 import org.jspecify.annotations.Nullable;
 
 import javax.crypto.*;
@@ -21,13 +22,121 @@ import java.security.NoSuchAlgorithmException;
  * A cryptographic utility class that provides encryption and decryption capabilities for byte
  * arrays and BitSets using specified algorithms, keys, and initialization vectors (IVs).
  * <p>
- * Recommended algorithm: {@link CryptByteBufferType#CHACHA_128}
+ * Recommended algorithm: {@link Type#CHACHA_128}
  * </p>
  *
  * @author unixninja92
- * @see CryptByteBufferType
+ * @see Type
  */
 public final class CryptByteBuffer implements Serializable {
+
+    /**
+     * Represents the cryptographic algorithm configurations available for byte buffer
+     * encryption in Hyphanet. This enum defines various symmetric cipher algorithms with their
+     * respective properties including block sizes, initialization vector (IV) requirements,
+     * and key specifications.
+     * <p>
+     * Each enum constant provides a complete configuration for a specific encryption
+     * algorithm, enabling consistent and secure cryptographic operations throughout the
+     * system.
+     * </p>
+     *
+     * @author unixninja92
+     * @see CryptByteBuffer
+     */
+    public enum Type implements Serializable {
+        /**
+         * Legacy RIJNDAEL implementation using PCFB mode.
+         *
+         * @deprecated Use {@link #AES_CTR} or {@link #CHACHA_128} instead for better security
+         */
+        @Deprecated RIJNDAEL_PCFB(8, 32, "RIJNDAEL256/CFB/NoPadding", KeyType.RIJNDAEL_256),
+
+        /**
+         * AES cipher in Counter (CTR) mode with 256-bit key strength. Provides strong
+         * encryption with parallel processing capabilities.
+         */
+        AES_CTR(16, 16, "AES/CTR/NOPADDING", KeyType.AES_256),
+
+        /**
+         * ChaCha stream cipher with 128-bit security strength. Offers high-speed encryption on
+         * software implementations.
+         */
+        CHACHA_128(32, 8, "CHACHA", KeyType.CHACHA_128),
+
+        /**
+         * ChaCha stream cipher with 256-bit security strength. Provides extended security
+         * margin compared to CHACHA_128.
+         */
+        CHACHA_256(64, 8, "CHACHA", KeyType.CHACHA_256);
+
+        /**
+         * Bitmask used for algorithm aggregation and identification. This value must be
+         * positive and unique for each algorithm type.
+         */
+        public final int bitmask;
+
+        /**
+         * The cipher's block size in bytes. For stream ciphers, this represents the internal
+         * state size.
+         */
+        public final int blockSize;
+
+        /**
+         * The size of the initialization vector (IV) in bytes. This value is required for all
+         * supported cipher modes.
+         */
+        public final Integer ivSize; // in bytes
+
+        /**
+         * The standardized algorithm name as recognized by Java's cryptography providers. This
+         * name includes the cipher, mode, and padding scheme.
+         */
+        public final String algName;
+
+        /**
+         * The base cipher name without mode and padding specifications.
+         */
+        public final String cipherName;
+
+        /**
+         * The key type specification for this cipher. Defines the key generation parameters
+         * and constraints.
+         */
+        public final KeyType keyType;
+
+        /**
+         * Constructs a new cipher type configuration with the specified parameters.
+         *
+         * @param bitmask The unique identifier bitmask for this algorithm
+         * @param ivSize  The size of the initialization vector in bytes
+         * @param algName The Java provider's algorithm name specification
+         * @param keyType The key type specification for this cipher
+         *
+         * @throws IllegalArgumentException if bitmask is not positive, ivSize is not positive,
+         *                                  or algName is blank
+         */
+        Type(int bitmask, int ivSize, String algName, KeyType keyType) {
+
+            if (bitmask <= 0) {
+                throw new IllegalArgumentException("Bitmask must be positive");
+            }
+            if (ivSize <= 0) {
+                throw new IllegalArgumentException("IV size must be positive");
+            }
+            if (algName.isBlank()) {
+                throw new IllegalArgumentException("Algorithm name cannot be blank");
+            }
+
+            this.bitmask = bitmask;
+            this.ivSize = ivSize;
+            this.cipherName = keyType.algName;
+            this.blockSize = keyType.keySize;
+            this.algName = algName;
+            this.keyType = keyType;
+        }
+
+    }
 
     @Serial
     private static final long serialVersionUID = 6143338995971755362L;
@@ -42,11 +151,8 @@ public final class CryptByteBuffer implements Serializable {
      * @throws InvalidAlgorithmParameterException if the IV parameters are invalid
      * @throws InvalidKeyException                if the key is invalid
      */
-    public CryptByteBuffer(
-        CryptByteBufferType type,
-        SecretKey key,
-        @Nullable IvParameterSpec iv
-    ) throws InvalidKeyException, InvalidAlgorithmParameterException {
+    public CryptByteBuffer(Type type, SecretKey key, @Nullable IvParameterSpec iv)
+        throws InvalidKeyException, InvalidAlgorithmParameterException {
         this.type = type;
         this.key = key;
         try {
@@ -77,8 +183,7 @@ public final class CryptByteBuffer implements Serializable {
      *
      * @throws GeneralSecurityException if any cryptographic error occurs
      */
-    public CryptByteBuffer(CryptByteBufferType type, SecretKey key)
-        throws GeneralSecurityException {
+    public CryptByteBuffer(Type type, SecretKey key) throws GeneralSecurityException {
         this(type, key, (IvParameterSpec) null);
     }
 
@@ -90,8 +195,7 @@ public final class CryptByteBuffer implements Serializable {
      *
      * @throws GeneralSecurityException if any cryptographic error occurs
      */
-    public CryptByteBuffer(CryptByteBufferType type, byte[] key)
-        throws GeneralSecurityException {
+    public CryptByteBuffer(Type type, byte[] key) throws GeneralSecurityException {
         this(type, KeyGenUtil.getSecretKey(type.keyType, key));
     }
 
@@ -103,8 +207,7 @@ public final class CryptByteBuffer implements Serializable {
      *
      * @throws GeneralSecurityException if any cryptographic error occurs
      */
-    public CryptByteBuffer(CryptByteBufferType type, ByteBuffer key)
-        throws GeneralSecurityException {
+    public CryptByteBuffer(Type type, ByteBuffer key) throws GeneralSecurityException {
         this(type, Fields.copyToArray(key));
     }
 
@@ -119,7 +222,7 @@ public final class CryptByteBuffer implements Serializable {
      * @throws InvalidKeyException                if the key is invalid
      * @throws InvalidAlgorithmParameterException if the IV parameters are invalid
      */
-    public CryptByteBuffer(CryptByteBufferType type, SecretKey key, byte[] iv, int offset)
+    public CryptByteBuffer(Type type, SecretKey key, byte[] iv, int offset)
         throws InvalidKeyException, InvalidAlgorithmParameterException {
         this(type, key, new IvParameterSpec(iv, offset, type.ivSize));
     }
@@ -135,7 +238,7 @@ public final class CryptByteBuffer implements Serializable {
      * @throws InvalidKeyException                if the key is invalid
      * @throws InvalidAlgorithmParameterException if the IV parameters are invalid
      */
-    public CryptByteBuffer(CryptByteBufferType type, SecretKey key, byte[] iv)
+    public CryptByteBuffer(Type type, SecretKey key, byte[] iv)
         throws InvalidKeyException, InvalidAlgorithmParameterException {
         this(type, key, iv, 0);
     }
@@ -151,7 +254,7 @@ public final class CryptByteBuffer implements Serializable {
      * @throws InvalidKeyException                if the key is invalid
      * @throws InvalidAlgorithmParameterException if the IV parameters are invalid
      */
-    public CryptByteBuffer(CryptByteBufferType type, SecretKey key, ByteBuffer iv)
+    public CryptByteBuffer(Type type, SecretKey key, ByteBuffer iv)
         throws InvalidKeyException, InvalidAlgorithmParameterException {
         this(type, key, Fields.copyToArray(iv), 0);
     }
@@ -168,7 +271,7 @@ public final class CryptByteBuffer implements Serializable {
      * @throws InvalidKeyException                if the key is invalid
      * @throws InvalidAlgorithmParameterException if the IV parameters are invalid
      */
-    public CryptByteBuffer(CryptByteBufferType type, byte[] key, byte[] iv, int offset)
+    public CryptByteBuffer(Type type, byte[] key, byte[] iv, int offset)
         throws InvalidKeyException, InvalidAlgorithmParameterException {
         this(type, KeyGenUtil.getSecretKey(type.keyType, key), iv, offset);
     }
@@ -184,10 +287,11 @@ public final class CryptByteBuffer implements Serializable {
      * @throws InvalidKeyException                if the key is invalid
      * @throws InvalidAlgorithmParameterException if the IV parameters are invalid
      */
-    public CryptByteBuffer(CryptByteBufferType type, byte[] key, byte[] iv)
+    public CryptByteBuffer(Type type, byte[] key, byte[] iv)
         throws InvalidKeyException, InvalidAlgorithmParameterException {
         this(type, key, iv, 0);
     }
+
 
     /**
      * Creates a CryptByteBuffer instance using ByteBuffers for both key and IV. Both key and
@@ -200,11 +304,10 @@ public final class CryptByteBuffer implements Serializable {
      * @throws InvalidKeyException                if the key is invalid
      * @throws InvalidAlgorithmParameterException if the IV parameters are invalid
      */
-    public CryptByteBuffer(CryptByteBufferType type, ByteBuffer key, ByteBuffer iv)
+    public CryptByteBuffer(Type type, ByteBuffer key, ByteBuffer iv)
         throws InvalidKeyException, InvalidAlgorithmParameterException {
         this(type, Fields.copyToArray(key), Fields.copyToArray(iv), 0);
     }
-
 
     /**
      * Encrypts the provided byte array.
@@ -239,7 +342,6 @@ public final class CryptByteBuffer implements Serializable {
             throw new IllegalArgumentException("Decryption failed", e);
         }
     }
-
 
     /**
      * Generates a new random IV and reinitializes the ciphers. Not applicable for RijndaelPCFB
@@ -294,24 +396,19 @@ public final class CryptByteBuffer implements Serializable {
     /**
      * The cryptographic algorithm type configuration being used.
      */
-    private final CryptByteBufferType type;
-
+    private final Type type;
     /**
      * The secret key used for encryption and decryption operations.
      */
     private final SecretKey key;
-
     /**
      * The cipher instance used for encryption operations.
      */
     private final transient Cipher encryptCipher;
-
-
     /**
      * The cipher instance used for decryption operations.
      */
     private final transient Cipher decryptCipher;
-
     /**
      * The initialization vector specification.
      */

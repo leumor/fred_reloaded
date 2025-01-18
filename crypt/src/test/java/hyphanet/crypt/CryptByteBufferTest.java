@@ -17,7 +17,7 @@ import java.security.Security;
 import static org.junit.jupiter.api.Assertions.*;
 
 class CryptByteBufferTest {
-    private static final CryptByteBufferType[] CIPHER_TYPES = CryptByteBufferType.values();
+    private static final CryptByteBuffer.Type[] CIPHER_TYPES = CryptByteBuffer.Type.values();
 
     private static final String IV_PLAIN_TEXT = "6bc1bee22e409f96e93d7e117393172a" +
                                                 "ae2d8a571e03ac9c9eb76fac45af8e5130c81c46a35ce411e5fbc1191a0a52ef" +
@@ -44,7 +44,7 @@ class CryptByteBufferTest {
     @Test
     void testSuccessfulRoundTripByteArray() throws GeneralSecurityException {
         for (int i = 0; i < CIPHER_TYPES.length; i++) {
-            CryptByteBufferType type = CIPHER_TYPES[i];
+            CryptByteBuffer.Type type = CIPHER_TYPES[i];
             CryptByteBuffer crypt;
 
             if (IVS[i] == null) {
@@ -65,7 +65,7 @@ class CryptByteBufferTest {
     @Test
     void testSuccessfulRoundTripByteArrayNewInstance() throws GeneralSecurityException {
         for (int i = 0; i < CIPHER_TYPES.length; i++) {
-            CryptByteBufferType type = CIPHER_TYPES[i];
+            CryptByteBuffer.Type type = CIPHER_TYPES[i];
             CryptByteBuffer crypt;
             byte[] plain = Hex.decode(IV_PLAIN_TEXT);
             if (IVS[i] == null) {
@@ -94,7 +94,7 @@ class CryptByteBufferTest {
     @Test
     void testEncryptByteArrayNullInput() throws GeneralSecurityException {
         for (int i = 0; i < CIPHER_TYPES.length; i++) {
-            CryptByteBufferType type = CIPHER_TYPES[i];
+            CryptByteBuffer.Type type = CIPHER_TYPES[i];
             CryptByteBuffer crypt;
             if (IVS[i] == null) {
                 crypt = new CryptByteBuffer(type, KEYS[i]);
@@ -113,7 +113,7 @@ class CryptByteBufferTest {
     @Test
     void testDecryptByteArrayNullInput() throws GeneralSecurityException {
         for (int i = 0; i < CIPHER_TYPES.length; i++) {
-            CryptByteBufferType type = CIPHER_TYPES[i];
+            CryptByteBuffer.Type type = CIPHER_TYPES[i];
             CryptByteBuffer crypt;
             if (IVS[i] == null) {
                 crypt = new CryptByteBuffer(type, KEYS[i]);
