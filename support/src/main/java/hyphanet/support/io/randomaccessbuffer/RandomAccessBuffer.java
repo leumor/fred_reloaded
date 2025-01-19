@@ -9,6 +9,7 @@ import hyphanet.support.io.bucket.BucketTools;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * A thread-safe interface for random access buffer (RAB) operations with a fixed length. It
@@ -50,11 +51,14 @@ public interface RandomAccessBuffer extends AutoCloseable {
          * @throws IllegalStateException if the lock is already unlocked
          */
         public final void unlock() {
-            synchronized (this) {
+            lock.lock();
+            try {
                 if (!locked) {
                     throw new IllegalStateException("Already unlocked");
                 }
                 locked = false;
+            } finally {
+                lock.unlock();
             }
             innerUnlock();
         }
@@ -65,6 +69,7 @@ public interface RandomAccessBuffer extends AutoCloseable {
          */
         protected abstract void innerUnlock();
 
+        private final ReentrantLock lock = new ReentrantLock();
         private boolean locked;
     }
 

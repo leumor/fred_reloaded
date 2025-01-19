@@ -9,4 +9,5 @@ module hyphanet.crypt {
 
     exports hyphanet.crypt;
     exports hyphanet.crypt.key;
+    exports hyphanet.crypt.mac;
 }
