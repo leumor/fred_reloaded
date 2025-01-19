@@ -1,5 +1,6 @@
 package hyphanet.support.io.randomaccessbuffer;
 
+import hyphanet.crypt.key.MasterSecret;
 import hyphanet.support.io.PersistentFileTracker;
 import hyphanet.support.io.bucket.PersistentTempBucketFactory;
 
@@ -18,4 +19,6 @@ public interface ResumeContext {
     PersistentFileTracker getPersistentFileTracker();
 
     PersistentTempBucketFactory getPersistentTempBucketFactory();
+
+    MasterSecret getPersistentMasterSecret();
 }

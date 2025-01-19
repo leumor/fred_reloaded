@@ -1,5 +1,7 @@
 package hyphanet.support.io.bucket;
 
+import hyphanet.crypt.key.MasterSecret;
+
 /**
  * Defines the context required by a {@link Bucket} to perform necessary actions after a
  * restart or resumption of the application. This interface aims to decouple {@link Bucket}
@@ -12,4 +14,6 @@ package hyphanet.support.io.bucket;
  */
 public interface ResumeContext {
     PersistentTempBucketFactory getPersistentBucketFactory();
+
+    MasterSecret getPersistentMasterSecret();
 }
