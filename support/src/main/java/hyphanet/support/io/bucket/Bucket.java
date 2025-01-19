@@ -4,6 +4,7 @@
 package hyphanet.support.io.bucket;
 
 import hyphanet.support.io.ResumeFailedException;
+import hyphanet.support.io.stream.NullInputStream;
 import org.jspecify.annotations.Nullable;
 
 import java.io.DataOutputStream;
@@ -74,11 +75,11 @@ public interface Bucket extends AutoCloseable {
      * <p><strong>Resource Management:</strong> The caller must close the returned stream to
      * prevent resource leaks.</p>
      *
-     * @return An unbuffered {@link InputStream}, or null if the Bucket is empty
+     * @return An unbuffered {@link InputStream}, or {@link NullInputStream} if the Bucket is
+     * empty
      *
      * @throws IOException if an I/O error occurs
      */
-    @Nullable
     InputStream getInputStreamUnbuffered() throws IOException;
 
     /**
