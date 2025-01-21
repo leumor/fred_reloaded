@@ -8,6 +8,7 @@ plugins {
     id("net.ltgt.errorprone")
     id("net.ltgt.nullaway")
     id("org.sonarqube")
+    id("com.diffplug.spotless")
 }
 
 repositories {
@@ -31,7 +32,6 @@ dependencies {
     implementation("ch.qos.logback:logback-classic:latest.release")
     implementation("com.machinezoo.noexception:noexception:latest.release")
     implementation("org.jspecify:jspecify:latest.release")
-
 }
 
 // Apply a specific Java toolchain to ease working on different environments.
@@ -51,6 +51,17 @@ sonar {
         property("sonar.projectKey", "leumor_fred_reloaded")
         property("sonar.organization", "leumor")
         property("sonar.host.url", "https://sonarcloud.io")
+    }
+}
+
+spotless {
+    java {
+        importOrder()
+        removeUnusedImports()
+        // apply a specific flavor of google-java-format
+        googleJavaFormat()
+        // fix formatting of type annotations
+        formatAnnotations()
     }
 }
 
