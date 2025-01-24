@@ -8,6 +8,7 @@ import hyphanet.support.io.FilenameGenerator;
 import hyphanet.support.io.PersistentFileTracker;
 import hyphanet.support.io.ResumeFailedException;
 import hyphanet.support.io.StorageFormatException;
+
 import java.io.*;
 import java.util.Arrays;
 import java.util.Set;
@@ -146,7 +147,7 @@ public class AeadCrypt implements Bucket, Serializable {
   @Override
   public InputStream getInputStreamUnbuffered() throws IOException {
     InputStream is = underlying.getInputStreamUnbuffered();
-    return AeadInputStream.createAES(is, key);
+    return AeadInputStream.createAes(is, key);
   }
 
   @Override
