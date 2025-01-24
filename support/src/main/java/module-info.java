@@ -2,7 +2,6 @@ module hyphanet.support {
     requires org.apache.commons.lang3;
     requires com.machinezoo.noexception;
     requires hyphanet.crypt;
-    requires hyphanet.crypt.mac;
     requires hyphanet.base;
     requires org.bouncycastle.provider;
     requires org.jspecify;

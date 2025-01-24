@@ -5,7 +5,7 @@ package hyphanet.crypt.key;
 
 import hyphanet.base.Fields;
 import hyphanet.crypt.Global;
-import hyphanet.crypt.UnsupportedTypeException;
+import hyphanet.crypt.exception.UnsupportedTypeException;
 import hyphanet.crypt.mac.Mac;
 import hyphanet.crypt.mac.MacType;
 
@@ -344,8 +344,11 @@ public final class KeyGenUtil {
      * @throws InvalidKeyException if the base key is invalid for the derivation process
      */
     public static SecretKey deriveSecretKey(
-        SecretKey kdfKey, Class<?> c, String kdfString,
-        KeyType type) throws InvalidKeyException {
+        SecretKey kdfKey,
+        Class<?> c,
+        String kdfString,
+        KeyType type
+    ) throws InvalidKeyException {
         return getSecretKey(
             type,
             deriveBytesTruncated(kdfKey, c, kdfString, type.keySize >> 3)
@@ -366,9 +369,11 @@ public final class KeyGenUtil {
      * @throws InvalidKeyException if the base key is invalid for the derivation process
      */
     public static IvParameterSpec deriveIvParameterSpec(
-        SecretKey kdfKey, Class<?> c,
-        String kdfString, KeyType ivType)
-        throws InvalidKeyException {
+        SecretKey kdfKey,
+        Class<?> c,
+        String kdfString,
+        KeyType ivType
+    ) throws InvalidKeyException {
         return getIvParameterSpec(deriveBytesTruncated(
             kdfKey,
             c,
@@ -421,9 +426,11 @@ public final class KeyGenUtil {
      * @throws InvalidKeyException if the base key is invalid for the derivation process
      */
     private static ByteBuffer deriveBytesTruncated(
-        SecretKey kdfKey, Class<?> c,
-        String kdfString, int len)
-        throws InvalidKeyException {
+        SecretKey kdfKey,
+        Class<?> c,
+        String kdfString,
+        int len
+    ) throws InvalidKeyException {
         byte[] key = new byte[len];
         deriveBytes(kdfKey, c, kdfString).get(key);
         return ByteBuffer.wrap(key).asReadOnlyBuffer();

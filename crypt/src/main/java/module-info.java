@@ -8,6 +8,9 @@ module hyphanet.crypt {
     requires org.apache.commons.rng.api;
 
     exports hyphanet.crypt;
+    exports hyphanet.crypt.hash;
     exports hyphanet.crypt.key;
     exports hyphanet.crypt.mac;
+    exports hyphanet.crypt.io;
+    exports hyphanet.crypt.exception;
 }

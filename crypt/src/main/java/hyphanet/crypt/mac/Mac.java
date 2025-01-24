@@ -4,7 +4,7 @@
 package hyphanet.crypt.mac;
 
 import hyphanet.base.Fields;
-import hyphanet.crypt.UnsupportedTypeException;
+import hyphanet.crypt.exception.UnsupportedTypeException;
 import hyphanet.crypt.key.KeyGenUtil;
 import org.bouncycastle.crypto.generators.Poly1305KeyGenerator;
 

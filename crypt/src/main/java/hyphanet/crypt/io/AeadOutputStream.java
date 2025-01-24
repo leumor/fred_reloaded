@@ -92,8 +92,8 @@ public class AeadOutputStream extends FilterOutputStream {
   }
 
   @Override
-  public void write(byte[] buf) throws IOException {
-    write(buf, 0, buf.length);
+  public void write(byte[] b) throws IOException {
+    write(b, 0, b.length);
   }
 
   /**
@@ -147,7 +147,7 @@ public class AeadOutputStream extends FilterOutputStream {
       throws IOException {
     var mainCipher = AESEngine.newInstance();
     AESLightEngine hashCipher = new AESLightEngine();
-    byte[] nonce = new byte[mainCipher.getBlockSize()];
+    byte[] nonce = new byte[Math.min(mainCipher.getBlockSize(), 15)];
     random.nextBytes(nonce);
     nonce[0] &= 0x7F;
     return new AeadOutputStream(os, key, nonce, hashCipher, mainCipher);

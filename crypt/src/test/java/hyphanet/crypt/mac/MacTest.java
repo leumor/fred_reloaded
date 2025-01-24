@@ -4,7 +4,7 @@
 package hyphanet.crypt.mac;
 
 import hyphanet.base.Fields;
-import hyphanet.crypt.UnsupportedTypeException;
+import hyphanet.crypt.exception.UnsupportedTypeException;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Test;
@@ -20,32 +20,38 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class MacTest {
     private static final MacType[] TYPES = MacType.values();
-    private static final byte[][] KEYS =
-        {Hex.decode("0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b"),
-            Hex.decode("0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b"),
-            Hex.decode("0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b"),
-            Hex.decode("e285000e6080a701a410040f4814470b568d149b821f99d41319e6410094a760")};
+    private static final byte[][] KEYS = {
+        Hex.decode("0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b"), Hex.decode(
+        "0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b"), Hex.decode(
+        "0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b"), Hex.decode(
+        "e285000e6080a701a410040f4814470b568d149b821f99d41319e6410094a760")
+    };
     private static final byte[] HMAC_MESSAGE = "Hi There".getBytes(StandardCharsets.UTF_8);
     private static final byte[][] MESSAGES =
         {HMAC_MESSAGE, HMAC_MESSAGE, HMAC_MESSAGE, Hex.decode("66f75c0e0c7a406586")};
-    private static final IvParameterSpec[] IVS = {null, null, null,
-        new IvParameterSpec(Hex.decode("166450152e2394835606a9d1dd2cdc8b"))};
-    private static final byte[][] TRUE_MACS =
-        {Hex.decode("b0344c61d8db38535ca8afceaf0bf12b881dc200c9833da726e9376c2e32cff7"),
-            Hex.decode(
-                "afd03944d84895626b0825f4ab46907f15f9dadbe4101ec682aa034c7cebc59cfaea9ea9076ede7" +
-                "f4af152e8b2fa9cb6"), Hex.decode(
+    private static final IvParameterSpec[] IVS = {
+        null, null, null, new IvParameterSpec(Hex.decode("166450152e2394835606a9d1dd2cdc8b"))
+    };
+    private static final byte[][] TRUE_MACS = {
+        Hex.decode("b0344c61d8db38535ca8afceaf0bf12b881dc200c9833da726e9376c2e32cff7"),
+        Hex.decode(
+            "afd03944d84895626b0825f4ab46907f15f9dadbe4101ec682aa034c7cebc59cfaea9ea9076ede7" +
+            "f4af152e8b2fa9cb6"),
+        Hex.decode(
             "87aa7cdea5ef619d4ff0b4241a1d6cb02379f4e2ce4ec2787ad0b30545e17cdedaa833b7d6b8a70" +
             "2038b274eaea3f4e4be9d914eeb61f1702e696c203a126854"),
-            Hex.decode("1644272eee3b30b7f82568425e817756")};
-    private static final byte[][] FALSE_MACS =
-        {Hex.decode("4bb5e21dd13001ed5faccfcfdaf8a854881dc200c9833da726e9376c2e32cff7"),
-            Hex.decode(
-                "4bb5e21dd13001ed5faccfcfdaf8a854881dc200c9833da726e9376c2e32cff7faea9ea9076ede7" +
-                "f4af152e8b2fa9cb6"), Hex.decode(
+        Hex.decode("1644272eee3b30b7f82568425e817756")
+    };
+    private static final byte[][] FALSE_MACS = {
+        Hex.decode("4bb5e21dd13001ed5faccfcfdaf8a854881dc200c9833da726e9376c2e32cff7"),
+        Hex.decode(
+            "4bb5e21dd13001ed5faccfcfdaf8a854881dc200c9833da726e9376c2e32cff7faea9ea9076ede7" +
+            "f4af152e8b2fa9cb6"),
+        Hex.decode(
             "4bb5e21dd13001ed5faccfcfdaf8a854881dc200c9833da726e9376c2e32cff7faea9ea9076ede7" +
             "2038b274eaea3f4e4be9d914eeb61f1702e696c203a126854"),
-            Hex.decode("881dc200c9833da726e9376c2e32cff7")};
+        Hex.decode("881dc200c9833da726e9376c2e32cff7")
+    };
 
     static {
         Security.addProvider(new BouncyCastleProvider());

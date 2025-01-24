@@ -4,7 +4,7 @@
 package hyphanet.crypt.key;
 
 import hyphanet.base.HexUtil;
-import hyphanet.crypt.UnsupportedTypeException;
+import hyphanet.crypt.exception.UnsupportedTypeException;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.jupiter.api.Test;
 
@@ -21,31 +21,30 @@ class KeyGenUtilTest {
     private static final int FALSE_LENGTH = -1;
     private static final KeyType[] KEY_TYPES = KeyType.values();
 
-    private static final byte[][] TRUE_LENGTH_SECRET_KEYS =
-        {HexUtil.hexToBytes("20e86dc31ebf2c0e37670e30f8f45c57"), HexUtil.hexToBytes(
-            "8c6c2e0a60b3b73e9dbef076b68b686bacc9d20081e8822725d14b10b5034f48"),
-            HexUtil.hexToBytes("33a4a38b71c8e350d3a98357d1bc9ecd"), HexUtil.hexToBytes(
-            "be56dbec20bff9f6f343800367287b48c0c28bf47f14b46aad3a32e4f24f0f5e"),
-            HexUtil.hexToBytes(
-                "2e3e4a8f7c896ebf95fc3a59f283ca1e2808d984ad9043e710f74c4a8f4c8372"),
-            HexUtil.hexToBytes(
-                "c9f1731f7e996603c6e1f8f72da8a66e51dd8bbc2465f1a9f4d32f800c41ac28" +
-                "f99fe0c1d811678f91300cf33e527436"), HexUtil.hexToBytes(
-            "2ada39975c02c442e5ebc34832cde05e718acb28e15cdf80c8ab1da9c05bb53c" +
-            "0b026c88a32aee65a924c9ea0b4e6cf5d2d434489d8bb82dfe7876919f690a56"),
-            HexUtil.hexToBytes(
-                "a92e3fa63e8cbe50869fb352d883911271bf2b0e9048ad04c013b20e901f5806"),
-            HexUtil.hexToBytes("45d6c9656b3b115263ba12739e90dcc1"), HexUtil.hexToBytes(
-            "f468986cbaeecabd4cf242607ac602b51a1adaf4f9a4fc5b298970cbda0b55c6")};
+    private static final byte[][] TRUE_LENGTH_SECRET_KEYS = {
+        HexUtil.hexToBytes("20e86dc31ebf2c0e37670e30f8f45c57"),
+        HexUtil.hexToBytes("8c6c2e0a60b3b73e9dbef076b68b686bacc9d20081e8822725d14b10b5034f48"),
+        HexUtil.hexToBytes("33a4a38b71c8e350d3a98357d1bc9ecd"),
+        HexUtil.hexToBytes("be56dbec20bff9f6f343800367287b48c0c28bf47f14b46aad3a32e4f24f0f5e"),
+        HexUtil.hexToBytes("2e3e4a8f7c896ebf95fc3a59f283ca1e2808d984ad9043e710f74c4a8f4c8372"),
+        HexUtil.hexToBytes("c9f1731f7e996603c6e1f8f72da8a66e51dd8bbc2465f1a9f4d32f800c41ac28" +
+                           "f99fe0c1d811678f91300cf33e527436"),
+        HexUtil.hexToBytes("2ada39975c02c442e5ebc34832cde05e718acb28e15cdf80c8ab1da9c05bb53c" +
+                           "0b026c88a32aee65a924c9ea0b4e6cf5d2d434489d8bb82dfe7876919f690a56"),
+        HexUtil.hexToBytes("a92e3fa63e8cbe50869fb352d883911271bf2b0e9048ad04c013b20e901f5806"),
+        HexUtil.hexToBytes("45d6c9656b3b115263ba12739e90dcc1"),
+        HexUtil.hexToBytes("f468986cbaeecabd4cf242607ac602b51a1adaf4f9a4fc5b298970cbda0b55c6")
+    };
 
     private static final KeyPairType[] TRUE_KEY_PAIR_TYPES =
         {KeyPairType.ECP256, KeyPairType.ECP384, KeyPairType.ECP521};
     @SuppressWarnings("deprecation")
     private static final KeyPairType FALSE_KEY_PAIR_TYPE = KeyPairType.DSA;
-    private static final byte[][] TRUE_PUBLIC_KEYS = {HexUtil.hexToBytes(
-        "3059301306072a8648ce3d020106082a8648ce3d030107034200040126491fbe391419f" +
-        "cdca058122a8520a816d3b7af9bc3a3af038e455b311b8234e5915ae2da11550a9f0ff9da5c65257" +
-        "c95c2bd3d5c21bcf16f6c15a94a50cb"), HexUtil.hexToBytes(
+    private static final byte[][] TRUE_PUBLIC_KEYS = {
+        HexUtil.hexToBytes(
+            "3059301306072a8648ce3d020106082a8648ce3d030107034200040126491fbe391419f" +
+            "cdca058122a8520a816d3b7af9bc3a3af038e455b311b8234e5915ae2da11550a9f0ff9da5c65257" +
+            "c95c2bd3d5c21bcf16f6c15a94a50cb"), HexUtil.hexToBytes(
         "3076301006072a8648ce3d020106052b81040022036200043a095518fc49cfaf6feb5af" +
         "01cf71c02ebfff4fe581d93c6e252c8c607e6568db7267e0b958c4a262a6e6fa7c18572c3af59cd1" +
         "6535a28759d04488bae6c3014bbb4b89c25cbe3b76d7b540dabb13aed5793eb3ce572811b560bb18" +
@@ -54,16 +53,21 @@ class KeyGenUtilTest {
         "03461e435188cb90f7501bcb7ed97e8c506c5b60ff21178a625f80f5729ed4746d8e83b28145a51b" +
         "9495880bf41b8ff0746ea0fe684832cc100ef1b01793c84abf64f31452d95bf0ef43d32440d8bc0d" +
         "67501fcffaf51ae4956e5ff22f3baffea5edddbebbeed0ec3b4af28d18568aaf97b5cd026f675388" +
-        "1e0c4")};
-    private static final byte[][] TRUE_PRIVATE_KEYS = {HexUtil.hexToBytes(
-        "3041020100301306072a8648ce3d020106082a8648ce3d030107042730250201010420f" +
-        "8cb4b29aa51153ba811461e93fd1b2e69a127972f7100c5e246a3b2dcdd1b1c"), HexUtil.hexToBytes(
-        "304e020100301006072a8648ce3d020106052b81040022043730350201010430b88fe05" +
-        "d03b20dca95f19cb0fbabdfef1211452b29527ccac2ea37236d31ab6e7cada08315c62912b5c17cd" +
-        "f2d87fa3d"), HexUtil.hexToBytes(
-        "3060020100301006072a8648ce3d020106052b8104002304493047020101044201b4f57" +
-        "3157d51f2e64a8b465fa92e52bae3529270951d448c18e4967beaa04b1f1fedb0e7a1e26f2eefb30" +
-        "566a479e1194358670b044fae438d11717eb2a795c3a8")};
+        "1e0c4")
+    };
+    private static final byte[][] TRUE_PRIVATE_KEYS = {
+        HexUtil.hexToBytes(
+            "3041020100301306072a8648ce3d020106082a8648ce3d030107042730250201010420f" +
+            "8cb4b29aa51153ba811461e93fd1b2e69a127972f7100c5e246a3b2dcdd1b1c"),
+        HexUtil.hexToBytes(
+            "304e020100301006072a8648ce3d020106052b81040022043730350201010430b88fe05" +
+            "d03b20dca95f19cb0fbabdfef1211452b29527ccac2ea37236d31ab6e7cada08315c62912b5c17cd" +
+            "f2d87fa3d"),
+        HexUtil.hexToBytes(
+            "3060020100301006072a8648ce3d020106052b8104002304493047020101044201b4f57" +
+            "3157d51f2e64a8b465fa92e52bae3529270951d448c18e4967beaa04b1f1fedb0e7a1e26f2eefb30" +
+            "566a479e1194358670b044fae438d11717eb2a795c3a8")
+    };
     private static final byte[] TRUE_IV = new byte[16];
     private static final String KDF_INPUT = "testKey";
     private static final PublicKey[] PUBLIC_KEYS = new PublicKey[TRUE_PUBLIC_KEYS.length];
@@ -312,8 +316,10 @@ class KeyGenUtilTest {
 
     @Test
     void testDeriveSecretKey() throws InvalidKeyException {
-        SecretKey kdfKey =
-            KeyGenUtil.getSecretKey(KeyType.HMAC_SHA_512, TRUE_LENGTH_SECRET_KEYS[6]);
+        SecretKey kdfKey = KeyGenUtil.getSecretKey(
+            KeyType.HMAC_SHA_512,
+            TRUE_LENGTH_SECRET_KEYS[6]
+        );
         SecretKey buf1 = KeyGenUtil.deriveSecretKey(
             kdfKey,
             KeyGenUtil.class,
@@ -333,10 +339,16 @@ class KeyGenUtilTest {
     @Test
     void testDeriveSecretKeyLength() throws InvalidKeyException {
         for (KeyType type : KEY_TYPES) {
-            SecretKey kdfKey =
-                KeyGenUtil.getSecretKey(KeyType.HMAC_SHA_512, TRUE_LENGTH_SECRET_KEYS[6]);
-            SecretKey buf1 =
-                KeyGenUtil.deriveSecretKey(kdfKey, KeyGenUtil.class, KDF_INPUT, type);
+            SecretKey kdfKey = KeyGenUtil.getSecretKey(
+                KeyType.HMAC_SHA_512,
+                TRUE_LENGTH_SECRET_KEYS[6]
+            );
+            SecretKey buf1 = KeyGenUtil.deriveSecretKey(
+                kdfKey,
+                KeyGenUtil.class,
+                KDF_INPUT,
+                type
+            );
 
             assertEquals(buf1.getEncoded().length, type.keySize >> 3);
         }
@@ -357,8 +369,10 @@ class KeyGenUtilTest {
 
     @Test
     void testDeriveIvParameterSpec() throws InvalidKeyException {
-        SecretKey kdfKey =
-            KeyGenUtil.getSecretKey(KeyType.HMAC_SHA_512, TRUE_LENGTH_SECRET_KEYS[6]);
+        SecretKey kdfKey = KeyGenUtil.getSecretKey(
+            KeyType.HMAC_SHA_512,
+            TRUE_LENGTH_SECRET_KEYS[6]
+        );
         IvParameterSpec buf1 = KeyGenUtil.deriveIvParameterSpec(
             kdfKey,
             KeyGenUtil.class,
@@ -378,10 +392,16 @@ class KeyGenUtilTest {
     @Test
     void testDeriveIvParameterSpecLength() throws InvalidKeyException {
         for (KeyType type : KEY_TYPES) {
-            SecretKey kdfKey =
-                KeyGenUtil.getSecretKey(KeyType.HMAC_SHA_512, TRUE_LENGTH_SECRET_KEYS[6]);
-            IvParameterSpec buf1 =
-                KeyGenUtil.deriveIvParameterSpec(kdfKey, KeyGenUtil.class, KDF_INPUT, type);
+            SecretKey kdfKey = KeyGenUtil.getSecretKey(
+                KeyType.HMAC_SHA_512,
+                TRUE_LENGTH_SECRET_KEYS[6]
+            );
+            IvParameterSpec buf1 = KeyGenUtil.deriveIvParameterSpec(
+                kdfKey,
+                KeyGenUtil.class,
+                KDF_INPUT,
+                type
+            );
 
             assertEquals(buf1.getIV().length, type.ivSize >> 3);
         }
