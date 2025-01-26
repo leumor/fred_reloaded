@@ -26,29 +26,29 @@ import java.io.*;
  * @see RandomAccessible
  * @see RandomAccessBuffer
  */
-public class RabBucket implements Bucket, RandomAccessible {
+public class Rab implements Bucket, RandomAccessible {
 
-  /** Magic number used to identify {@link RabBucket} data in serialized form. */
+  /** Magic number used to identify {@link Rab} data in serialized form. */
   static final int MAGIC = 0x892a708a;
 
   /**
-   * Constructs a new {@link RabBucket} wrapping an existing {@link RandomAccessBuffer}.
+   * Constructs a new {@link Rab} Bucket wrapping an existing {@link RandomAccessBuffer}.
    *
-   * <p>The newly created {@link RabBucket} will be read-only and operate on the provided {@link
+   * <p>The newly created {@link Rab} Bucket will be read-only and operate on the provided {@link
    * #underlying} buffer. The size of the bucket is determined by the current size of the {@link
    * #underlying} buffer.
    *
    * @param underlying The {@link RandomAccessBuffer} to use as the underlying storage.
    */
-  public RabBucket(RandomAccessBuffer underlying) {
+  public Rab(RandomAccessBuffer underlying) {
     this.underlying = underlying;
     size = underlying.size();
   }
 
   /**
-   * Constructs a {@link RabBucket} by restoring it from a {@link DataInputStream}.
+   * Constructs a {@link Rab} Bucket by restoring it from a {@link DataInputStream}.
    *
-   * <p>This constructor is used to reconstruct a {@link RabBucket} from a serialized state,
+   * <p>This constructor is used to reconstruct a {@link Rab} Bucket from a serialized state,
    * typically during application restart or recovery. It delegates the actual restoration of the
    * underlying {@link RandomAccessBuffer} to {@link BucketTools#restoreRabFrom(DataInputStream,
    * FilenameGenerator, PersistentFileTracker, MasterSecret)}.
@@ -60,13 +60,13 @@ public class RabBucket implements Bucket, RandomAccessible {
    * @throws IOException if an I/O error occurs during reading from the input stream or restoring
    *     the buffer.
    * @throws StorageFormatException if the data in the input stream is not in the expected format
-   *     for a {@link RabBucket}.
+   *     for a {@link Rab}.
    * @throws ResumeFailedException if the resumption process fails and the bucket cannot be properly
    *     initialized.
    * @see BucketTools#restoreRabFrom(DataInputStream, FilenameGenerator, PersistentFileTracker,
    *     MasterSecret)
    */
-  RabBucket(
+  Rab(
       DataInputStream dis,
       FilenameGenerator fg,
       PersistentFileTracker persistentFileTracker,
@@ -79,8 +79,8 @@ public class RabBucket implements Bucket, RandomAccessible {
   /**
    * {@inheritDoc}
    *
-   * @throws IOException Always throws {@link IOException} because writing to a {@code RabBucket} is
-   *     not supported. {@code RabBucket} instances are read-only.
+   * @throws IOException Always throws {@link IOException} because writing to a {@link Rab} Bucket
+   *     is not supported. {@link Rab} Bucket instances are read-only.
    */
   @Override
   public OutputStream getOutputStream() throws IOException {
@@ -90,8 +90,8 @@ public class RabBucket implements Bucket, RandomAccessible {
   /**
    * {@inheritDoc}
    *
-   * @throws IOException Always throws {@link IOException} because writing to a {@code RabBucket} is
-   *     not supported. {@code RabBucket} instances are read-only.
+   * @throws IOException Always throws {@link IOException} because writing to a {@link Rab} Bucket
+   *     is not supported. {@link Rab} Bucket instances are read-only.
    */
   @Override
   public OutputStream getOutputStreamUnbuffered() throws IOException {
@@ -133,7 +133,7 @@ public class RabBucket implements Bucket, RandomAccessible {
   /**
    * {@inheritDoc}
    *
-   * <p>Always returns {@code null} as {@link RabBucket} does not have a specific name associated
+   * <p>Always returns {@code null} as {@link Rab} Bucket does not have a specific name associated
    * with it, as it's typically a wrapper around an anonymous {@link RandomAccessBuffer}.
    *
    * @return {@code null}
@@ -147,8 +147,8 @@ public class RabBucket implements Bucket, RandomAccessible {
    * {@inheritDoc}
    *
    * <p>Returns the current size of the data in the underlying {@link RandomAccessBuffer}. This size
-   * is fixed at the time of {@link RabBucket} creation and does not change as {@link RabBucket} is
-   * read-only.
+   * is fixed at the time of {@link Rab} Bucket creation and does not change as {@link Rab} Bucket
+   * is read-only.
    *
    * @return The size in bytes of the data in the bucket.
    */
@@ -160,7 +160,7 @@ public class RabBucket implements Bucket, RandomAccessible {
   /**
    * {@inheritDoc}
    *
-   * <p>Always returns {@code true} because {@link RabBucket} is designed to be read-only.
+   * <p>Always returns {@code true} because {@link Rab} Bucket is designed to be read-only.
    * Modifications are not supported after creation.
    *
    * @return {@code true}
@@ -173,8 +173,8 @@ public class RabBucket implements Bucket, RandomAccessible {
   /**
    * {@inheritDoc}
    *
-   * <p>This method has no effect as {@link RabBucket} is always read-only. Calling this method will
-   * not change the read-only status of the bucket.
+   * <p>This method has no effect as {@link Rab} Bucket is always read-only. Calling this method
+   * will not change the read-only status of the bucket.
    */
   @Override
   public void setReadOnly() {
@@ -185,7 +185,7 @@ public class RabBucket implements Bucket, RandomAccessible {
    * {@inheritDoc}
    *
    * <p>Disposes of the underlying {@link RandomAccessBuffer}, releasing any resources held by it.
-   * This operation should be called when the {@link RabBucket} and its associated data are no
+   * This operation should be called when the {@link Rab} Bucket and its associated data are no
    * longer needed.
    *
    * @see RandomAccessBuffer#dispose()
@@ -199,7 +199,8 @@ public class RabBucket implements Bucket, RandomAccessible {
    * {@inheritDoc}
    *
    * <p>Closes the underlying {@link RandomAccessBuffer}, releasing any resources associated with
-   * it. After closing, further operations on the {@link RabBucket} might throw {@link IOException}.
+   * it. After closing, further operations on the {@link Rab} Bucket might throw {@link
+   * IOException}.
    *
    * @throws IOException if an I/O error occurs during closing the underlying buffer.
    * @see RandomAccessBuffer#close()
@@ -212,7 +213,7 @@ public class RabBucket implements Bucket, RandomAccessible {
   /**
    * {@inheritDoc}
    *
-   * <p>Shadow copies are not supported for {@link RabBucket}. This method always returns {@code
+   * <p>Shadow copies are not supported for {@link Rab} Bucket. This method always returns {@code
    * null}.
    *
    * @return {@code null}, as shadow copies are not supported.
@@ -241,11 +242,11 @@ public class RabBucket implements Bucket, RandomAccessible {
   /**
    * {@inheritDoc}
    *
-   * <p>Stores the {@link RabBucket}'s reconstruction data to the provided {@link DataOutputStream}.
-   * This method writes the {@link #MAGIC} number followed by the reconstruction data of the
-   * underlying {@link RandomAccessBuffer} to the output stream. This allows for the {@link
-   * RabBucket} to be restored later using the {@link #RabBucket(DataInputStream, FilenameGenerator,
-   * PersistentFileTracker, MasterSecret)} constructor.
+   * <p>Stores the {@link Rab} Bucket's reconstruction data to the provided {@link
+   * DataOutputStream}. This method writes the {@link #MAGIC} number followed by the reconstruction
+   * data of the underlying {@link RandomAccessBuffer} to the output stream. This allows for the
+   * {@link Rab} Bucket to be restored later using the {@link #Rab(DataInputStream,
+   * FilenameGenerator, PersistentFileTracker, MasterSecret)} constructor.
    *
    * @param dos The {@link DataOutputStream} to write the bucket data to.
    * @throws IOException if an I/O error occurs during writing to the output stream.
@@ -273,17 +274,19 @@ public class RabBucket implements Bucket, RandomAccessible {
 
   /**
    * The size of the data stored in this bucket, which is determined by the size of the underlying
-   * {@link RandomAccessBuffer} at the time of {@link RabBucket} creation.
+   * {@link RandomAccessBuffer} at the time of {@link Rab} Bucket creation.
    *
-   * <p>This value is constant throughout the lifecycle of the {@link RabBucket} as it is read-only.
+   * <p>This value is constant throughout the lifecycle of the {@link Rab} Bucket as it is
+   * read-only.
    */
   final long size;
 
   /**
-   * The underlying {@link RandomAccessBuffer} that provides the storage for this {@link RabBucket}.
+   * The underlying {@link RandomAccessBuffer} that provides the storage for this {@link Rab}
+   * Bucket.
    *
    * <p>All data read and write operations are delegated to this {@link RandomAccessBuffer}. The
-   * lifecycle of this buffer is managed by the {@link RabBucket}.
+   * lifecycle of this buffer is managed by the {@link Rab} Bucket.
    */
   private final RandomAccessBuffer underlying;
 }
