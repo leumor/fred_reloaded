@@ -477,7 +477,7 @@ public class PaddedEphemerallyEncrypted implements Bucket, Serializable {
           // Write random padding
           long paddingNeeded = paddedLength() - dataLength;
           int sz = 65536;
-          if (paddingNeeded < (long) sz) {
+          if (paddingNeeded < sz) {
             sz = (int) paddingNeeded;
           }
           byte[] padBuffer = new byte[sz];
