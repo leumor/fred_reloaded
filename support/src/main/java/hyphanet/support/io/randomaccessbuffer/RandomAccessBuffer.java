@@ -3,6 +3,7 @@ package hyphanet.support.io.randomaccessbuffer;
 import hyphanet.crypt.key.MasterSecret;
 import hyphanet.support.io.FilenameGenerator;
 import hyphanet.support.io.PersistentFileTracker;
+import hyphanet.support.io.ResumeContext;
 import hyphanet.support.io.ResumeFailedException;
 import hyphanet.support.io.bucket.BucketTools;
 

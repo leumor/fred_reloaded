@@ -1,5 +1,6 @@
 package hyphanet.support.io.randomaccessbuffer;
 
+import hyphanet.support.io.ResumeContext;
 import hyphanet.support.io.ResumeFailedException;
 import hyphanet.support.io.StorageFormatException;
 import hyphanet.support.io.util.FileSystem;

@@ -1,5 +1,7 @@
 package hyphanet.support.io.randomaccessbuffer;
 
+import hyphanet.support.io.ResumeContext;
+
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.Serial;

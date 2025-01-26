@@ -3,7 +3,7 @@ package hyphanet.support.io.randomaccessbuffer;
 import freenet.support.Logger;
 import freenet.support.api.LockableRandomAccessBuffer;
 import freenet.support.api.LockableRandomAccessBufferFactory;
-import hyphanet.support.io.FileUtil;
+import hyphanet.support.io.util.FilePath;
 
 import java.io.File;
 import java.io.IOException;
@@ -105,7 +105,7 @@ public class DiskSpaceCheckingRandomAccessBufferFactory
 
     @Override
     public boolean checkDiskSpace(File file, int toWrite, int bufferSize) {
-        if (!FileUtil.isParent(dir, file)) {
+        if (!FilePath.isParent(dir, file)) {
             Logger.error(
                 this,
                 "Not checking disk space because " + file + " is not child of " + dir
