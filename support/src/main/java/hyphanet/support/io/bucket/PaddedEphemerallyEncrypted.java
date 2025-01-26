@@ -152,27 +152,11 @@ public class PaddedEphemerallyEncrypted implements Bucket, Serializable {
    * @throws IllegalStateException if the calculated padded size results in an impossible state.
    */
   public static long paddedLength(long dataLength, long minPaddedSize) {
-    long size = dataLength;
-    if (size < minPaddedSize) {
-      size = minPaddedSize;
+    long paddedSize = Math.max(dataLength, minPaddedSize);
+    if (Long.bitCount(paddedSize) == 1) {
+      return paddedSize;
     }
-    if (size == minPaddedSize) {
-      return size;
-    }
-    long min = minPaddedSize;
-    long max = minPaddedSize << 1;
-    while (true) {
-      if (max < 0) {
-        throw new IllegalStateException(
-            "Impossible size: " + size + " - min=" + min + ", max=" + max);
-      }
-      if (size <= max) {
-        logger.info("Padded: {} was: {}", max, dataLength);
-        return max;
-      }
-      min = max;
-      max = max << 1;
-    }
+    return Long.highestOneBit(paddedSize) << 1;
   }
 
   /**
