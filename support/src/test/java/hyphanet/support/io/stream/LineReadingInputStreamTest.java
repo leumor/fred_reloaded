@@ -1,9 +1,9 @@
 /* This code is part of Freenet. It is distributed under the GNU General
  * Public License, version 2 (or at your option any later version). See
  * http://www.gnu.org/ for further details of the GPL. */
-package hyphanet.support.io;
+package hyphanet.support.io.stream;
 
-import hyphanet.support.io.stream.LineReadingInputStream;
+import hyphanet.support.io.TooLongException;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
@@ -56,8 +56,9 @@ public class LineReadingInputStreamTest {
         instance = new LineReadingInputStream(is);
 
         var finalInstance = instance;
-        assertThrows(TooLongException.class,
-                     () -> finalInstance.readLineWithoutMarking(LENGTH_CHECKING_LINE_LF - 1,
+        assertThrows(
+            TooLongException.class,
+            () -> finalInstance.readLineWithoutMarking(LENGTH_CHECKING_LINE_LF - 1,
                                                                 BUFFER_SIZE, true));
 
         // Same test shouldn't throw
