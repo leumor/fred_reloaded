@@ -99,8 +99,6 @@ public class CountedInputStream extends FilterInputStream {
   /**
    * The total number of bytes read from the underlying input stream. This counter is incremented by
    * each {@link #read()} and {@link #skip(long)} operation that successfully reads or skips bytes.
-   * It is protected to allow subclasses to access and potentially modify the count, although direct
-   * modification is generally discouraged.
    */
-  protected long count = 0;
+  private long count = 0;
 }
