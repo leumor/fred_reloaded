@@ -1,6 +1,5 @@
 package hyphanet.crypt.io;
 
-import hyphanet.crypt.exception.AeadVerificationFailedException;
 import org.bouncycastle.crypto.BlockCipher;
 import org.bouncycastle.crypto.InvalidCipherTextException;
 import org.bouncycastle.crypto.engines.AESEngine;

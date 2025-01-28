@@ -10,5 +10,4 @@ module hyphanet.crypt {
   exports hyphanet.crypt.key;
   exports hyphanet.crypt.mac;
   exports hyphanet.crypt.io;
-  exports hyphanet.crypt.exception;
 }

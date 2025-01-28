@@ -5,7 +5,7 @@ package hyphanet.crypt.key;
 
 import hyphanet.base.Fields;
 import hyphanet.crypt.Global;
-import hyphanet.crypt.exception.UnsupportedTypeException;
+import hyphanet.crypt.UnsupportedTypeException;
 import hyphanet.crypt.mac.Mac;
 import hyphanet.crypt.mac.MacType;
 

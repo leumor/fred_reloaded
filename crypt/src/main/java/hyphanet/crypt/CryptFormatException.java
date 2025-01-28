@@ -1,4 +1,4 @@
-package hyphanet.crypt.exception;
+package hyphanet.crypt;
 
 import java.io.IOException;
 import java.io.Serial;

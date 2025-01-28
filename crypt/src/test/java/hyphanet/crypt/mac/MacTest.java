@@ -4,7 +4,7 @@
 package hyphanet.crypt.mac;
 
 import hyphanet.base.Fields;
-import hyphanet.crypt.exception.UnsupportedTypeException;
+import hyphanet.crypt.UnsupportedTypeException;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Test;
