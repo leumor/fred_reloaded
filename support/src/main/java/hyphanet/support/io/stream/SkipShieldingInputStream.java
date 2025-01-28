@@ -22,39 +22,82 @@ import java.io.IOException;
 import java.io.InputStream;
 
 /**
- * A wrapper that overwrites {@link #skip} and delegates to {@link #read} instead.
+ * A wrapper that shields against exceptions thrown by {@link InputStream#skip(long)} and delegates
+ * to {@link InputStream#read(byte[], int, int)} instead.
  *
- * <p>Some implementations of {@link InputStream} implement {@link
- * InputStream#skip} in a way that throws an expecption if the stream is not seekable -
- * {@link System#in System.in} is known to behave that way. For such a stream it is impossible
- * to invoke skip at all and you have to read from the stream (and discard the data read)
- * instead. Skipping is potentially much faster than reading so we do want to invoke
- * {@code skip} when possible. We provide this class so you can wrap your own
- * {@link InputStream} in it if you encounter problems with {@code skip} throwing an
- * excpetion.</p>
+ * <p>Some implementations of {@link InputStream#skip(long)} might throw an {@link IOException} if
+ * the stream is not seekable. A notable example is {@link System#in}. For such streams, invoking
+ * {@code skip} directly is not possible. This class provides a workaround by overriding {@link
+ * #skip(long)} and internally using {@link #read(byte[], int, int)} to discard bytes, effectively
+ * simulating the skip operation.
+ *
+ * <p>While skipping via reading is generally less efficient than native skip implementations, it
+ * ensures compatibility with non-seekable input streams and prevents unexpected exceptions when
+ * skipping is attempted.
  *
  * @since 1.17
  */
+@SuppressWarnings("java:S4929")
 public class SkipShieldingInputStream extends FilterInputStream {
-    private static final int SKIP_BUFFER_SIZE = 8192;
-    // we can use a shared buffer as the content is discarded anyway
-    private static final byte[] SKIP_BUFFER = new byte[SKIP_BUFFER_SIZE];
+  /**
+   * The size of the buffer used for skipping bytes when the underlying stream's {@code skip()}
+   * method is problematic. This buffer size is chosen to be reasonably large to improve efficiency,
+   * but small enough to be memory-friendly.
+   */
+  private static final int SKIP_BUFFER_SIZE = 8192;
 
-    public SkipShieldingInputStream(InputStream in) {
-        super(in);
+  /**
+   * A shared static buffer used to discard bytes when simulating skip operations. This buffer is
+   * shared across all instances of {@link SkipShieldingInputStream} as its content is discarded and
+   * not relevant to the stream's data. Using a static buffer reduces memory allocation overhead.
+   */
+  private static final byte[] SKIP_BUFFER = new byte[SKIP_BUFFER_SIZE];
+
+  /**
+   * Constructs a {@code SkipShieldingInputStream} that wraps the given input stream.
+   *
+   * @param in the underlying input stream to be shielded.
+   * @see FilterInputStream#FilterInputStream(InputStream)
+   */
+  public SkipShieldingInputStream(InputStream in) {
+    super(in);
+  }
+
+  /**
+   * Skips over and discards {@code n} bytes of data from the input stream.
+   *
+   * <p>This implementation overrides the default {@link FilterInputStream#skip(long)} method.
+   * Instead of directly delegating to the underlying stream's {@code skip} method, which might
+   * throw an {@link IOException} for non-seekable streams, this method simulates skipping by
+   * reading and discarding bytes from the stream.
+   *
+   * <p>The skipping is performed by repeatedly calling {@link #read(byte[], int, int)} with a
+   * temporary buffer ({@link #SKIP_BUFFER}) until the requested number of bytes has been skipped or
+   * the end of the stream is reached.
+   *
+   * @throws IOException if an I/O error occurs. Specifically, an {@code IOException} may be thrown
+   *     if the underlying input stream throws an {@code IOException} during the {@code read}
+   *     operations used for skipping.
+   */
+  @Override
+  public long skip(long n) throws IOException {
+    if (n <= 0) {
+      return 0L;
     }
 
-    @Override
-    public long skip(long n) throws IOException {
-        int retval;
-        if (n < 0) {
-            retval = 0;
-        } else {
-            retval = read(SKIP_BUFFER, 0, (int) Math.min(n, SKIP_BUFFER_SIZE));
-            if (retval < 0) {
-                retval = 0;
-            }
-        }
-        return retval;
+    long skipped = 0L;
+    int readCount;
+    int currentSkip;
+    while (skipped < n) {
+      // Make sure skipped length is less than the size of SKIP_BUFFER
+      currentSkip = (int) Math.min(n - skipped, SKIP_BUFFER_SIZE);
+
+      readCount = read(SKIP_BUFFER, 0, currentSkip);
+      if (readCount < 0) {
+        break; // End of stream
+      }
+      skipped += readCount;
     }
+    return skipped;
+  }
 }
