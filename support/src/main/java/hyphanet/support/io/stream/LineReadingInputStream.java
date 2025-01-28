@@ -50,6 +50,7 @@ import org.jspecify.annotations.Nullable;
  * @see FilterInputStream
  * @see TooLongException
  */
+@SuppressWarnings("java:S4929")
 public class LineReadingInputStream extends FilterInputStream implements LineReader {
 
   /** Minimum buffer size for reading operations in bytes */
@@ -182,8 +183,7 @@ public class LineReadingInputStream extends FilterInputStream implements LineRea
         if (buf[ctr] == '\n') {
           String line = createLineString(buf, ctr, utf);
           reset();
-          //noinspection ResultOfMethodCallIgnored
-          skip(ctr + 1);
+          skipNBytes((long) ctr + 1);
           return line;
         }
       }
@@ -224,6 +224,7 @@ public class LineReadingInputStream extends FilterInputStream implements LineRea
    * @param requestedSize requested buffer size from the caller
    * @return the optimal buffer size that balances memory usage and performance
    */
+  @SuppressWarnings("java:S6885")
   private static int calculateBufferSize(int maxLength, int requestedSize) {
     return Math.max(
         Math.min(MIN_BUFFER_SIZE, maxLength), Math.min(DEFAULT_BUFFER_SIZE, requestedSize));
