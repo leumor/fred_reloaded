@@ -4,18 +4,18 @@
 package hyphanet.support.io;
 
 import hyphanet.support.io.stream.LineReadingInputStream;
-
 import java.io.IOException;
+import java.io.Serial;
 
 /**
  * Exception thrown when attempting to read a line that exceeds the maximum allowed length.
- * <p>
- * This exception is typically thrown by {@link LineReadingInputStream} when encountering a
- * line that is longer than the specified maximum length. This helps prevent denial-of-service
- * attacks and out-of-memory conditions when processing untrusted input.
- * </p>
  *
- * <p>Example usage:</p>
+ * <p>This exception is typically thrown by {@link LineReadingInputStream} when encountering a line
+ * that is longer than the specified maximum length. This helps prevent denial-of-service attacks
+ * and out-of-memory conditions when processing untrusted input.
+ *
+ * <p>Example usage:
+ *
  * <pre>{@code
  * try {
  *     String line = inputStream.readLine(1000, 128, true);
@@ -26,9 +26,9 @@ import java.io.IOException;
  * }</pre>
  */
 public class TooLongException extends IOException {
-    private static final long serialVersionUID = -1;
+  @Serial private static final long serialVersionUID = -1;
 
-    TooLongException(String s) {
-        super(s);
-    }
+  public TooLongException(String s) {
+    super(s);
+  }
 }
