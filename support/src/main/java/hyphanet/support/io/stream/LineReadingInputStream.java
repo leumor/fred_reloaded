@@ -5,14 +5,14 @@ package hyphanet.support.io.stream;
 
 import hyphanet.base.HexUtil;
 import hyphanet.support.io.LineReader;
-import hyphanet.support.io.TooLongException;
+import org.jspecify.annotations.Nullable;
+
 import java.io.EOFException;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import org.jspecify.annotations.Nullable;
 
 /**
  * A specialized {@link FilterInputStream} implementation that provides line reading capabilities

@@ -1,9 +1,8 @@
 /* This code is part of Freenet. It is distributed under the GNU General
  * Public License, version 2 (or at your option any later version). See
  * http://www.gnu.org/ for further details of the GPL. */
-package hyphanet.support.io;
+package hyphanet.support.io.stream;
 
-import hyphanet.support.io.stream.LineReadingInputStream;
 import java.io.IOException;
 import java.io.Serial;
 

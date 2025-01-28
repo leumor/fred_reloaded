@@ -4,29 +4,30 @@
 package hyphanet.support.io;
 
 import hyphanet.support.io.stream.LineReadingInputStream;
+import java.io.IOException;
 import org.jspecify.annotations.Nullable;
 
-import java.io.IOException;
-
 /**
- * <p>An interface for reading text lines from a stream with configurable character encoding
- * support and built-in protection against excessive memory consumption.</p>
+ * An interface for reading text lines from a stream with configurable character encoding support
+ * and built-in protection against excessive memory consumption.
  *
- * <p>This interface provides functionality to read lines of text from an input source,
- * with support for:</p>
+ * <p>This interface provides functionality to read lines of text from an input source, with support
+ * for:
+ *
  * <ul>
- *   <li>Multiple character encodings (UTF-8 and ISO-8859-1)</li>
- *   <li>Both Unix (\n) and Windows (\r\n) line endings</li>
- *   <li>Configurable maximum line length to prevent memory exhaustion</li>
- *   <li>Adjustable buffer sizes for performance optimization</li>
+ *   <li>Multiple character encodings (UTF-8 and ISO-8859-1)
+ *   <li>Both Unix (\n) and Windows (\r\n) line endings
+ *   <li>Configurable maximum line length to prevent memory exhaustion
+ *   <li>Adjustable buffer sizes for performance optimization
  * </ul>
  *
  * <p><strong>Line Termination:</strong><br>
- * A line is considered terminated by either a line feed character ("\n") or a carriage
- * return followed by a line feed ("\r\n"). The line termination characters are stripped
- * from the returned string.</p>
+ * A line is considered terminated by either a line feed character ("\n") or a carriage return
+ * followed by a line feed ("\r\n"). The line termination characters are stripped from the returned
+ * string.
  *
- * <p><strong>Example usage:</strong></p>
+ * <p><strong>Example usage:</strong>
+ *
  * <pre>{@code
  * try (InputStream input = new FileInputStream("data.txt")) {
  *     LineReader reader = new LineReadingInputStream(input);
@@ -44,40 +45,29 @@ import java.io.IOException;
  * }</pre>
  *
  * @see LineReadingInputStream
- * @see TooLongException
  */
 public interface LineReader {
 
-    /**
-     * <p>Reads a single line of text from the underlying stream using the specified
-     * encoding and size constraints.</p>
-     *
-     * <p>This method blocks until one of the following conditions occurs:</p>
-     * <ul>
-     *   <li>A line terminator is detected (\n or \r\n)</li>
-     *   <li>The end of the stream is reached</li>
-     *   <li>The maximum line length is exceeded</li>
-     * </ul>
-     *
-     * @param maxLength  the maximum allowed length of a line in bytes. If a line exceeds this
-     *                   length, a {@link TooLongException} will be thrown to prevent memory
-     *                   exhaustion
-     * @param bufferSize the initial size of the internal read buffer in bytes. This value may
-     *                   affect performance but not functionality. The actual buffer may grow
-     *                   up to maxLength if needed
-     * @param utf        if {@code true}, decode the input as UTF-8; if {@code false}, decode
-     *                   as ISO-8859-1
-     *
-     * @return the line of text without any line termination characters, or {@code null} if the
-     * end of e end of the stream has been reached with no data read or if maxLength is less
-     * than 1
-     *
-     * @throws IOException      if an I/O error occurs while reading from the underlying
-     *                          stream
-     * @throws TooLongException if the line length exceeds the specified maxLength
-     * @see LineReadingInputStream#readLine(int, int, boolean)
-     */
-    @Nullable
-    String readLine(int maxLength, int bufferSize, boolean utf) throws IOException;
-
+  /**
+   * Reads a single line of text from the underlying stream using the specified encoding and size
+   * constraints.
+   *
+   * <p>This method blocks until one of the following conditions occurs:
+   *
+   * <ul>
+   *   <li>A line terminator is detected (\n or \r\n)
+   *   <li>The end of the stream is reached
+   *   <li>The maximum line length is exceeded
+   * </ul>
+   *
+   * @param maxLength the maximum allowed length of a line in bytes. If a line exceeds this length,
+   *     an {@link IOException} will be thrown to prevent memory exhaustion
+   * @param bufferSize the initial size of the internal read buffer in bytes. This value may affect
+   *     performance but not functionality. The actual buffer may grow up to maxLength if needed
+   * @param utf if {@code true}, decode the input as UTF-8; if {@code false}, decode as ISO-8859-1
+   * @return the line of text without any line termination characters, or {@code null} if the end of
+   *     e end of the stream has been reached with no data read or if maxLength is less than 1
+   * @throws IOException if an I/O error occurs while reading from the underlying stream
+   */
+  @Nullable String readLine(int maxLength, int bufferSize, boolean utf) throws IOException;
 }

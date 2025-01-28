@@ -3,7 +3,6 @@
  * http://www.gnu.org/ for further details of the GPL. */
 package hyphanet.support.io.stream;
 
-import hyphanet.support.io.TooLongException;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
