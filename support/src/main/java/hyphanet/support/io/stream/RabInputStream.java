@@ -6,7 +6,7 @@ import java.io.InputStream;
 import java.util.Objects;
 
 /**
- * An {@code InputStream} that reads data from a {@link RandomAccessBuffer}. This class allows
+ * An {@link InputStream} that reads data from a {@link RandomAccessBuffer}. This class allows
  * treating a portion of a {@link RandomAccessBuffer} as a sequential input stream. It provides
  * methods to read bytes from the underlying buffer, starting from a specified offset and up to a
  * given size.
