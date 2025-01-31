@@ -179,7 +179,7 @@ public class RegularFile extends BaseFile implements Bucket, Serializable {
     }
 
     @Override
-    protected boolean deleteOnFree() {
+    protected boolean deleteOnDispose() {
         return deleteOnFree;
     }
 

@@ -4,6 +4,7 @@ import hyphanet.crypt.key.MasterSecret;
 import hyphanet.support.io.bucket.Bucket;
 import hyphanet.support.io.bucket.PersistentTempBucketFactory;
 import hyphanet.support.io.randomaccessbuffer.RandomAccessBuffer;
+
 import java.util.Random;
 
 /**
@@ -27,4 +28,6 @@ public interface ResumeContext {
   PersistentTempBucketFactory getPersistentBucketFactory();
 
   Random getFastWeakRandom();
+
+  FilenameGenerator getPersistentFg();
 }
