@@ -18,7 +18,7 @@ package hyphanet.support;
 
 import hyphanet.base.Base64;
 import hyphanet.support.io.LineReader;
-import hyphanet.support.io.Readers;
+import hyphanet.support.io.ReaderUtil;
 import org.junit.jupiter.api.Test;
 
 import java.io.BufferedReader;
@@ -625,10 +625,10 @@ class SimpleFieldSetTest {
     void testEmptyValue() throws IOException {
         String written = "foo.blah=\nEnd\n";
         LineReader r =
-            Readers.fromBufferedReader(new BufferedReader(new StringReader(written)));
+            ReaderUtil.fromBufferedReader(new BufferedReader(new StringReader(written)));
         SimpleFieldSet sfsCheck = new SimpleFieldSet(r, 1024, 1024, true, false, false);
         assertTrue(Objects.requireNonNull(sfsCheck.get("foo.blah")).isEmpty());
-        r = Readers.fromBufferedReader(new BufferedReader(new StringReader(written)));
+        r = ReaderUtil.fromBufferedReader(new BufferedReader(new StringReader(written)));
         sfsCheck = new SimpleFieldSet(r, 1024, 1024, true, false, true);
         assertTrue(Objects.requireNonNull(sfsCheck.get("foo.blah")).isEmpty());
     }
@@ -812,7 +812,7 @@ class SimpleFieldSetTest {
         String written = sw.toString();
         assertEquals(written, key + "==" + base64Value + "\nEnd\n");
         LineReader r =
-            Readers.fromBufferedReader(new BufferedReader(new StringReader(written)));
+            ReaderUtil.fromBufferedReader(new BufferedReader(new StringReader(written)));
         SimpleFieldSet sfsCheck = new SimpleFieldSet(r, 1024, 1024, true, false, true);
         assertEquals(sfsCheck.get(key), value);
     }
