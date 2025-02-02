@@ -1,9 +1,9 @@
 package hyphanet.support.io;
 
 import hyphanet.crypt.key.MasterSecret;
-import hyphanet.support.io.bucket.Bucket;
-import hyphanet.support.io.bucket.PersistentTempBucketFactory;
-import hyphanet.support.io.randomaccessbuffer.RandomAccessBuffer;
+import hyphanet.support.io.storage.bucket.Bucket;
+import hyphanet.support.io.storage.bucket.PersistentTempBucketFactory;
+import hyphanet.support.io.storage.randomaccessbuffer.RandomAccessBuffer;
 
 import java.util.Random;
 

@@ -1,8 +1,9 @@
 package hyphanet.support.io.stream;
 
-import hyphanet.support.io.bucket.Bucket;
-import hyphanet.support.io.bucket.BucketTools;
-import hyphanet.support.io.bucket.Factory;
+import hyphanet.support.io.storage.bucket.Bucket;
+import hyphanet.support.io.storage.bucket.BucketTools;
+import hyphanet.support.io.storage.bucket.Factory;
+
 import java.io.DataOutputStream;
 import java.io.FilterOutputStream;
 import java.io.IOException;

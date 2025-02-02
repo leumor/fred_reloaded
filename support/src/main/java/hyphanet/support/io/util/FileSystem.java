@@ -1,7 +1,7 @@
 package hyphanet.support.io.util;
 
-import hyphanet.support.io.bucket.BucketTools;
-import hyphanet.support.io.bucket.RegularFile;
+import hyphanet.support.io.storage.bucket.BucketTools;
+import hyphanet.support.io.storage.bucket.RegularFile;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -1,6 +1,7 @@
 package hyphanet.support.io.stream;
 
-import hyphanet.support.io.randomaccessbuffer.RandomAccessBuffer;
+import hyphanet.support.io.storage.randomaccessbuffer.RandomAccessBuffer;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Objects;

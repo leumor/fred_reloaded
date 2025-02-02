@@ -5,7 +5,7 @@ import hyphanet.base.Base64;
 import hyphanet.base.Fields;
 import hyphanet.base.IllegalBase64Exception;
 import hyphanet.support.io.LineReader;
-import hyphanet.support.io.Readers;
+import hyphanet.support.io.ReaderUtil;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jspecify.annotations.Nullable;
@@ -209,7 +209,7 @@ public class SimpleFieldSet {
 
         StringReader sr = new StringReader(content);
         BufferedReader br = new BufferedReader(sr);
-        read(Readers.fromBufferedReader(br), allowMultiple, allowBase64);
+        read(ReaderUtil.fromBufferedReader(br), allowMultiple, allowBase64);
     }
 
     /**
@@ -244,7 +244,7 @@ public class SimpleFieldSet {
         BufferedReader br, boolean allowMultiple, boolean allowBase64,
         boolean alwaysBase64) throws IOException {
         this(alwaysBase64);
-        read(Readers.fromBufferedReader(br), allowMultiple, allowBase64);
+        read(ReaderUtil.fromBufferedReader(br), allowMultiple, allowBase64);
     }
 
     /**
