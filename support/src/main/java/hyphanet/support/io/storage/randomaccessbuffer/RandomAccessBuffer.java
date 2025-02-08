@@ -124,7 +124,7 @@ public interface RandomAccessBuffer extends Storage {
    * <p>This method may perform no operation in some implementations. Callers should ensure that the
    * object becomes eligible for garbage collection after calling this method.
    */
-  void dispose();
+  boolean dispose();
 
   /**
    * Acquires a lock on the RAB to keep it open.

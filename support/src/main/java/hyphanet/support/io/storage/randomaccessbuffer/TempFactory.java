@@ -1,31 +1,36 @@
 package hyphanet.support.io.storage.randomaccessbuffer;
 
+import hyphanet.crypt.key.MasterSecret;
 import hyphanet.support.io.FilenameGenerator;
+import hyphanet.support.io.storage.EncryptType;
+import hyphanet.support.io.storage.RamStorageCapableFactory;
+import hyphanet.support.io.storage.TempStorageRamTracker;
 import hyphanet.support.io.storage.bucket.PaddedEphemerallyEncrypted;
-import hyphanet.support.io.storage.bucket.TempBucketFactory;
+import java.io.IOException;
+import java.security.GeneralSecurityException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.security.GeneralSecurityException;
-
-public class TempFactory implements Factory {
+public class TempFactory implements Factory, RamStorageCapableFactory {
   private static final Logger logger = LoggerFactory.getLogger(TempFactory.class);
 
   public TempFactory(
+      TempStorageRamTracker ramTracker,
       FilenameGenerator filenameGenerator,
-      long maxRamRafSize,
-      long ramPoolSize,
       long minDiskSpace,
-      boolean encrypt) {
-    this.underlyingDiskRabFactory = new PooledFileFactory(filenameGenerator);
-    this.maxRamRafSize = maxRamRafSize;
-    this.ramPoolSize = ramPoolSize;
-    this.minDiskSpace = minDiskSpace;
+      boolean encrypt,
+      EncryptType encryptType,
+      MasterSecret secret) {
+    this.ramTracker = ramTracker;
+
+    var underlyingDiskRabFactory = new PooledFileFactory(filenameGenerator);
     this.diskRabFactory =
         new DiskSpaceCheckingFactory(
-            underlyingDiskRabFactory, filenameGenerator.getDir(), minDiskSpace - maxRamRafSize);
+            underlyingDiskRabFactory, filenameGenerator.getDir(), minDiskSpace);
+
     this.encrypt = encrypt;
+    this.encryptType = encryptType;
+    this.secret = secret;
   }
 
   @Override
@@ -39,27 +44,13 @@ public class TempFactory implements Factory {
 
     long now = System.currentTimeMillis();
 
-    Temp raf = null;
-
-    synchronized (this) {
-      if ((size > 0)
-          && (size <= maxRamRafSize)
-          && (ramBytesInUse < ramPoolSize)
-          && (ramBytesInUse + size <= ramPoolSize)) {
-        raf = new Temp(this, (int) size, now);
-        ramBytesInUse += size;
-      }
-    }
-
-    if (raf != null) {
-      return raf;
+    if (createRam) {
+      return new Temp(ramTracker, (int) size, now, diskRabFactory);
     } else {
-      boolean encrypt;
-      encrypt = this.encrypt;
       long realSize = size;
       long paddedSize = size;
       if (encrypt) {
-        realSize += TempBucketFactory.CRYPT_TYPE.headerLen;
+        realSize += encryptType.headerLen;
         paddedSize =
             PaddedEphemerallyEncrypted.paddedLength(
                 realSize, PaddedEphemerallyEncrypted.MIN_PADDED_SIZE);
@@ -70,7 +61,7 @@ public class TempFactory implements Factory {
           ret = new Padded(ret, realSize);
         }
         try {
-          ret = new Encrypted(CRYPT_TYPE, ret, secret, true);
+          ret = new Encrypted(encryptType, ret, secret, true);
         } catch (GeneralSecurityException e) {
           logger.error("Cannot create encrypted tempfile: {}", e, e);
         }
@@ -88,20 +79,8 @@ public class TempFactory implements Factory {
 
     long now = System.currentTimeMillis();
 
-    Temp raf = null;
-
-    synchronized (this) {
-      if ((size > 0)
-          && (size <= maxRamRafSize)
-          && (ramBytesInUse < ramPoolSize)
-          && (ramBytesInUse + size <= ramPoolSize)) {
-        raf = new Temp(this, initialContents, offset, size, now, readOnly);
-        ramBytesInUse += size;
-      }
-    }
-
-    if (raf != null) {
-      return raf;
+    if (createRam) {
+      return new Temp(ramTracker, initialContents, offset, size, now, diskRabFactory, readOnly);
     } else {
       if (encrypt) {
         // FIXME do the encryption in memory? Test it ...
@@ -116,12 +95,18 @@ public class TempFactory implements Factory {
     }
   }
 
-  private final PooledFileFactory underlyingDiskRabFactory;
-  private final DiskSpaceCheckingFactory diskRabFactory;
+  public boolean isCreateRam() {
+    return createRam;
+  }
 
-  private final long maxRamRafSize;
-  private final long ramPoolSize;
-  private final long minDiskSpace;
+  public void setCreateRam(boolean createRam) {
+    this.createRam = createRam;
+  }
+
+  private final TempStorageRamTracker ramTracker;
+  private final DiskSpaceCheckingFactory diskRabFactory;
   private final boolean encrypt;
-  private long ramBytesInUse;
+  private final EncryptType encryptType;
+  private final MasterSecret secret;
+  private boolean createRam;
 }

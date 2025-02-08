@@ -1,42 +1,69 @@
 package hyphanet.support.io.storage.bucket;
 
+import static hyphanet.support.io.storage.TempResourceManager.TRACE_STORAGE_LEAKS;
+
 import hyphanet.base.SizeUtil;
+import hyphanet.support.GlobalCleaner;
 import hyphanet.support.io.ResumeContext;
-import hyphanet.support.io.storage.ToDiskMigratable;
+import hyphanet.support.io.storage.TempStorage;
+import hyphanet.support.io.storage.TempStorageRamTracker;
 import hyphanet.support.io.storage.randomaccessbuffer.RandomAccessBuffer;
 import hyphanet.support.io.stream.InsufficientDiskSpaceException;
+import java.io.*;
+import java.lang.ref.Cleaner;
+import java.lang.ref.WeakReference;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.ListIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
-import java.lang.ref.WeakReference;
-import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.ListIterator;
-
-import static hyphanet.support.io.storage.bucket.TempBucketFactory.TRACE_BUCKET_LEAKS;
-
-public class Temp implements Bucket, ToDiskMigratable, RandomAccessible {
+public class Temp implements TempStorage, RandomAccessible {
   /** A timestamp used to evaluate the age of the bucket and maybe consider it for a migration */
   public final long creationTime;
 
   private static final Logger logger = LoggerFactory.getLogger(Temp.class);
 
-  public Temp(TempBucketFactory factory, long now, RandomAccessible cur) {
-    this.factory = factory;
+  public Temp(
+      TempStorageRamTracker ramTracker,
+      long now,
+      RandomAccessible cur,
+      Path tempFileDir,
+      long maxRamSize,
+      long ramStoragePoolSize,
+      long minDiskSpace,
+      Factory fileBucketFactory,
+      hyphanet.support.io.storage.randomaccessbuffer.Factory rabMigrateToFactory) {
+    this.ramTracker = ramTracker;
+
     if (cur == null) {
       throw new NullPointerException();
     }
-    if (TRACE_BUCKET_LEAKS) {
+    if (TRACE_STORAGE_LEAKS) {
       tracer = new Throwable();
     } else {
       tracer = null;
     }
     this.currentBucket = cur;
     this.creationTime = now;
+
+    this.tempFileDir = tempFileDir;
+    this.maxRamSize = maxRamSize;
+    this.ramStoragePoolSize = ramStoragePoolSize;
+    this.minDiskSpace = minDiskSpace;
+
+    this.fileBucketFactory = fileBucketFactory;
+    this.rabMigrateToFactory = rabMigrateToFactory;
+
     this.osIndex = 0;
     this.tbis = new ArrayList<>(1);
     logger.info("Created {}", this);
+
+    cleanable =
+        GlobalCleaner.getInstance()
+            .register(
+                this, new CleaningAction(getReference(), this.currentBucket, tbis, os, ramTracker));
   }
 
   /** A blocking method to force-migrate from a RAMBucket to a FileBucket */
@@ -44,14 +71,14 @@ public class Temp implements Bucket, ToDiskMigratable, RandomAccessible {
     Bucket toMigrate = null;
     long size;
     synchronized (this) {
-      if (!isRAMBucket() || hasBeenDisposed)
+      if (!isRamBucket() || hasBeenDisposed)
       // Nothing to migrate! We don't want to switch back to ram, do we?
 
       {
         return false;
       }
       toMigrate = currentBucket;
-      RandomAccessible tempFB = factory._makeFileBucket();
+      RandomAccessible tempFB = fileBucketFactory.makeBucket(currentBucket.size());
       size = currentSize;
       if (os != null) {
         os.flush();
@@ -82,18 +109,18 @@ public class Temp implements Bucket, ToDiskMigratable, RandomAccessible {
     }
     logger.info("We have migrated {}", toMigrate.hashCode());
 
-    synchronized (factory.ramBucketQueue) {
-      factory.ramBucketQueue.remove(getReference());
+    synchronized (ramTracker) {
+      ramTracker.removeFromRamStorageQueue(getReference());
+      ramTracker.freeRam(size);
     }
 
     // We can free it on-thread as it's a rambucket
     toMigrate.dispose();
     // Might have changed already so we can't rely on currentSize!
-    factory._hasDisposed(size);
     return true;
   }
 
-  public final synchronized boolean isRAMBucket() {
+  public final synchronized boolean isRamBucket() {
     return (currentBucket instanceof Array);
   }
 
@@ -159,34 +186,16 @@ public class Temp implements Bucket, ToDiskMigratable, RandomAccessible {
   }
 
   @Override
-  public synchronized void dispose() {
-    Bucket cur;
-    synchronized (this) {
-      if (hasBeenDisposed) {
-        return;
-      }
-      hasBeenDisposed = true;
-
-      try {
-        os.close();
-      } catch (IOException e) {
-        logger.warn("Error closing output stream", e);
-      }
-      closeInputStreams(true);
-      if (isRAMBucket()) {
-        // If it's in memory we must free before removing from the queue.
-        currentBucket.dispose();
-        factory._hasDisposed(currentSize);
-        synchronized (factory.ramBucketQueue) {
-          factory.ramBucketQueue.remove(getReference());
-        }
-        return;
-      } else {
-        // Better to free outside the lock if it's not in-memory.
-        cur = currentBucket;
-      }
+  public synchronized boolean dispose() {
+    if (hasBeenDisposed) {
+      return false;
     }
-    cur.dispose();
+    hasBeenDisposed = true;
+
+    cleanable.clean();
+    currentBucket = null;
+
+    return true;
   }
 
   @Override
@@ -199,7 +208,7 @@ public class Temp implements Bucket, ToDiskMigratable, RandomAccessible {
     return currentBucket.createShadow();
   }
 
-  public WeakReference<ToDiskMigratable> getReference() {
+  public WeakReference<TempStorage> getReference() {
     return weakRef;
   }
 
@@ -234,13 +243,16 @@ public class Temp implements Bucket, ToDiskMigratable, RandomAccessible {
       setReadOnly();
       hyphanet.support.io.storage.randomaccessbuffer.Temp rab =
           new hyphanet.support.io.storage.randomaccessbuffer.Temp(
-              factory, currentBucket.toRandomAccessBuffer(), creationTime, !isRAMBucket(), this);
-      if (isRAMBucket()) {
-        synchronized (factory.ramBucketQueue) {
-          // No change in space usage.
-          factory.ramBucketQueue.remove(getReference());
-          factory.ramBucketQueue.add(rab.getReference());
-        }
+              ramTracker,
+              currentBucket.toRandomAccessBuffer(),
+              creationTime,
+              rabMigrateToFactory,
+              !isRamBucket(),
+              this);
+      if (isRamBucket()) {
+        // No change in space usage.
+        ramTracker.removeFromRamStorageQueue(getReference());
+        ramTracker.addToRamStorageQueue(rab.getReference());
       }
       currentBucket = new Rab(rab);
       return rab;
@@ -257,28 +269,6 @@ public class Temp implements Bucket, ToDiskMigratable, RandomAccessible {
     return currentBucket;
   }
 
-  @Override
-  protected void finalize() throws Throwable {
-    // If it's been converted to a TempRandomAccessBuffer, finalize() will only be
-    // called
-    // if *neither* object is reachable.
-    if (!hasBeenDisposed) {
-      if (TRACE_BUCKET_LEAKS) {
-        logger.error(
-            "TempBucket not freed, size={}, isRAMBucket={} : {}",
-            size(),
-            isRAMBucket(),
-            this,
-            tracer);
-      } else {
-        logger.error(
-            "TempBucket not freed, size={}, isRAMBucket={} : {}", size(), isRAMBucket(), this);
-      }
-      dispose();
-    }
-    super.finalize();
-  }
-
   private synchronized void closeInputStreams(boolean forFree) {
     for (ListIterator<TempBucketInputStream> i = tbis.listIterator(); i.hasNext(); ) {
       TempBucketInputStream is = i.next();
@@ -291,7 +281,7 @@ public class Temp implements Bucket, ToDiskMigratable, RandomAccessible {
         }
       } else {
         try {
-          is._maybeResetInputStream();
+          is.maybeResetInputStream();
         } catch (IOException e) {
           i.remove();
           try {
@@ -302,6 +292,70 @@ public class Temp implements Bucket, ToDiskMigratable, RandomAccessible {
         }
       }
     }
+  }
+
+  static class CleaningAction implements Runnable {
+    CleaningAction(
+        WeakReference<TempStorage> thisRef,
+        Bucket currentBucket,
+        ArrayList<TempBucketInputStream> inputStreams,
+        OutputStream outputStream,
+        TempStorageRamTracker ramTracker) {
+      this.thisRef = thisRef;
+      this.currentBucket = currentBucket;
+      this.inputStreams = inputStreams;
+      this.outputStream = outputStream;
+      this.ramTracker = ramTracker;
+    }
+
+    @Override
+    public void run() {
+      if (currentBucket == null) {
+        // Already disposed
+        return;
+      }
+
+      var size = currentBucket.size();
+
+      String msg = "TempBucket not freed, size={} : {}";
+      if (TRACE_STORAGE_LEAKS) {
+        logger.error(msg, size, this, new Throwable());
+      } else {
+        logger.error(msg, size, this);
+      }
+
+      // Close input and output streams
+      for (TempBucketInputStream is : inputStreams) {
+        try {
+          is.close();
+        } catch (IOException e) {
+          logger.warn("Error closing input stream: {}", is, e);
+        }
+      }
+
+      try {
+        outputStream.close();
+      } catch (IOException e) {
+        logger.warn("Error closing output stream", e);
+      }
+
+      currentBucket.dispose();
+
+      if (currentBucket instanceof Array) { // Is Ram bucket
+        synchronized (ramTracker) {
+          if (ramTracker.ramStorageRefInQueue(thisRef)) {
+            ramTracker.freeRam(size);
+            ramTracker.removeFromRamStorageQueue(thisRef);
+          }
+        }
+      }
+    }
+
+    private final WeakReference<TempStorage> thisRef;
+    private final Bucket currentBucket;
+    private final ArrayList<TempBucketInputStream> inputStreams;
+    private final OutputStream outputStream;
+    private final TempStorageRamTracker ramTracker;
   }
 
   private class TempBucketOutputStream extends OutputStream {
@@ -318,12 +372,12 @@ public class Temp implements Bucket, ToDiskMigratable, RandomAccessible {
           throw new IOException("Already freed");
         }
         long futureSize = currentSize + 1;
-        _maybeMigrateRamBucket(futureSize);
+        maybeMigrateRamBucket(futureSize);
         os.write(b);
         currentSize = futureSize;
-        if (isRAMBucket()) // We need to re-check because it might have changed!
+        if (isRamBucket()) // We need to re-check because it might have changed!
         {
-          factory._hasTaken(1);
+          ramTracker.takeRam(1);
         }
       }
     }
@@ -335,12 +389,12 @@ public class Temp implements Bucket, ToDiskMigratable, RandomAccessible {
           throw new IOException("Already freed");
         }
         long futureSize = currentSize + len;
-        _maybeMigrateRamBucket(futureSize);
+        maybeMigrateRamBucket(futureSize);
         os.write(b, off, len);
         currentSize = futureSize;
-        if (isRAMBucket()) // We need to re-check because it might have changed!
+        if (isRamBucket()) // We need to re-check because it might have changed!
         {
-          factory._hasTaken(len);
+          ramTracker.takeRam(len);
         }
       }
     }
@@ -351,7 +405,7 @@ public class Temp implements Bucket, ToDiskMigratable, RandomAccessible {
         if (hasBeenDisposed) {
           return;
         }
-        _maybeMigrateRamBucket(currentSize);
+        maybeMigrateRamBucket(currentSize);
         if (!closed) {
           os.flush();
         }
@@ -364,7 +418,7 @@ public class Temp implements Bucket, ToDiskMigratable, RandomAccessible {
         if (closed) {
           return;
         }
-        _maybeMigrateRamBucket(currentSize);
+        maybeMigrateRamBucket(currentSize);
         os.flush();
         os.close();
         os = null;
@@ -372,21 +426,19 @@ public class Temp implements Bucket, ToDiskMigratable, RandomAccessible {
       }
     }
 
-    private void _maybeMigrateRamBucket(long futureSize) throws IOException {
+    private void maybeMigrateRamBucket(long futureSize) throws IOException {
       if (closed) {
         return;
       }
-      if (isRAMBucket()) {
+      if (isRamBucket()) {
         boolean shouldMigrate = false;
         boolean isOversized = false;
 
-        if (futureSize
-            >= Math.min(
-                Integer.MAX_VALUE,
-                factory.getMaxRamBucketSize() * TempBucketFactory.RAMBUCKET_CONVERSION_FACTOR)) {
+        if (futureSize >= Math.min(Integer.MAX_VALUE, maxRamSize)) {
           isOversized = true;
           shouldMigrate = true;
-        } else if ((futureSize - currentSize) + factory.getRamUsed() >= factory.getMaxRamUsed()) {
+        } else if ((futureSize - currentSize) + ramTracker.getRamBytesInUse()
+            >= ramStoragePoolSize) {
           shouldMigrate = true;
         }
 
@@ -396,11 +448,7 @@ public class Temp implements Bucket, ToDiskMigratable, RandomAccessible {
                 .atInfo()
                 .setMessage("The bucket {} is over {}: we will " + "force-migrate it to disk.")
                 .addArgument(Temp.this)
-                .addArgument(
-                    () ->
-                        SizeUtil.formatSize(
-                            factory.getMaxRamBucketSize()
-                                * TempBucketFactory.RAMBUCKET_CONVERSION_FACTOR))
+                .addArgument(() -> SizeUtil.formatSize(maxRamSize))
                 .log();
           } else {
             logger.info("The bucketpool is full: force-migrate before " + "we go over the limit");
@@ -410,9 +458,8 @@ public class Temp implements Bucket, ToDiskMigratable, RandomAccessible {
       } else {
         // Check for excess disk usage.
         if (futureSize - lastCheckedSize >= CHECK_DISK_EVERY) {
-          if (Files.getFileStore(factory.getFilenameGenerator().getDir()).getUsableSpace()
-                  + (futureSize - currentSize)
-              < factory.getMinDiskSpace()) {
+          if (Files.getFileStore(tempFileDir).getUsableSpace() - (futureSize - currentSize)
+              < minDiskSpace) {
             throw new InsufficientDiskSpaceException();
           }
           lastCheckedSize = futureSize;
@@ -431,7 +478,7 @@ public class Temp implements Bucket, ToDiskMigratable, RandomAccessible {
       this.currentIS = currentBucket.getInputStreamUnbuffered();
     }
 
-    public void _maybeResetInputStream() throws IOException {
+    public void maybeResetInputStream() throws IOException {
       if (idx != osIndex) {
         close();
       } else {
@@ -531,19 +578,32 @@ public class Temp implements Bucket, ToDiskMigratable, RandomAccessible {
     private long index = 0;
   }
 
-  private final TempBucketFactory factory;
+  private final TempStorageRamTracker ramTracker;
 
   /** All the open-streams to reset or close on migration or free() */
   private final ArrayList<TempBucketInputStream> tbis;
 
   private final Throwable tracer;
-  private final WeakReference<ToDiskMigratable> weakRef = new WeakReference<>(this);
+  private final WeakReference<TempStorage> weakRef = new WeakReference<>(this);
+
+  /**
+   * The maximum RAM size allowed for this bucket. If over this size, the bucket will be migrated to
+   * a file bucket.
+   */
+  private final long maxRamSize;
+
+  private final long ramStoragePoolSize;
+  private final Path tempFileDir;
+  private final long minDiskSpace;
+
+  private final Factory fileBucketFactory;
+  private final hyphanet.support.io.storage.randomaccessbuffer.Factory rabMigrateToFactory;
 
   /** The underlying bucket itself */
   private RandomAccessible currentBucket;
 
   /**
-   * We have to account the size of the underlying bucket ourself in order to be able to access it
+   * We have to account the size of the underlying bucket ourselves in order to be able to access it
    * fast
    */
   private long currentSize;
@@ -558,4 +618,6 @@ public class Temp implements Bucket, ToDiskMigratable, RandomAccessible {
   private short osIndex;
 
   private boolean hasBeenDisposed = false;
+
+  private Cleaner.Cleanable cleanable;
 }

@@ -12,28 +12,11 @@ import java.io.IOException;
 public interface Storage extends Resumable, AutoCloseable {
 
   /**
-   * Returns an identifier for this Storage.
-   *
-   * @return A String name identifying this Storage
-   */
-  String getName();
-
-  /**
    * Returns the current size of data stored in this Storage.
    *
    * @return The size in bytes
    */
   long size();
-
-  /**
-   * Checks if this Storage is read-only.
-   *
-   * @return {@code true} if the Storage is read-only, {@code false} otherwise
-   */
-  boolean isReadOnly();
-
-  /** Makes this Storage read-only. This operation cannot be reversed. */
-  void setReadOnly();
 
   /**
    * Stores the Storage's reconstruction data to the provided output stream.
@@ -59,8 +42,11 @@ public interface Storage extends Resumable, AutoCloseable {
    *
    * <p>This method may perform no operation in some implementations. Callers should ensure that the
    * object becomes eligible for garbage collection after calling this method.
+   *
+   * @return true if the storage was successfully disposed, false if it was already disposed.
    */
-  default void dispose() {
+  default boolean dispose() {
     close();
+    return true;
   }
 }

@@ -9,6 +9,7 @@ import hyphanet.support.io.FilenameGenerator;
 import hyphanet.support.io.PersistentFileTracker;
 import hyphanet.support.io.ResumeContext;
 import hyphanet.support.io.ResumeFailedException;
+import hyphanet.support.io.storage.EncryptType;
 import hyphanet.support.io.storage.StorageFormatException;
 import hyphanet.support.io.storage.randomaccessbuffer.RandomAccessBuffer;
 import hyphanet.support.io.stream.NullInputStream;
@@ -73,7 +74,7 @@ public class Encrypted implements RandomAccessible, Serializable {
    * @param masterKey The master key for encryption
    */
   public Encrypted(
-      hyphanet.support.io.storage.randomaccessbuffer.Encrypted.Type type,
+      EncryptType type,
       RandomAccessible underlying,
       MasterSecret masterKey) {
     this.type = type;
@@ -99,7 +100,7 @@ public class Encrypted implements RandomAccessible, Serializable {
       PersistentFileTracker persistentFileTracker,
       MasterSecret masterKey)
       throws IOException, ResumeFailedException, StorageFormatException {
-    type = hyphanet.support.io.storage.randomaccessbuffer.Encrypted.Type.getByBitmask(dis.readInt());
+    type = EncryptType.getByBitmask(dis.readInt());
     if (type == null) {
       throw new ResumeFailedException("Unknown EncryptedRandomAccessBucket type");
     }
@@ -651,7 +652,7 @@ public class Encrypted implements RandomAccessible, Serializable {
   }
 
   /** The encryption type configuration */
-  private final hyphanet.support.io.storage.randomaccessbuffer.Encrypted.Type type;
+  private final EncryptType type;
 
   /** The underlying storage implementation */
   private final RandomAccessible underlying;
