@@ -1,8 +1,8 @@
 package hyphanet.support.io.stream;
 
 import hyphanet.support.io.storage.bucket.Bucket;
+import hyphanet.support.io.storage.bucket.BucketFactory;
 import hyphanet.support.io.storage.bucket.BucketTools;
-import hyphanet.support.io.storage.bucket.Factory;
 
 import java.io.DataOutputStream;
 import java.io.FilterOutputStream;
@@ -19,7 +19,7 @@ import java.io.OutputStream;
  * <p>The underlying {@link Bucket} is used as temporary storage and is disposed of when this stream
  * is closed. The underlying output stream passed to the constructor is not closed by this class
  * unless specified via the {@code closeUnderlying} parameter in the {@link #create(OutputStream,
- * Factory, int, boolean)} method.
+ * BucketFactory, int, boolean)} method.
  */
 public class PrependLengthOutputStream extends FilterOutputStream {
 
@@ -27,7 +27,7 @@ public class PrependLengthOutputStream extends FilterOutputStream {
    * Constructs a {@code PrependLengthOutputStream}.
    *
    * <p>This constructor is private. Instances should be created using the static {@link
-   * #create(OutputStream, Factory, int, boolean)} method.
+   * #create(OutputStream, BucketFactory, int, boolean)} method.
    *
    * @param os The {@link OutputStream} to write to for the temporary {@link Bucket}. This is
    *     obtained from the temporary {@link Bucket}.
@@ -54,12 +54,12 @@ public class PrependLengthOutputStream extends FilterOutputStream {
    * Creates a new {@link PrependLengthOutputStream}.
    *
    * <p>This is the factory method for creating instances of {@link PrependLengthOutputStream}. It
-   * creates a temporary {@link Bucket} using the provided {@link Factory} and obtains an {@link
+   * creates a temporary {@link Bucket} using the provided {@link BucketFactory} and obtains an {@link
    * OutputStream} from it to buffer the data.
    *
    * @param out The original {@link OutputStream} to which the length and data will be written upon
    *     closing.
-   * @param bf The {@link Factory} used to create the temporary {@link Bucket}.
+   * @param bf The {@link BucketFactory} used to create the temporary {@link Bucket}.
    * @param offset The offset to subtract from the final size when writing the length. This allows
    *     for prepending data to the temporary bucket that should not be included in the length.
    * @param closeUnderlying Whether to close the underlying {@code out} {@link OutputStream} when
@@ -70,7 +70,7 @@ public class PrependLengthOutputStream extends FilterOutputStream {
    *     fails or if obtaining an {@link OutputStream} from it fails.
    */
   public static PrependLengthOutputStream create(
-      OutputStream out, Factory bf, int offset, boolean closeUnderlying) throws IOException {
+      OutputStream out, BucketFactory bf, int offset, boolean closeUnderlying) throws IOException {
     Bucket temp = bf.makeBucket(-1);
     OutputStream os = temp.getOutputStream();
     return new PrependLengthOutputStream(os, temp, out, offset, closeUnderlying);
@@ -182,7 +182,7 @@ public class PrependLengthOutputStream extends FilterOutputStream {
 
   /**
    * The temporary {@link Bucket} used to buffer the data before writing to the original output
-   * stream. This bucket is created in the {@link #create(OutputStream, Factory, int, boolean)}
+   * stream. This bucket is created in the {@link #create(OutputStream, BucketFactory, int, boolean)}
    * method and disposed of in the {@link #close()} method.
    */
   private final Bucket temp;
@@ -190,7 +190,7 @@ public class PrependLengthOutputStream extends FilterOutputStream {
   /**
    * The original {@link OutputStream} to which the prepended length and data from the temporary
    * {@link Bucket} are written upon {@link #close()}. This stream is passed to the {@link
-   * #create(OutputStream, Factory, int, boolean)} method.
+   * #create(OutputStream, BucketFactory, int, boolean)} method.
    */
   private final OutputStream origOS;
 
@@ -204,7 +204,7 @@ public class PrependLengthOutputStream extends FilterOutputStream {
   /**
    * A flag indicating whether the underlying {@link #origOS} should be closed when this {@link
    * PrependLengthOutputStream} is closed. This value is set in the {@link #create(OutputStream,
-   * Factory, int, boolean)} method.
+   * BucketFactory, int, boolean)} method.
    */
   private final boolean closeUnderlying;
 

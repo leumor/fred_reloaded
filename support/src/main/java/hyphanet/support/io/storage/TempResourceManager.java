@@ -1,25 +1,30 @@
 package hyphanet.support.io.storage;
 
-import static java.util.concurrent.TimeUnit.MINUTES;
-
 import hyphanet.base.TimeUtil;
 import hyphanet.crypt.key.MasterSecret;
 import hyphanet.support.io.FilenameGenerator;
+import hyphanet.support.io.storage.bucket.BucketFactory;
 import hyphanet.support.io.storage.bucket.RandomAccessible;
-import hyphanet.support.io.storage.randomaccessbuffer.RandomAccessBuffer;
+import hyphanet.support.io.storage.bucket.TempBucketFactory;
+import hyphanet.support.io.storage.rab.Rab;
+import hyphanet.support.io.storage.rab.RabFactory;
+import hyphanet.support.io.storage.rab.TempRab;
+import hyphanet.support.io.storage.rab.TempRabFactory;
 import hyphanet.support.io.stream.InsufficientDiskSpaceException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.concurrent.ExecutorService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import static java.util.concurrent.TimeUnit.MINUTES;
 
 // TODO:  Replace finalizer with Cleaner
 public class TempResourceManager
-    implements hyphanet.support.io.storage.randomaccessbuffer.Factory,
-        hyphanet.support.io.storage.bucket.Factory {
+    implements RabFactory, BucketFactory {
 
   public static final boolean TRACE_STORAGE_LEAKS = false;
 
@@ -48,7 +53,7 @@ public class TempResourceManager
     this.executor = executor;
 
     this.rabFactory =
-        new hyphanet.support.io.storage.randomaccessbuffer.TempFactory(
+        new TempRabFactory(
             ramTracker,
             filenameGenerator,
             minDiskSpace - ramStoragePoolSize,
@@ -56,7 +61,7 @@ public class TempResourceManager
             CRYPT_TYPE,
             masterSecret);
     this.bucketFactory =
-        new hyphanet.support.io.storage.bucket.TempFactory(
+        new TempBucketFactory(
             ramTracker,
             filenameGenerator,
             ramStoragePoolSize * RAMSTORAGE_CONVERSION_FACTOR,
@@ -80,24 +85,24 @@ public class TempResourceManager
   }
 
   @Override
-  public synchronized RandomAccessBuffer makeRab(long size) throws IOException {
+  public synchronized Rab makeRab(long size) throws IOException {
     setCreateRamStorage(size, rabFactory);
     runCleaner();
     var rab = rabFactory.makeRab(size);
     if (rabFactory.isCreateRam()) {
-      ramTracker.addToRamStorageQueue((hyphanet.support.io.storage.randomaccessbuffer.Temp) rab);
+      ramTracker.addToRamStorageQueue((TempRab) rab);
     }
     return rab;
   }
 
   @Override
-  public synchronized RandomAccessBuffer makeRab(
+  public synchronized Rab makeRab(
       byte[] initialContents, int offset, int size, boolean readOnly) throws IOException {
     setCreateRamStorage(size, rabFactory);
     runCleaner();
     var rab = rabFactory.makeRab(initialContents, offset, size, readOnly);
     if (rabFactory.isCreateRam()) {
-      ramTracker.addToRamStorageQueue((hyphanet.support.io.storage.randomaccessbuffer.Temp) rab);
+      ramTracker.addToRamStorageQueue((TempRab) rab);
     }
     return rab;
   }
@@ -119,8 +124,8 @@ public class TempResourceManager
     }
   }
 
-  private final hyphanet.support.io.storage.randomaccessbuffer.TempFactory rabFactory;
-  private final hyphanet.support.io.storage.bucket.TempFactory bucketFactory;
+  private final TempRabFactory rabFactory;
+  private final TempBucketFactory bucketFactory;
 
   /**
    * How big can the max initial size be for us to consider using RAM storage? If the initial size

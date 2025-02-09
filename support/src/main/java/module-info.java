@@ -10,7 +10,7 @@ module hyphanet.support {
   exports hyphanet.support;
   exports hyphanet.support.io;
   exports hyphanet.support.io.storage.bucket;
-  exports hyphanet.support.io.storage.randomaccessbuffer;
+  exports hyphanet.support.io.storage.rab;
   exports hyphanet.support.io.stream;
   exports hyphanet.support.io.util;
   exports hyphanet.support.io.storage;

@@ -1,12 +1,12 @@
 package hyphanet.support.io.storage.bucket;
 
-import hyphanet.support.io.storage.randomaccessbuffer.RandomAccessBuffer;
+import hyphanet.support.io.storage.rab.Rab;
 
 import java.io.IOException;
 
 /**
  * A specialized {@link Bucket} implementation that supports random access operations. This
- * interface provides functionality to convert a Bucket to a {@link RandomAccessBuffer} random
+ * interface provides functionality to convert a Bucket to a {@link Rab} random
  * access buffer without data copying.
  *
  * <p>This interface is particularly useful when dealing with data of uncertain size
@@ -20,17 +20,17 @@ import java.io.IOException;
  *   finalizers</li>
  *   <li>Transient RandomAccess bucket implementations may free resources in finalizers, but
  *   must ensure this only occurs when both the {@link Bucket} and
- *   {@link RandomAccessBuffer} are unreachable</li>
+ *   {@link Rab} are unreachable</li>
  * </ul>
  *
  * @see Bucket
- * @see RandomAccessBuffer
- * @see RandomAccessBuffer
+ * @see Rab
+ * @see Rab
  */
 public interface RandomAccessible extends Bucket {
 
     /**
-     * Converts this Bucket to a {@link RandomAccessBuffer} random access buffer efficiently
+     * Converts this Bucket to a {@link Rab} random access buffer efficiently
      * without copying the underlying data.
      *
      * <p>After conversion:</p>
@@ -39,11 +39,11 @@ public interface RandomAccessible extends Bucket {
      *   <li>Freeing the original Bucket becomes optional if the returned buffer is freed</li>
      * </ul>
      *
-     * @return A {@link RandomAccessBuffer} random access buffer containing this bucket's data
+     * @return A {@link Rab} random access buffer containing this bucket's data
      *
      * @throws IOException if the conversion fails due to I/O errors
      */
-    RandomAccessBuffer toRandomAccessBuffer() throws IOException;
+    Rab toRandomAccessBuffer() throws IOException;
 
     /**
      * {@inheritDoc} Creates a read-only shadow copy of this RandomAccess bucket.

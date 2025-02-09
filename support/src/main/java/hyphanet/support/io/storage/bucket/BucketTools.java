@@ -6,9 +6,7 @@ import hyphanet.support.io.FilenameGenerator;
 import hyphanet.support.io.PersistentFileTracker;
 import hyphanet.support.io.ResumeFailedException;
 import hyphanet.support.io.storage.StorageFormatException;
-import hyphanet.support.io.storage.randomaccessbuffer.PooledFile;
-import hyphanet.support.io.storage.randomaccessbuffer.RandomAccessBuffer;
-import hyphanet.support.io.storage.randomaccessbuffer.ReadOnly;
+import hyphanet.support.io.storage.rab.*;
 import hyphanet.support.io.util.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,7 +24,7 @@ import java.util.random.RandomGeneratorFactory;
 /** Helper functions for working with Buckets. */
 public class BucketTools {
 
-  static final ArrayFactory ARRAY_FACTORY = new ArrayFactory();
+  static final ArrayBucketFactory ARRAY_FACTORY = new ArrayBucketFactory();
   private static final int BUFFER_SIZE = 64 * 1024;
   private static final Logger logger = LoggerFactory.getLogger(BucketTools.class);
 
@@ -144,7 +142,7 @@ public class BucketTools {
     }
   }
 
-  public static Bucket[] makeBuckets(Factory bf, int count, int size) throws IOException {
+  public static Bucket[] makeBuckets(BucketFactory bf, int count, int size) throws IOException {
     Bucket[] ret = new Bucket[count];
     for (int i = 0; i < count; i++) {
       ret[i] = bf.makeBucket(size);
@@ -241,18 +239,18 @@ public class BucketTools {
     }
   }
 
-  public static RandomAccessible makeImmutableBucket(Factory bucketFactory, byte[] data)
+  public static RandomAccessible makeImmutableBucket(BucketFactory bucketFactory, byte[] data)
       throws IOException {
     return makeImmutableBucket(bucketFactory, data, data.length);
   }
 
-  public static RandomAccessible makeImmutableBucket(Factory bucketFactory, byte[] data, int length)
+  public static RandomAccessible makeImmutableBucket(BucketFactory bucketFactory, byte[] data, int length)
       throws IOException {
     return makeImmutableBucket(bucketFactory, data, 0, length);
   }
 
   public static RandomAccessible makeImmutableBucket(
-      Factory bucketFactory, byte[] data, int offset, int length) throws IOException {
+      BucketFactory bucketFactory, byte[] data, int offset, int length) throws IOException {
     RandomAccessible bucket = bucketFactory.makeBucket(length);
     OutputStream os = bucket.getOutputStreamUnbuffered();
     try {
@@ -419,15 +417,15 @@ public class BucketTools {
    *     writing to created buckets.
    */
   public static Bucket[] split(
-      Bucket origData, int splitSize, Factory bf, boolean freeData, boolean persistent)
+      Bucket origData, int splitSize, BucketFactory bf, boolean freeData, boolean persistent)
       throws IOException {
-    if (origData instanceof RegularFile) {
+    if (origData instanceof RegularFileBucket) {
       if (freeData) {
         logger.error(
             "Asked to free data when splitting a FileBucket ?!?!? Not "
                 + "freeing as this would clobber the split result...");
       }
-      Bucket[] buckets = ((RegularFile) origData).split(splitSize);
+      Bucket[] buckets = ((RegularFileBucket) origData).split(splitSize);
       if (persistent) {
         return buckets;
       }
@@ -483,7 +481,7 @@ public class BucketTools {
    * @param length
    * @return the padded bucket
    */
-  public static Bucket pad(Bucket oldBucket, int blockLength, Factory bf, int length)
+  public static Bucket pad(Bucket oldBucket, int blockLength, BucketFactory bf, int length)
       throws IOException {
     byte[] hash = BucketTools.hash(oldBucket);
     Bucket b = bf.makeBucket(blockLength);
@@ -508,7 +506,7 @@ public class BucketTools {
   }
 
   public static byte[] pad(byte[] orig, int blockSize, int length) throws IOException {
-    Array b = new Array(orig);
+    ArrayBucket b = new ArrayBucket(orig);
     Bucket ret = BucketTools.pad(b, blockSize, ARRAY_FACTORY, length);
     return BucketTools.toByteArray(ret);
   }
@@ -553,7 +551,7 @@ public class BucketTools {
    * @throws IOException If something breaks while copying the data.
    */
   public static long copyTo(
-      Bucket bucket, RandomAccessBuffer raf, long fileOffset, long truncateLength)
+      Bucket bucket, Rab raf, long fileOffset, long truncateLength)
       throws IOException {
     if (truncateLength == 0) {
       return 0;
@@ -621,30 +619,30 @@ public class BucketTools {
       throws IOException, StorageFormatException, ResumeFailedException {
     int magic = dis.readInt();
     switch (magic) {
-      case AeadCrypt.MAGIC:
-        return new AeadCrypt(dis, fg, persistentFileTracker, masterKey);
-      case RegularFile.MAGIC:
-        return new RegularFile(dis);
+      case AeadCryptBucket.MAGIC:
+        return new AeadCryptBucket(dis, fg, persistentFileTracker, masterKey);
+      case RegularFileBucket.MAGIC:
+        return new RegularFileBucket(dis);
       case PersistentTempFileBucket.MAGIC:
         return new PersistentTempFileBucket(dis);
-      case DelayedDispose.MAGIC:
-        return new DelayedDispose(dis, fg, persistentFileTracker, masterKey);
-      case DelayedDisposeRandomAccess.MAGIC:
-        return new DelayedDisposeRandomAccess(dis, fg, persistentFileTracker, masterKey);
-      case NoDispose.MAGIC:
-        return new NoDispose(dis, fg, persistentFileTracker, masterKey);
-      case PaddedEphemerallyEncrypted.MAGIC:
-        return new PaddedEphemerallyEncrypted(dis, fg, persistentFileTracker, masterKey);
-      case ReadOnlyFileSlice.MAGIC:
-        return new ReadOnlyFileSlice(dis);
-      case Padded.MAGIC:
-        return new Padded(dis, fg, persistentFileTracker, masterKey);
-      case PaddedRandomAccess.MAGIC:
-        return new PaddedRandomAccess(dis, fg, persistentFileTracker, masterKey);
-      case Rab.MAGIC:
-        return new Rab(dis, fg, persistentFileTracker, masterKey);
-      case Encrypted.MAGIC:
-        return new Encrypted(dis, fg, persistentFileTracker, masterKey);
+      case DelayedDisposeBucket.MAGIC:
+        return new DelayedDisposeBucket(dis, fg, persistentFileTracker, masterKey);
+      case DelayedDisposeRandomAccessBucket.MAGIC:
+        return new DelayedDisposeRandomAccessBucket(dis, fg, persistentFileTracker, masterKey);
+      case NoDisposeBucket.MAGIC:
+        return new NoDisposeBucket(dis, fg, persistentFileTracker, masterKey);
+      case PaddedEphemerallyEncryptedBucket.MAGIC:
+        return new PaddedEphemerallyEncryptedBucket(dis, fg, persistentFileTracker, masterKey);
+      case ReadOnlyFileSliceBucket.MAGIC:
+        return new ReadOnlyFileSliceBucket(dis);
+      case PaddedBucket.MAGIC:
+        return new PaddedBucket(dis, fg, persistentFileTracker, masterKey);
+      case PaddedRandomAccessBucket.MAGIC:
+        return new PaddedRandomAccessBucket(dis, fg, persistentFileTracker, masterKey);
+      case RabBucket.MAGIC:
+        return new RabBucket(dis, fg, persistentFileTracker, masterKey);
+      case EncryptedBucket.MAGIC:
+        return new EncryptedBucket(dis, fg, persistentFileTracker, masterKey);
       default:
         throw new StorageFormatException("Unknown magic value for bucket " + magic);
     }
@@ -654,7 +652,7 @@ public class BucketTools {
    * Restore a LockableRandomAccessBuffer from a DataInputStream. Inverse of storeTo(). FIXME Maybe
    * we should just pass the ClientContext?
    */
-  public static RandomAccessBuffer restoreRabFrom(
+  public static Rab restoreRabFrom(
       DataInputStream dis,
       FilenameGenerator fg,
       PersistentFileTracker persistentFileTracker,
@@ -662,33 +660,33 @@ public class BucketTools {
       throws IOException, StorageFormatException, ResumeFailedException {
     int magic = dis.readInt();
     switch (magic) {
-      case PooledFile.MAGIC:
-        return new PooledFile(dis, fg, persistentFileTracker);
-      case hyphanet.support.io.storage.randomaccessbuffer.RegularFile.MAGIC:
-        return new hyphanet.support.io.storage.randomaccessbuffer.RegularFile(dis);
-      case ReadOnly.MAGIC:
-        return new ReadOnly(dis, fg, persistentFileTracker, masterSecret);
-      case hyphanet.support.io.storage.randomaccessbuffer.DelayedDispose.MAGIC:
-        return new hyphanet.support.io.storage.randomaccessbuffer.DelayedDispose(
+      case PooledFileRab.MAGIC:
+        return new PooledFileRab(dis, fg, persistentFileTracker);
+      case RegularFileRab.MAGIC:
+        return new RegularFileRab(dis);
+      case ReadOnlyRab.MAGIC:
+        return new ReadOnlyRab(dis, fg, persistentFileTracker, masterSecret);
+      case DelayedDisposeRab.MAGIC:
+        return new DelayedDisposeRab(
             dis, fg, persistentFileTracker, masterSecret);
-      case hyphanet.support.io.storage.randomaccessbuffer.Encrypted.MAGIC:
-        return hyphanet.support.io.storage.randomaccessbuffer.Encrypted.create(
+      case EncryptedRab.MAGIC:
+        return EncryptedRab.create(
             dis, fg, persistentFileTracker, masterSecret);
-      case hyphanet.support.io.storage.randomaccessbuffer.Padded.MAGIC:
-        return new hyphanet.support.io.storage.randomaccessbuffer.Padded(
+      case PaddedRab.MAGIC:
+        return new PaddedRab(
             dis, fg, persistentFileTracker, masterSecret);
       default:
         throw new StorageFormatException("Unknown magic value for RAF " + magic);
     }
   }
 
-  public static RandomAccessible toRandomAccessBucket(Bucket bucket, Factory bf)
+  public static RandomAccessible toRandomAccessBucket(Bucket bucket, BucketFactory bf)
       throws IOException {
     if (bucket instanceof RandomAccessible) {
       return (RandomAccessible) bucket;
     }
-    if (bucket instanceof DelayedDispose) {
-      RandomAccessible ret = ((DelayedDispose) bucket).toRandomAccessBucket();
+    if (bucket instanceof DelayedDisposeBucket) {
+      RandomAccessible ret = ((DelayedDisposeBucket) bucket).toRandomAccessBucket();
       if (ret != null) {
         return ret;
       }

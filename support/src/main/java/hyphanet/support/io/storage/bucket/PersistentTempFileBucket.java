@@ -6,7 +6,7 @@ import freenet.support.api.RandomAccessBucket;
 
 import java.io.*;
 
-public class PersistentTempFileBucket extends TempFile implements Serializable {
+public class PersistentTempFileBucket extends TempFileBucket implements Serializable {
 
     public static final int MAGIC = 0x2ffdd4cf;
     static final int BUFFER_SIZE = 4096;

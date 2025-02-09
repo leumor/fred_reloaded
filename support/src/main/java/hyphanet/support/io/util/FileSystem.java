@@ -1,7 +1,7 @@
 package hyphanet.support.io.util;
 
 import hyphanet.support.io.storage.bucket.BucketTools;
-import hyphanet.support.io.storage.bucket.RegularFile;
+import hyphanet.support.io.storage.bucket.RegularFileBucket;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -292,8 +292,8 @@ public final class FileSystem {
             logger.error("Failed to delete existing file {}", copyTo, e);
         }
         boolean copyFromExecutable = Files.isExecutable(copyFrom);
-        var outBucket = new RegularFile(copyTo, false, true, false, false);
-        var inBucket = new RegularFile(copyFrom, true, false, false, false);
+        var outBucket = new RegularFileBucket(copyTo, false, true, false, false);
+        var inBucket = new RegularFileBucket(copyFrom, true, false, false, false);
         try {
             BucketTools.copy(inBucket, outBucket);
         } catch (IOException e) {
