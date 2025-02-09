@@ -68,7 +68,7 @@ public class Temp implements TempStorage, RandomAccessible {
 
   /** A blocking method to force-migrate from a RAMBucket to a FileBucket */
   public final boolean migrateToDisk() throws IOException {
-    Bucket toMigrate = null;
+    Bucket toMigrate;
     long size;
     synchronized (this) {
       if (!isRamBucket() || hasBeenDisposed)
@@ -90,11 +90,8 @@ public class Temp implements TempStorage, RandomAccessible {
         }
       } else {
         if (size > 0) {
-          OutputStream temp = tempFB.getOutputStreamUnbuffered();
-          try {
+          try (OutputStream temp = tempFB.getOutputStreamUnbuffered()) {
             BucketTools.copyTo(toMigrate, temp, size);
-          } finally {
-            temp.close();
           }
         }
       }

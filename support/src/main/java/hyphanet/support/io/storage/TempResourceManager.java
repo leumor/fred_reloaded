@@ -43,13 +43,9 @@ public class TempResourceManager
       long minDiskSpace,
       boolean encrypt,
       MasterSecret masterSecret) {
-    this.filenameGenerator = filenameGenerator;
     this.maxInitSingleRamStorageSize = maxInitSingleRamStorageSize;
     this.ramStoragePoolSize = ramStoragePoolSize;
-    this.encrypt = encrypt;
     this.executor = executor;
-    this.minDiskSpace = minDiskSpace;
-    this.secret = masterSecret;
 
     this.rabFactory =
         new hyphanet.support.io.storage.randomaccessbuffer.TempFactory(
@@ -58,7 +54,7 @@ public class TempResourceManager
             minDiskSpace - ramStoragePoolSize,
             encrypt,
             CRYPT_TYPE,
-            secret);
+            masterSecret);
     this.bucketFactory =
         new hyphanet.support.io.storage.bucket.TempFactory(
             ramTracker,
@@ -68,7 +64,7 @@ public class TempResourceManager
             minDiskSpace,
             encrypt,
             CRYPT_TYPE,
-            secret,
+            masterSecret,
             rabFactory);
   }
 
@@ -125,7 +121,6 @@ public class TempResourceManager
 
   private final hyphanet.support.io.storage.randomaccessbuffer.TempFactory rabFactory;
   private final hyphanet.support.io.storage.bucket.TempFactory bucketFactory;
-  private final FilenameGenerator filenameGenerator;
 
   /**
    * How big can the max initial size be for us to consider using RAM storage? If the initial size
@@ -142,9 +137,6 @@ public class TempResourceManager
   private final TempStorageRamTracker ramTracker = new TempStorageRamTracker();
 
   private final ExecutorService executor;
-  private final MasterSecret secret;
-  private final long minDiskSpace;
-  private final boolean encrypt;
   private boolean runningCleaner = false;
   private final Runnable cleaner =
       new Runnable() {
@@ -161,13 +153,12 @@ public class TempResourceManager
               } catch (InsufficientDiskSpaceException e) {
                 if (!saidSo) {
                   logger.error("Insufficient disk space to migrate in-RAM buckets to disk!");
-                  System.err.println("Out of disk space!");
                   saidSo = true;
                 }
                 try {
                   Thread.sleep(1000);
                 } catch (InterruptedException e1) {
-                  // Ignore.
+                  Thread.currentThread().interrupt();
                 }
                 continue;
               }
@@ -188,13 +179,12 @@ public class TempResourceManager
               } catch (InsufficientDiskSpaceException e) {
                 if (!saidSo) {
                   logger.error("Insufficient disk space to migrate in-RAM buckets to disk!");
-                  System.err.println("Out of disk space!");
                   saidSo = true;
                 }
                 try {
                   Thread.sleep(1000);
                 } catch (InterruptedException e1) {
-                  // Ignore.
+                  Thread.currentThread().interrupt();
                 }
               }
             }
