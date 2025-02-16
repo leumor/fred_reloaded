@@ -5,7 +5,7 @@ import hyphanet.support.io.FilenameGenerator;
 import hyphanet.support.io.storage.EncryptType;
 import hyphanet.support.io.storage.RamStorageCapableFactory;
 import hyphanet.support.io.storage.TempStorageRamTracker;
-import hyphanet.support.io.storage.bucket.PaddedEphemerallyEncryptedBucket;
+import hyphanet.support.io.storage.bucket.wrapper.PaddedEphemerallyEncryptedBucket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

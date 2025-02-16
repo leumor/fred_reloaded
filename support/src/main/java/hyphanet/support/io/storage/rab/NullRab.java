@@ -12,30 +12,30 @@ import java.io.IOException;
  * scenarios where a {@link Rab} is required but actual storage operations are not needed, such as
  * testing or when dealing with optional storage components. All operations are effectively no-ops,
  * except for {@link #pread(long, byte[], int, int)} which fills the provided buffer with zeros and
- * {@link #size()} which returns the configured length. {@link #onResume(ResumeContext)} and {@link
+ * {@link #size()} which returns the configured size. {@link #onResume(ResumeContext)} and {@link
  * #storeTo(DataOutputStream)} throw {@link UnsupportedOperationException}.
  */
 public class NullRab implements Rab {
 
   /**
-   * Constructs a {@link NullRab} with the specified length.
+   * Constructs a {@link NullRab} with the specified size.
    *
-   * @param length the size of the null buffer in bytes, as returned by {@link #size()}.
+   * @param size the size of the null buffer in bytes, as returned by {@link #size()}.
    */
-  public NullRab(long length) {
-    this.length = length;
+  public NullRab(long size) {
+    this.size = size;
   }
 
   /**
    * Returns the pre-configured size of this {@link NullRab}.
    *
-   * <p>This method always returns the length provided in the constructor.
+   * <p>This method always returns the size provided in the constructor.
    *
    * @return the size of the null buffer in bytes.
    */
   @Override
   public long size() {
-    return length;
+    return size;
   }
 
   /**
@@ -153,6 +153,6 @@ public class NullRab implements Rab {
     return o.getClass() == getClass();
   }
 
-  /** The pre-configured length of this {@code NullRab}. */
-  private final long length;
+  /** The pre-configured size of this {@code NullRab}. */
+  private final long size;
 }

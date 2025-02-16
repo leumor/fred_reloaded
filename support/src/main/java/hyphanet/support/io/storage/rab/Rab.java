@@ -7,6 +7,7 @@ import hyphanet.support.io.ResumeContext;
 import hyphanet.support.io.ResumeFailedException;
 import hyphanet.support.io.storage.Storage;
 import hyphanet.support.io.storage.bucket.BucketTools;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -124,7 +125,7 @@ public interface Rab extends Storage {
    * <p>This method may perform no operation in some implementations. Callers should ensure that the
    * object becomes eligible for garbage collection after calling this method.
    */
-  boolean dispose();
+  void dispose();
 
   /**
    * Acquires a lock on the RAB to keep it open.

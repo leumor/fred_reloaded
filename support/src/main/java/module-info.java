@@ -14,4 +14,5 @@ module hyphanet.support {
   exports hyphanet.support.io.stream;
   exports hyphanet.support.io.util;
   exports hyphanet.support.io.storage;
+  exports hyphanet.support.io.storage.bucket.wrapper;
 }

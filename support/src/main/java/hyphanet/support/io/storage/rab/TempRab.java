@@ -1,31 +1,29 @@
 package hyphanet.support.io.storage.rab;
 
+import static hyphanet.support.io.storage.TempResourceManager.TRACE_STORAGE_LEAKS;
+
 import hyphanet.support.GlobalCleaner;
 import hyphanet.support.io.ResumeContext;
 import hyphanet.support.io.storage.TempStorage;
 import hyphanet.support.io.storage.TempStorageRamTracker;
 import hyphanet.support.io.storage.bucket.TempBucket;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.lang.ref.Cleaner;
 import java.lang.ref.WeakReference;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-
-import static hyphanet.support.io.storage.TempResourceManager.TRACE_STORAGE_LEAKS;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * A proxy class for {@link Rab} that allows switching the underlying {@link
- * Rab} instance.
+ * A proxy class for {@link Rab} that allows switching the underlying {@link Rab} instance.
  *
  * <p>This class acts as an intermediary, forwarding read and write operations to an underlying
- * {@link Rab}. The key feature is its ability to replace the underlying buffer with
- * a new one, for instance, during data migration or buffer resizing, without changing the external
- * reference to the {@link TempRab} itself. This provides a level of indirection and flexibility,
- * particularly useful in scenarios where the backing storage might need to be dynamically altered.
+ * {@link Rab}. The key feature is its ability to replace the underlying buffer with a new one, for
+ * instance, during data migration or buffer resizing, without changing the external reference to
+ * the {@link TempRab} itself. This provides a level of indirection and flexibility, particularly
+ * useful in scenarios where the backing storage might need to be dynamically altered.
  *
  * <p>Thread safety is ensured through a {@link ReadWriteLock}, protecting access to the underlying
  * buffer and related state variables.
@@ -77,8 +75,8 @@ public class TempRab implements Rab, TempStorage {
   /**
    * Constructs a {@link TempRab} with an initial underlying {@link Rab}.
    *
-   * @param initialWrap The initial {@link Rab} to wrap. This becomes the initially
-   *     active underlying storage.
+   * @param initialWrap The initial {@link Rab} to wrap. This becomes the initially active
+   *     underlying storage.
    * @param size The logical size of this proxy buffer. This size might be smaller than the actual
    *     size of the {@code initialWrap}, effectively limiting the accessible region.
    * @throws IOException If the size of the {@code initialWrap} is less than the specified {@code
@@ -115,8 +113,8 @@ public class TempRab implements Rab, TempStorage {
    * {@inheritDoc}
    *
    * <p>Returns the logical size of this proxy buffer, as specified during construction. This size
-   * might be smaller than the size of the underlying {@link Rab}, effectively
-   * representing a view or a limited region of the underlying storage.
+   * might be smaller than the size of the underlying {@link Rab}, effectively representing a view
+   * or a limited region of the underlying storage.
    *
    * @return The logical size of this proxy buffer in bytes.
    */
@@ -239,8 +237,8 @@ public class TempRab implements Rab, TempStorage {
    * {@inheritDoc}
    *
    * <p>Obtains a {@link RabLock} for this proxy buffer. This method manages locking at both the
-   * proxy level and the underlying {@link Rab} level to ensure consistent state
-   * during lock operations and migrations.
+   * proxy level and the underlying {@link Rab} level to ensure consistent state during lock
+   * operations and migrations.
    *
    * @return A {@link RabLock} associated with this proxy buffer. Closing this lock will release the
    *     lock on the underlying buffer when the last proxy-level lock is closed.
@@ -273,16 +271,15 @@ public class TempRab implements Rab, TempStorage {
   }
 
   @Override
-  public boolean dispose() {
+  public void dispose() {
     if (!innerDispose()) {
-      return false;
+      return;
     }
     logger.info("Disposed {}", this);
     if (tempBucket != null) {
       // Tell the TempBucket to prevent log spam. Don't call free().
       tempBucket.onDisposed();
     }
-    return true;
   }
 
   public WeakReference<TempStorage> getReference() {
@@ -338,8 +335,7 @@ public class TempRab implements Rab, TempStorage {
   }
 
   /**
-   * Disposes the underlying {@link Rab} and sets the internal reference to {@code
-   * null}.
+   * Disposes the underlying {@link Rab} and sets the internal reference to {@code null}.
    *
    * <p><b>Thread Safety:</b> Acquires a write lock to ensure exclusive access during the freeing
    * process.
@@ -398,9 +394,8 @@ public class TempRab implements Rab, TempStorage {
    *   <li><b>Locking:</b> Acquires a write lock to ensure exclusive access during migration.
    *   <li><b>Checks State:</b> Verifies that the proxy is not closed and the underlying buffer is
    *       not null.
-   *   <li><b>Creates Successor:</b> Calls the abstract method {@link
-   *       #innerMigrate(Rab)} to create a new {@link Rab} which
-   *       should contain the same data as the current underlying buffer.
+   *   <li><b>Creates Successor:</b> Calls the abstract method {@link #innerMigrate(Rab)} to create
+   *       a new {@link Rab} which should contain the same data as the current underlying buffer.
    *   <li><b>Lock Management:</b> If there are active {@link RabLock}s ({@code lockOpenCount > 0}):
    *       <ul>
    *         <li>Attempts to acquire a new lock on the successor buffer using {@code
@@ -545,8 +540,8 @@ public class TempRab implements Rab, TempStorage {
   private final long size;
 
   /**
-   * Read/write lock to protect concurrent access to the {@code underlying} {@link
-   * Rab}, {@code lockOpenCount}, and {@code closed} flag.
+   * Read/write lock to protect concurrent access to the {@code underlying} {@link Rab}, {@code
+   * lockOpenCount}, and {@code closed} flag.
    *
    * <p>A read lock is acquired for read and write operations ({@link #pread(long, byte[], int,
    * int)}, {@link #pwrite(long, byte[], int, int)}, {@link #hasBeenDisposed()}, {@link
@@ -573,15 +568,15 @@ public class TempRab implements Rab, TempStorage {
   /**
    * Counter for the number of currently active {@link RabLock}s obtained via {@link #lockOpen()}.
    *
-   * <p>This is used to manage the lifecycle of the lock on the underlying {@link
-   * Rab}. The underlying lock is acquired when {@code lockOpenCount} transitions
-   * from 0 to 1 and released when it transitions from 1 to 0.
+   * <p>This is used to manage the lifecycle of the lock on the underlying {@link Rab}. The
+   * underlying lock is acquired when {@code lockOpenCount} transitions from 0 to 1 and released
+   * when it transitions from 1 to 0.
    */
   private int lockOpenCount;
 
   /**
-   * The {@link RabLock} obtained on the underlying {@link Rab} when the first {@link
-   * RabLock} is requested on this proxy.
+   * The {@link RabLock} obtained on the underlying {@link Rab} when the first {@link RabLock} is
+   * requested on this proxy.
    *
    * <p>This lock is held as long as there is at least one active {@link RabLock} on this proxy
    * (i.e., {@code lockOpenCount > 0}). It is used to ensure that the underlying buffer remains

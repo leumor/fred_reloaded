@@ -42,11 +42,8 @@ public interface Storage extends Resumable, AutoCloseable {
    *
    * <p>This method may perform no operation in some implementations. Callers should ensure that the
    * object becomes eligible for garbage collection after calling this method.
-   *
-   * @return true if the storage was successfully disposed, false if it was already disposed.
    */
-  default boolean dispose() {
+  default void dispose() {
     close();
-    return true;
   }
 }
