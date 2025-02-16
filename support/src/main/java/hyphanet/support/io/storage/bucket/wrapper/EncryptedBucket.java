@@ -1,4 +1,4 @@
-package hyphanet.support.io.storage.bucket;
+package hyphanet.support.io.storage.bucket.wrapper;
 
 import hyphanet.base.Fields;
 import hyphanet.crypt.CryptByteBuffer;
@@ -11,6 +11,8 @@ import hyphanet.support.io.ResumeContext;
 import hyphanet.support.io.ResumeFailedException;
 import hyphanet.support.io.storage.EncryptType;
 import hyphanet.support.io.storage.StorageFormatException;
+import hyphanet.support.io.storage.bucket.BucketTools;
+import hyphanet.support.io.storage.bucket.RandomAccessible;
 import hyphanet.support.io.storage.rab.EncryptedRab;
 import hyphanet.support.io.storage.rab.Rab;
 import hyphanet.support.io.stream.NullInputStream;
@@ -20,6 +22,7 @@ import java.security.GeneralSecurityException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javax.crypto.SecretKey;
 import org.bouncycastle.crypto.SkippingStreamCipher;
 import org.bouncycastle.crypto.params.KeyParameter;
@@ -124,7 +127,7 @@ public class EncryptedBucket implements RandomAccessible, Serializable {
    */
   @Override
   public OutputStream getOutputStreamUnbuffered() throws IOException {
-    if (isDisposed) {
+    if (disposed.get()) {
       throw new IOException(
           "This RandomAccessBuffer has already been closed. This should not" + " happen.");
     }
@@ -157,7 +160,7 @@ public class EncryptedBucket implements RandomAccessible, Serializable {
     if (size() == 0) {
       return new NullInputStream();
     }
-    if (isDisposed) {
+    if (disposed.get()) {
       throw new IOException(
           "This RandomAccessBuffer has already been closed. This should not" + " happen.");
     }
@@ -216,12 +219,11 @@ public class EncryptedBucket implements RandomAccessible, Serializable {
   }
 
   @Override
-  public boolean dispose() {
-    if (isDisposed) {
-      return false;
+  public void dispose() {
+    if (disposed.compareAndSet(false, true)) {
+      return;
     }
-    isDisposed = true;
-    return underlying.dispose();
+    underlying.dispose();
   }
 
   /**
@@ -660,7 +662,7 @@ public class EncryptedBucket implements RandomAccessible, Serializable {
   private transient SecretKey headerMacKey;
 
   /** Flag indicating if this bucket has been disposed */
-  private transient volatile boolean isDisposed = false;
+  private AtomicBoolean disposed = new AtomicBoolean();
 
   /** The unencrypted base key used for derivation */
   private transient SecretKey unencryptedBaseKey;
