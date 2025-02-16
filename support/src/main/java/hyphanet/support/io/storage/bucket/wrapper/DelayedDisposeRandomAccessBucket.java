@@ -2,7 +2,7 @@
  * This code is part of Freenet. It is distributed under the GNU General Public License, version 2
  * (or at your option any later version). See http://www.gnu.org/ for further details of the GPL.
  */
-package hyphanet.support.io.storage.bucket;
+package hyphanet.support.io.storage.bucket.wrapper;
 
 import hyphanet.crypt.key.MasterSecret;
 import hyphanet.support.io.FilenameGenerator;
@@ -11,9 +11,13 @@ import hyphanet.support.io.ResumeContext;
 import hyphanet.support.io.ResumeFailedException;
 import hyphanet.support.io.storage.DelayedDisposable;
 import hyphanet.support.io.storage.StorageFormatException;
+import hyphanet.support.io.storage.bucket.Bucket;
+import hyphanet.support.io.storage.bucket.BucketTools;
+import hyphanet.support.io.storage.bucket.RandomAccessible;
 import hyphanet.support.io.storage.rab.DelayedDisposeRab;
 import hyphanet.support.io.storage.rab.Rab;
 import java.io.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -91,46 +95,30 @@ public class DelayedDisposeRandomAccessBucket
 
   @Override
   public boolean toDispose() {
-    return disposed;
+    return disposed.get();
   }
 
   @Override
   public OutputStream getOutputStream() throws IOException {
-    synchronized (this) {
-      if (disposed) {
-        throw new IOException("Already freed");
-      }
-    }
+    checkDisposed();
     return bucket.getOutputStream();
   }
 
   @Override
   public OutputStream getOutputStreamUnbuffered() throws IOException {
-    synchronized (this) {
-      if (disposed) {
-        throw new IOException("Already freed");
-      }
-    }
+    checkDisposed();
     return bucket.getOutputStreamUnbuffered();
   }
 
   @Override
   public InputStream getInputStream() throws IOException {
-    synchronized (this) {
-      if (disposed) {
-        throw new IOException("Already freed");
-      }
-    }
+    checkDisposed();
     return bucket.getInputStream();
   }
 
   @Override
   public InputStream getInputStreamUnbuffered() throws IOException {
-    synchronized (this) {
-      if (disposed) {
-        throw new IOException("Already freed");
-      }
-    }
+    checkDisposed();
     return bucket.getInputStreamUnbuffered();
   }
 
@@ -160,7 +148,7 @@ public class DelayedDisposeRandomAccessBucket
    * @return The underlying bucket, or null if the bucket has been freed
    */
   public synchronized Bucket getUnderlying() {
-    if (disposed) {
+    if (disposed.get()) {
       return null;
     }
     return bucket;
@@ -172,16 +160,12 @@ public class DelayedDisposeRandomAccessBucket
   }
 
   @Override
-  public boolean dispose() {
-    synchronized (this) {
-      if (disposed) {
-        return false;
-      }
-      disposed = true;
+  public void dispose() {
+    if (disposed.compareAndSet(false, true)) {
+      return;
     }
     logger.info("Freeing {} underlying={}", this, bucket, new Exception("debug"));
     this.factory.delayedDispose(this, createdCommitID);
-    return true;
   }
 
   @Override
@@ -214,24 +198,26 @@ public class DelayedDisposeRandomAccessBucket
 
   @Override
   public Rab toRandomAccessBuffer() throws IOException {
-    synchronized (this) {
-      if (disposed) {
-        throw new IOException("Already freed");
-      }
-    }
+    checkDisposed();
     setReadOnly();
     return new DelayedDisposeRab(bucket.toRandomAccessBuffer(), factory);
+  }
+
+  private void checkDisposed() throws IOException {
+    if (disposed.get()) {
+      throw new IOException("Already disposed");
+    }
   }
 
   /** The underlying bucket being wrapped */
   private final RandomAccessible bucket;
 
+  /** Flag indicating whether this bucket has been disposed */
+  private final AtomicBoolean disposed = new AtomicBoolean();
+
   /** Factory for tracking persistent files */
   // Only set on construction and on onResume() on startup. So shouldn't need locking.
   private transient PersistentFileTracker factory;
-
-  /** Flag indicating whether this bucket has been disposed */
-  private boolean disposed;
 
   /** Commit ID at the time of creation */
   private transient long createdCommitID;
