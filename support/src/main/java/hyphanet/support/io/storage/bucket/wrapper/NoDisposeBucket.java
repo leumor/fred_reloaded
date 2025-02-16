@@ -1,4 +1,4 @@
-package hyphanet.support.io.storage.bucket;
+package hyphanet.support.io.storage.bucket.wrapper;
 
 import hyphanet.crypt.key.MasterSecret;
 import hyphanet.support.io.FilenameGenerator;
@@ -6,6 +6,8 @@ import hyphanet.support.io.PersistentFileTracker;
 import hyphanet.support.io.ResumeContext;
 import hyphanet.support.io.ResumeFailedException;
 import hyphanet.support.io.storage.StorageFormatException;
+import hyphanet.support.io.storage.bucket.Bucket;
+import hyphanet.support.io.storage.bucket.BucketTools;
 import java.io.*;
 
 /**
@@ -125,9 +127,8 @@ public class NoDisposeBucket implements Bucket, Serializable {
    * of the underlying bucket. This is the core purpose of the {@code NoDispose} class.
    */
   @Override
-  public boolean dispose() {
+  public void dispose() {
     // Do nothing.
-    return false;
   }
 
   @Override

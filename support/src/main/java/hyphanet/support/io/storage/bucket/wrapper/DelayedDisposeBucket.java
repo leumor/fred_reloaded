@@ -2,7 +2,7 @@
  * This code is part of Freenet. It is distributed under the GNU General Public License, version 2
  * (or at your option any later version). See http://www.gnu.org/ for further details of the GPL.
  */
-package hyphanet.support.io.storage.bucket;
+package hyphanet.support.io.storage.bucket.wrapper;
 
 import hyphanet.crypt.key.MasterSecret;
 import hyphanet.support.io.FilenameGenerator;
@@ -11,10 +11,12 @@ import hyphanet.support.io.ResumeContext;
 import hyphanet.support.io.ResumeFailedException;
 import hyphanet.support.io.storage.DelayedDisposable;
 import hyphanet.support.io.storage.StorageFormatException;
+import hyphanet.support.io.storage.bucket.Bucket;
+import hyphanet.support.io.storage.bucket.BucketTools;
+import hyphanet.support.io.storage.bucket.RandomAccessible;
+import java.io.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.*;
 
 /**
  * The {@link DelayedDisposeBucket} class provides a mechanism to delay the disposal of an
@@ -204,19 +206,15 @@ public class DelayedDisposeBucket implements Bucket, Serializable, DelayedDispos
    * {@link #realDispose()} is called. If already disposed or migrated, this method has no effect.
    */
   @Override
-  public boolean dispose() {
+  public void dispose() {
     synchronized (this) {
-      if (disposed) {
-        return false;
-      }
-      if (migrated) {
-        return false;
+      if (disposed || migrated) {
+        return;
       }
       disposed = true;
     }
     logger.info("Freeing {} underlying={}", this, bucket);
     this.factory.delayedDispose(this, createdCommitID);
-    return true;
   }
 
   @Override

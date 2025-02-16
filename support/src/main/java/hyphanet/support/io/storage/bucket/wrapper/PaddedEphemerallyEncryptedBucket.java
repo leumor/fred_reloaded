@@ -1,7 +1,7 @@
 /* This code is part of Freenet. It is distributed under the GNU General
  * Public License, version 2 (or at your option any later version). See
  * http://www.gnu.org/ for further details of the GPL. */
-package hyphanet.support.io.storage.bucket;
+package hyphanet.support.io.storage.bucket.wrapper;
 
 import hyphanet.crypt.JcaProvider;
 import hyphanet.crypt.key.MasterSecret;
@@ -10,6 +10,8 @@ import hyphanet.support.io.PersistentFileTracker;
 import hyphanet.support.io.ResumeContext;
 import hyphanet.support.io.ResumeFailedException;
 import hyphanet.support.io.storage.StorageFormatException;
+import hyphanet.support.io.storage.bucket.Bucket;
+import hyphanet.support.io.storage.bucket.BucketTools;
 import hyphanet.support.io.stream.NullInputStream;
 import java.io.*;
 import java.security.InvalidAlgorithmParameterException;
@@ -264,8 +266,8 @@ public class PaddedEphemerallyEncryptedBucket implements Bucket, Serializable {
    * <p>Disposes of the underlying {@link Bucket}.
    */
   @Override
-  public boolean dispose() {
-    return bucket.dispose();
+  public void dispose() {
+    bucket.dispose();
   }
 
   /**

@@ -1,4 +1,4 @@
-package hyphanet.support.io.storage.bucket;
+package hyphanet.support.io.storage.bucket.wrapper;
 
 import hyphanet.crypt.Global;
 import hyphanet.crypt.io.AeadInputStream;
@@ -9,6 +9,8 @@ import hyphanet.support.io.PersistentFileTracker;
 import hyphanet.support.io.ResumeContext;
 import hyphanet.support.io.ResumeFailedException;
 import hyphanet.support.io.storage.StorageFormatException;
+import hyphanet.support.io.storage.bucket.Bucket;
+import hyphanet.support.io.storage.bucket.BucketTools;
 import java.io.*;
 import java.util.Arrays;
 import java.util.Set;
@@ -181,8 +183,8 @@ public class AeadCryptBucket implements Bucket, Serializable {
    * <p>Disposes both this bucket and underlying storage.
    */
   @Override
-  public boolean dispose() {
-    return underlying.dispose();
+  public void dispose() {
+    underlying.dispose();
   }
 
   @Override

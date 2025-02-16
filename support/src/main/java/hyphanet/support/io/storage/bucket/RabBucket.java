@@ -6,30 +6,28 @@ import hyphanet.support.io.PersistentFileTracker;
 import hyphanet.support.io.ResumeContext;
 import hyphanet.support.io.ResumeFailedException;
 import hyphanet.support.io.storage.StorageFormatException;
+import hyphanet.support.io.storage.rab.Rab;
 import hyphanet.support.io.stream.RabInputStream;
 import java.io.*;
 
 /**
- * This class implements a {@link Bucket} and {@link RandomAccessible} interface using a {@link
- * hyphanet.support.io.storage.rab.Rab} as its underlying storage. It is inherently read-only after
- * construction.
+ * This class implements a {@link Bucket} and {@link RandomAccessible} interface using a {@link Rab}
+ * as its underlying storage. It is inherently read-only after construction.
  *
  * <p><b>Implementation Details:</b>
  *
  * <ul>
  *   <li><b>Read-Only:</b> RabBucket is designed to be read-only after creation. Modifications are
- *       not supported, reflecting the nature of its underlying {@link
- *       hyphanet.support.io.storage.rab.Rab}.
+ *       not supported, reflecting the nature of its underlying {@link Rab}.
  *   <li><b>Resource Management:</b> RabBucket directly manages the lifecycle of the provided {@link
- *       hyphanet.support.io.storage.rab.Rab}. Closing or disposing of the RabBucket will close or
- *       dispose the underlying buffer.
+ *       Rab}. Closing or disposing of the RabBucket will close or dispose the underlying buffer.
  *   <li><b>Shadow Copies:</b> Shadow copy creation is not supported as RabBucket is intended to be
- *       a lightweight wrapper around an existing {@link hyphanet.support.io.storage.rab.Rab}.
+ *       a lightweight wrapper around an existing {@link Rab}.
  * </ul>
  *
  * @see Bucket
  * @see RandomAccessible
- * @see hyphanet.support.io.storage.rab.Rab
+ * @see Rab
  */
 public class RabBucket implements Bucket, RandomAccessible {
 
@@ -37,17 +35,15 @@ public class RabBucket implements Bucket, RandomAccessible {
   static final int MAGIC = 0x892a708a;
 
   /**
-   * Constructs a new {@link RabBucket} Bucket wrapping an existing {@link
-   * hyphanet.support.io.storage.rab.Rab}.
+   * Constructs a new {@link RabBucket} Bucket wrapping an existing {@link Rab}.
    *
    * <p>The newly created {@link RabBucket} Bucket will be read-only and operate on the provided
    * {@link #underlying} buffer. The size of the bucket is determined by the current size of the
    * {@link #underlying} buffer.
    *
-   * @param underlying The {@link hyphanet.support.io.storage.rab.Rab} to use as the underlying
-   *     storage.
+   * @param underlying The {@link Rab} to use as the underlying storage.
    */
-  public RabBucket(hyphanet.support.io.storage.rab.Rab underlying) {
+  public RabBucket(Rab underlying) {
     this.underlying = underlying;
     size = underlying.size();
   }
@@ -57,9 +53,8 @@ public class RabBucket implements Bucket, RandomAccessible {
    *
    * <p>This constructor is used to reconstruct a {@link RabBucket} Bucket from a serialized state,
    * typically during application restart or recovery. It delegates the actual restoration of the
-   * underlying {@link hyphanet.support.io.storage.rab.Rab} to {@link
-   * BucketTools#restoreRabFrom(DataInputStream, FilenameGenerator, PersistentFileTracker,
-   * MasterSecret)}.
+   * underlying {@link Rab} to {@link BucketTools#restoreRabFrom(DataInputStream, FilenameGenerator,
+   * PersistentFileTracker, MasterSecret)}.
    *
    * @param dis The {@link DataInputStream} to read the bucket data from.
    * @param fg The {@link FilenameGenerator} for generating filenames if needed during restoration.
@@ -110,8 +105,7 @@ public class RabBucket implements Bucket, RandomAccessible {
    * {@inheritDoc}
    *
    * <p>Returns a {@link BufferedInputStream} wrapping the unbuffered input stream from the
-   * underlying {@link hyphanet.support.io.storage.rab.Rab}. This provides efficient buffered
-   * reading from the bucket's data.
+   * underlying {@link Rab}. This provides efficient buffered reading from the bucket's data.
    *
    * @return A {@link BufferedInputStream} for reading data from this bucket.
    * @throws IOException if an I/O error occurs while creating the input stream.
@@ -125,10 +119,9 @@ public class RabBucket implements Bucket, RandomAccessible {
   /**
    * {@inheritDoc}
    *
-   * <p>Creates an unbuffered {@link InputStream} to read data from the underlying {@link
-   * hyphanet.support.io.storage.rab.Rab}. The stream is implemented using {@link RabInputStream}
-   * which is optimized for reading from {@link hyphanet.support.io.storage.rab.Rab} efficiently
-   * without unnecessary copying.
+   * <p>Creates an unbuffered {@link InputStream} to read data from the underlying {@link Rab}. The
+   * stream is implemented using {@link RabInputStream} which is optimized for reading from {@link
+   * Rab} efficiently without unnecessary copying.
    *
    * @return An unbuffered {@link InputStream} for reading data from this bucket.
    * @throws IOException if an I/O error occurs while creating the input stream.
@@ -143,8 +136,7 @@ public class RabBucket implements Bucket, RandomAccessible {
    * {@inheritDoc}
    *
    * <p>Always returns {@code null} as {@link RabBucket} Bucket does not have a specific name
-   * associated with it, as it's typically a wrapper around an anonymous {@link
-   * hyphanet.support.io.storage.rab.Rab}.
+   * associated with it, as it's typically a wrapper around an anonymous {@link Rab}.
    *
    * @return {@code null}
    */
@@ -156,9 +148,9 @@ public class RabBucket implements Bucket, RandomAccessible {
   /**
    * {@inheritDoc}
    *
-   * <p>Returns the current size of the data in the underlying {@link
-   * hyphanet.support.io.storage.rab.Rab}. This size is fixed at the time of {@link RabBucket}
-   * Bucket creation and does not change as {@link RabBucket} Bucket is read-only.
+   * <p>Returns the current size of the data in the underlying {@link Rab}. This size is fixed at
+   * the time of {@link RabBucket} Bucket creation and does not change as {@link RabBucket} Bucket
+   * is read-only.
    *
    * @return The size in bytes of the data in the bucket.
    */
@@ -194,26 +186,25 @@ public class RabBucket implements Bucket, RandomAccessible {
   /**
    * {@inheritDoc}
    *
-   * <p>Disposes of the underlying {@link hyphanet.support.io.storage.rab.Rab}, releasing any
-   * resources held by it. This operation should be called when the {@link RabBucket} Bucket and its
-   * associated data are no longer needed.
+   * <p>Disposes of the underlying {@link Rab}, releasing any resources held by it. This operation
+   * should be called when the {@link RabBucket} Bucket and its associated data are no longer
+   * needed.
    *
-   * @see hyphanet.support.io.storage.rab.Rab#dispose()
+   * @see Rab#dispose()
    */
   @Override
-  public boolean dispose() {
-    return underlying.dispose();
+  public void dispose() {
+    underlying.dispose();
   }
 
   /**
    * {@inheritDoc}
    *
-   * <p>Closes the underlying {@link hyphanet.support.io.storage.rab.Rab}, releasing any resources
-   * associated with it. After closing, further operations on the {@link RabBucket} Bucket might
-   * throw {@link IOException}.
+   * <p>Closes the underlying {@link Rab}, releasing any resources associated with it. After
+   * closing, further operations on the {@link RabBucket} Bucket might throw {@link IOException}.
    *
    * @throws IOException if an I/O error occurs during closing the underlying buffer.
-   * @see hyphanet.support.io.storage.rab.Rab#close()
+   * @see Rab#close()
    */
   @Override
   public void close() {
@@ -236,14 +227,13 @@ public class RabBucket implements Bucket, RandomAccessible {
   /**
    * {@inheritDoc}
    *
-   * <p>Delegates the {@code onResume} operation to the underlying {@link
-   * hyphanet.support.io.storage.rab.Rab}. This allows the underlying buffer to perform any
-   * necessary resumption tasks after a restart, such as re-registering with persistent storage
-   * trackers.
+   * <p>Delegates the {@code onResume} operation to the underlying {@link Rab}. This allows the
+   * underlying buffer to perform any necessary resumption tasks after a restart, such as
+   * re-registering with persistent storage trackers.
    *
    * @param context The {@link ResumeContext} providing runtime support for resuming.
    * @throws ResumeFailedException if the underlying buffer's resumption process fails.
-   * @see hyphanet.support.io.storage.rab.Rab#onResume(ResumeContext)
+   * @see Rab#onResume(ResumeContext)
    */
   @Override
   public void onResume(ResumeContext context) throws ResumeFailedException {
@@ -255,14 +245,13 @@ public class RabBucket implements Bucket, RandomAccessible {
    *
    * <p>Stores the {@link RabBucket} Bucket's reconstruction data to the provided {@link
    * DataOutputStream}. This method writes the {@link #MAGIC} number followed by the reconstruction
-   * data of the underlying {@link hyphanet.support.io.storage.rab.Rab} to the output stream. This
-   * allows for the {@link RabBucket} Bucket to be restored later using the {@link
-   * #RabBucket(DataInputStream, FilenameGenerator, PersistentFileTracker, MasterSecret)}
-   * constructor.
+   * data of the underlying {@link Rab} to the output stream. This allows for the {@link RabBucket}
+   * Bucket to be restored later using the {@link #RabBucket(DataInputStream, FilenameGenerator,
+   * PersistentFileTracker, MasterSecret)} constructor.
    *
    * @param dos The {@link DataOutputStream} to write the bucket data to.
    * @throws IOException if an I/O error occurs during writing to the output stream.
-   * @see hyphanet.support.io.storage.rab.Rab#storeTo(DataOutputStream)
+   * @see Rab#storeTo(DataOutputStream)
    * @see #MAGIC
    */
   @Override
@@ -274,20 +263,19 @@ public class RabBucket implements Bucket, RandomAccessible {
   /**
    * {@inheritDoc}
    *
-   * <p>Returns the underlying {@link hyphanet.support.io.storage.rab.Rab} directly. This method
-   * provides efficient access to the random access buffer representation of the bucket's data
-   * without copying.
+   * <p>Returns the underlying {@link Rab} directly. This method provides efficient access to the
+   * random access buffer representation of the bucket's data without copying.
    *
-   * @return The underlying {@link hyphanet.support.io.storage.rab.Rab}.
+   * @return The underlying {@link Rab}.
    */
   @Override
-  public hyphanet.support.io.storage.rab.Rab toRandomAccessBuffer() {
+  public Rab toRandomAccessBuffer() {
     return underlying;
   }
 
   /**
    * The size of the data stored in this bucket, which is determined by the size of the underlying
-   * {@link hyphanet.support.io.storage.rab.Rab} at the time of {@link RabBucket} Bucket creation.
+   * {@link Rab} at the time of {@link RabBucket} Bucket creation.
    *
    * <p>This value is constant throughout the lifecycle of the {@link RabBucket} Bucket as it is
    * read-only.
@@ -295,12 +283,10 @@ public class RabBucket implements Bucket, RandomAccessible {
   final long size;
 
   /**
-   * The underlying {@link hyphanet.support.io.storage.rab.Rab} that provides the storage for this
-   * {@link RabBucket} Bucket.
+   * The underlying {@link Rab} that provides the storage for this {@link RabBucket} Bucket.
    *
-   * <p>All data read and write operations are delegated to this {@link
-   * hyphanet.support.io.storage.rab.Rab}. The lifecycle of this buffer is managed by the {@link
-   * RabBucket} Bucket.
+   * <p>All data read and write operations are delegated to this {@link Rab}. The lifecycle of this
+   * buffer is managed by the {@link RabBucket} Bucket.
    */
-  private final hyphanet.support.io.storage.rab.Rab underlying;
+  private final Rab underlying;
 }

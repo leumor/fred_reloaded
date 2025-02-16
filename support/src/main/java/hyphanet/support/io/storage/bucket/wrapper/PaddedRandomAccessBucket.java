@@ -1,4 +1,4 @@
-package hyphanet.support.io.storage.bucket;
+package hyphanet.support.io.storage.bucket.wrapper;
 
 import hyphanet.crypt.key.MasterSecret;
 import hyphanet.support.io.FilenameGenerator;
@@ -6,6 +6,9 @@ import hyphanet.support.io.PersistentFileTracker;
 import hyphanet.support.io.ResumeContext;
 import hyphanet.support.io.ResumeFailedException;
 import hyphanet.support.io.storage.StorageFormatException;
+import hyphanet.support.io.storage.bucket.Bucket;
+import hyphanet.support.io.storage.bucket.BucketTools;
+import hyphanet.support.io.storage.bucket.RandomAccessible;
 import hyphanet.support.io.storage.rab.PaddedRab;
 import hyphanet.support.io.storage.rab.Rab;
 import hyphanet.support.io.util.Stream;
@@ -170,8 +173,8 @@ public class PaddedRandomAccessBucket implements RandomAccessible, Serializable 
   }
 
   @Override
-  public boolean dispose() {
-    return underlying.dispose();
+  public void dispose() {
+    underlying.dispose();
   }
 
   @Override
