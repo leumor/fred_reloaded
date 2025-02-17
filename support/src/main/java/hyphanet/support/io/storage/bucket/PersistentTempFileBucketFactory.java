@@ -3,8 +3,6 @@
  * http://www.gnu.org/ for further details of the GPL. */
 package hyphanet.support.io.storage.bucket;
 
-import static hyphanet.support.io.storage.TempResourceManager.CRYPT_TYPE;
-
 import hyphanet.crypt.key.MasterSecret;
 import hyphanet.support.io.DiskSpaceChecker;
 import hyphanet.support.io.FilenameGenerator;
@@ -14,13 +12,16 @@ import hyphanet.support.io.storage.bucket.wrapper.DelayedDisposeRandomAccessBuck
 import hyphanet.support.io.storage.bucket.wrapper.EncryptedBucket;
 import hyphanet.support.io.storage.bucket.wrapper.PaddedRandomAccessBucket;
 import hyphanet.support.io.util.FilePath;
+import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
-import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import static hyphanet.support.io.storage.Storage.CRYPT_TYPE;
 
 /**
  * Handles persistent temporary files. These are used for e.g. persistent downloads. These are

@@ -11,6 +11,9 @@ import java.io.IOException;
  */
 public interface Storage extends Resumable, AutoCloseable {
 
+  /** Default encryption type for encrypted storage. */
+  EncryptType CRYPT_TYPE = EncryptType.CHACHA_128;
+
   /**
    * Returns the current size of data stored in this Storage.
    *

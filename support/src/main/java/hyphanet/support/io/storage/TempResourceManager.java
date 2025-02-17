@@ -1,5 +1,7 @@
 package hyphanet.support.io.storage;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
+
 import hyphanet.base.TimeUtil;
 import hyphanet.crypt.key.MasterSecret;
 import hyphanet.support.io.FilenameGenerator;
@@ -11,25 +13,22 @@ import hyphanet.support.io.storage.rab.RabFactory;
 import hyphanet.support.io.storage.rab.TempRab;
 import hyphanet.support.io.storage.rab.TempRabFactory;
 import hyphanet.support.io.stream.InsufficientDiskSpaceException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.concurrent.ExecutorService;
-
-import static java.util.concurrent.TimeUnit.MINUTES;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 // TODO:  Replace finalizer with Cleaner
-public class TempResourceManager
-    implements RabFactory, BucketFactory {
+public class TempResourceManager implements RabFactory, BucketFactory {
 
   public static final boolean TRACE_STORAGE_LEAKS = false;
-  public static final EncryptType CRYPT_TYPE = EncryptType.CHACHA_128;
+
   /** How many times the maxRamStorageSize can a RAM storage be before it gets migrated? */
   private static final int RAMSTORAGE_CONVERSION_FACTOR = 4;
+
   /** How old is a long-lived RAM storage? */
   private static final long RAM_STORAGE_MAX_AGE = MINUTES.toMillis(5);
 
@@ -55,7 +54,7 @@ public class TempResourceManager
             filenameGenerator,
             minDiskSpace - ramStoragePoolSize,
             encrypt,
-            CRYPT_TYPE,
+            Storage.CRYPT_TYPE,
             masterSecret);
     this.bucketFactory =
         new TempBucketFactory(
@@ -65,7 +64,7 @@ public class TempResourceManager
             ramStoragePoolSize,
             minDiskSpace,
             encrypt,
-            CRYPT_TYPE,
+            Storage.CRYPT_TYPE,
             masterSecret,
             rabFactory);
   }
@@ -93,8 +92,8 @@ public class TempResourceManager
   }
 
   @Override
-  public synchronized Rab makeRab(
-      byte[] initialContents, int offset, int size, boolean readOnly) throws IOException {
+  public synchronized Rab makeRab(byte[] initialContents, int offset, int size, boolean readOnly)
+      throws IOException {
     setCreateRamStorage(size, rabFactory);
     runCleaner();
     var rab = rabFactory.makeRab(initialContents, offset, size, readOnly);
