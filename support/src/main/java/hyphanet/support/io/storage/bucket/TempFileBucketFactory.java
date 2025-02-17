@@ -3,6 +3,8 @@ package hyphanet.support.io.storage.bucket;
 import hyphanet.crypt.key.MasterSecret;
 import hyphanet.support.io.FilenameGenerator;
 import hyphanet.support.io.storage.EncryptType;
+import hyphanet.support.io.storage.bucket.wrapper.EncryptedBucket;
+import hyphanet.support.io.storage.bucket.wrapper.PaddedRandomAccessBucket;
 
 import java.io.IOException;
 

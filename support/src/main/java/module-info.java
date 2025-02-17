@@ -7,7 +7,6 @@ module hyphanet.support {
   requires org.jspecify;
   requires com.google.errorprone.annotations;
 
-  exports hyphanet.support;
   exports hyphanet.support.io;
   exports hyphanet.support.io.storage.bucket;
   exports hyphanet.support.io.storage.rab;

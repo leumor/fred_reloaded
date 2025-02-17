@@ -185,16 +185,14 @@ public class TempBucket implements TempStorage, RandomAccessible {
   }
 
   @Override
-  public synchronized boolean dispose() {
+  public synchronized void dispose() {
     if (hasBeenDisposed) {
-      return false;
+      return;
     }
     hasBeenDisposed = true;
 
     cleanable.clean();
     currentBucket = null;
-
-    return true;
   }
 
   @Override
@@ -617,5 +615,5 @@ public class TempBucket implements TempStorage, RandomAccessible {
   /** An identifier used to know when to deprecate the InputStreams */
   private short osIndex;
 
-  private boolean hasBeenDisposed = false;
+  private volatile boolean hasBeenDisposed = false;
 }

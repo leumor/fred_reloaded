@@ -152,7 +152,8 @@ public interface Bucket extends Storage {
    * <p>This method may perform no operation in some implementations. Callers should ensure that the
    * object becomes eligible for garbage collection after calling this method.
    */
-  default boolean dispose() {
-    return Storage.super.dispose();
+  @Override
+  default void dispose() {
+    Storage.super.dispose();
   }
 }

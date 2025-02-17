@@ -27,12 +27,9 @@ public class TempResourceManager
     implements RabFactory, BucketFactory {
 
   public static final boolean TRACE_STORAGE_LEAKS = false;
-
+  public static final EncryptType CRYPT_TYPE = EncryptType.CHACHA_128;
   /** How many times the maxRamStorageSize can a RAM storage be before it gets migrated? */
   private static final int RAMSTORAGE_CONVERSION_FACTOR = 4;
-
-  private static final EncryptType CRYPT_TYPE = EncryptType.CHACHA_128;
-
   /** How old is a long-lived RAM storage? */
   private static final long RAM_STORAGE_MAX_AGE = MINUTES.toMillis(5);
 
