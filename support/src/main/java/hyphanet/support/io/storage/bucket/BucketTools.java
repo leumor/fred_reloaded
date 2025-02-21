@@ -6,11 +6,9 @@ import hyphanet.support.io.FilenameGenerator;
 import hyphanet.support.io.PersistentFileTracker;
 import hyphanet.support.io.ResumeFailedException;
 import hyphanet.support.io.storage.StorageFormatException;
+import hyphanet.support.io.storage.bucket.wrapper.*;
 import hyphanet.support.io.storage.rab.*;
 import hyphanet.support.io.util.Stream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
@@ -20,6 +18,8 @@ import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.random.RandomGeneratorFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Helper functions for working with Buckets. */
 public class BucketTools {
@@ -244,8 +244,8 @@ public class BucketTools {
     return makeImmutableBucket(bucketFactory, data, data.length);
   }
 
-  public static RandomAccessible makeImmutableBucket(BucketFactory bucketFactory, byte[] data, int length)
-      throws IOException {
+  public static RandomAccessible makeImmutableBucket(
+      BucketFactory bucketFactory, byte[] data, int length) throws IOException {
     return makeImmutableBucket(bucketFactory, data, 0, length);
   }
 
@@ -550,8 +550,7 @@ public class BucketTools {
    * @return The number of bytes moved.
    * @throws IOException If something breaks while copying the data.
    */
-  public static long copyTo(
-      Bucket bucket, Rab raf, long fileOffset, long truncateLength)
+  public static long copyTo(Bucket bucket, Rab raf, long fileOffset, long truncateLength)
       throws IOException {
     if (truncateLength == 0) {
       return 0;
@@ -618,34 +617,25 @@ public class BucketTools {
       MasterSecret masterKey)
       throws IOException, StorageFormatException, ResumeFailedException {
     int magic = dis.readInt();
-    switch (magic) {
-      case AeadCryptBucket.MAGIC:
-        return new AeadCryptBucket(dis, fg, persistentFileTracker, masterKey);
-      case RegularFileBucket.MAGIC:
-        return new RegularFileBucket(dis);
-      case PersistentTempFileBucket.MAGIC:
-        return new PersistentTempFileBucket(dis);
-      case DelayedDisposeBucket.MAGIC:
-        return new DelayedDisposeBucket(dis, fg, persistentFileTracker, masterKey);
-      case DelayedDisposeRandomAccessBucket.MAGIC:
-        return new DelayedDisposeRandomAccessBucket(dis, fg, persistentFileTracker, masterKey);
-      case NoDisposeBucket.MAGIC:
-        return new NoDisposeBucket(dis, fg, persistentFileTracker, masterKey);
-      case PaddedEphemerallyEncryptedBucket.MAGIC:
-        return new PaddedEphemerallyEncryptedBucket(dis, fg, persistentFileTracker, masterKey);
-      case ReadOnlyFileSliceBucket.MAGIC:
-        return new ReadOnlyFileSliceBucket(dis);
-      case PaddedBucket.MAGIC:
-        return new PaddedBucket(dis, fg, persistentFileTracker, masterKey);
-      case PaddedRandomAccessBucket.MAGIC:
-        return new PaddedRandomAccessBucket(dis, fg, persistentFileTracker, masterKey);
-      case RabBucket.MAGIC:
-        return new RabBucket(dis, fg, persistentFileTracker, masterKey);
-      case EncryptedBucket.MAGIC:
-        return new EncryptedBucket(dis, fg, persistentFileTracker, masterKey);
-      default:
-        throw new StorageFormatException("Unknown magic value for bucket " + magic);
-    }
+    return switch (magic) {
+      case AeadCryptBucket.MAGIC -> new AeadCryptBucket(dis, fg, persistentFileTracker, masterKey);
+      case RegularFileBucket.MAGIC -> new RegularFileBucket(dis);
+      case PersistentTempFileBucket.MAGIC -> new PersistentTempFileBucket(dis);
+      case DelayedDisposeBucket.MAGIC ->
+          new DelayedDisposeBucket(dis, fg, persistentFileTracker, masterKey);
+      case DelayedDisposeRandomAccessBucket.MAGIC ->
+          new DelayedDisposeRandomAccessBucket(dis, fg, persistentFileTracker, masterKey);
+      case NoDisposeBucket.MAGIC -> new NoDisposeBucket(dis, fg, persistentFileTracker, masterKey);
+      case PaddedEphemerallyEncryptedBucket.MAGIC ->
+          new PaddedEphemerallyEncryptedBucket(dis, fg, persistentFileTracker, masterKey);
+      case ReadOnlyFileSliceBucket.MAGIC -> new ReadOnlyFileSliceBucket(dis);
+      case PaddedBucket.MAGIC -> new PaddedBucket(dis, fg, persistentFileTracker, masterKey);
+      case PaddedRandomAccessBucket.MAGIC ->
+          new PaddedRandomAccessBucket(dis, fg, persistentFileTracker, masterKey);
+      case RabBucket.MAGIC -> new RabBucket(dis, fg, persistentFileTracker, masterKey);
+      case EncryptedBucket.MAGIC -> new EncryptedBucket(dis, fg, persistentFileTracker, masterKey);
+      default -> throw new StorageFormatException("Unknown magic value for bucket " + magic);
+    };
   }
 
   /**
@@ -659,25 +649,16 @@ public class BucketTools {
       MasterSecret masterSecret)
       throws IOException, StorageFormatException, ResumeFailedException {
     int magic = dis.readInt();
-    switch (magic) {
-      case PooledFileRab.MAGIC:
-        return new PooledFileRab(dis, fg, persistentFileTracker);
-      case RegularFileRab.MAGIC:
-        return new RegularFileRab(dis);
-      case ReadOnlyRab.MAGIC:
-        return new ReadOnlyRab(dis, fg, persistentFileTracker, masterSecret);
-      case DelayedDisposeRab.MAGIC:
-        return new DelayedDisposeRab(
-            dis, fg, persistentFileTracker, masterSecret);
-      case EncryptedRab.MAGIC:
-        return EncryptedRab.create(
-            dis, fg, persistentFileTracker, masterSecret);
-      case PaddedRab.MAGIC:
-        return new PaddedRab(
-            dis, fg, persistentFileTracker, masterSecret);
-      default:
-        throw new StorageFormatException("Unknown magic value for RAF " + magic);
-    }
+    return switch (magic) {
+      case PooledFileRab.MAGIC -> new PooledFileRab(dis, fg, persistentFileTracker);
+      case RegularFileRab.MAGIC -> new RegularFileRab(dis);
+      case ReadOnlyRab.MAGIC -> new ReadOnlyRab(dis, fg, persistentFileTracker, masterSecret);
+      case DelayedDisposeRab.MAGIC ->
+          new DelayedDisposeRab(dis, fg, persistentFileTracker, masterSecret);
+      case EncryptedRab.MAGIC -> EncryptedRab.create(dis, fg, persistentFileTracker, masterSecret);
+      case PaddedRab.MAGIC -> new PaddedRab(dis, fg, persistentFileTracker, masterSecret);
+      default -> throw new StorageFormatException("Unknown magic value for RAF " + magic);
+    };
   }
 
   public static RandomAccessible toRandomAccessBucket(Bucket bucket, BucketFactory bf)
