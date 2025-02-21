@@ -144,6 +144,17 @@ public class InetAddressIpv6FirstComparator implements Comparator<InetAddress> {
     return Fields.compareBytes(bytes1, bytes2);
   }
 
+  /**
+   * Determines if the given address is reachable, using a cache to store results.
+   *
+   * <p>This method checks the cache first. If the reachability is not cached, it performs a
+   * reachability check using {@link InetAddress#isReachable(int)} with a timeout of {@link
+   * #DEFAULT_MAX_PING_TIME} milliseconds. The result is then stored in the cache for future use.
+   *
+   * @param address the address to check
+   * @param hash the hash code of the address, used as the cache key
+   * @return {@code true} if the address is reachable, {@code false} otherwise
+   */
   private boolean resolveReachability(InetAddress address, int hash) {
     var cached = REACHABILITY_CACHE.get(hash);
     if (cached != null) {
