@@ -170,7 +170,7 @@ public class RegularFileRab implements Rab, Serializable {
   }
 
   @Override
-  public boolean dispose() {
+  public void dispose() {
     close();
     try {
       if (secureDelete) {
@@ -181,7 +181,6 @@ public class RegularFileRab implements Rab, Serializable {
     } catch (IOException e) {
       logger.error("Unable to delete temporary file{} : {}", path, e, e);
     }
-    return true;
   }
 
   /**

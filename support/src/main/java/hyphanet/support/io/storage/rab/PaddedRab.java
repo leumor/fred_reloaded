@@ -146,8 +146,8 @@ public class PaddedRab implements Rab, Serializable {
 
   /** Disposes of the underlying buffer's resources. */
   @Override
-  public boolean dispose() {
-    return rab.dispose();
+  public void dispose() {
+    rab.dispose();
   }
 
   /**

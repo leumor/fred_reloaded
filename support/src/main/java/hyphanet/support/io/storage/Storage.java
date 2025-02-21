@@ -1,6 +1,7 @@
 package hyphanet.support.io.storage;
 
 import hyphanet.support.io.Resumable;
+
 import java.io.DataOutputStream;
 import java.io.IOException;
 
@@ -46,7 +47,5 @@ public interface Storage extends Resumable, AutoCloseable {
    * <p>This method may perform no operation in some implementations. Callers should ensure that the
    * object becomes eligible for garbage collection after calling this method.
    */
-  default void dispose() {
-    close();
-  }
+  void dispose();
 }

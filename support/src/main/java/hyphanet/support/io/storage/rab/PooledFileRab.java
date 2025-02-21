@@ -382,10 +382,10 @@ public class PooledFileRab implements Rab, Serializable {
    * based on the secureDelete setting.
    */
   @Override
-  public boolean dispose() {
+  public void dispose() {
     close();
     if (!deleteOnFree) {
-      return false;
+      return;
     }
     try {
       if (secureDelete) {
@@ -396,7 +396,6 @@ public class PooledFileRab implements Rab, Serializable {
     } catch (IOException e) {
       logger.error("Unable to delete temporary file {} : {}", path, e.getMessage());
     }
-    return true;
   }
 
   /**

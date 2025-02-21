@@ -83,8 +83,8 @@ public class ReadOnlyRab implements Rab {
   }
 
   @Override
-  public boolean dispose() {
-    return underlying.dispose();
+  public void dispose() {
+    underlying.dispose();
   }
 
   @Override

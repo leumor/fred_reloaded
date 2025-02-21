@@ -154,6 +154,6 @@ public interface Bucket extends Storage {
    */
   @Override
   default void dispose() {
-    Storage.super.dispose();
+    close();
   }
 }

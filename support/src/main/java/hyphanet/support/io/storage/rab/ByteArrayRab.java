@@ -148,9 +148,8 @@ public class ByteArrayRab implements Rab, Serializable {
    * <p>No-op as there are no resources to dispose.
    */
   @Override
-  public boolean dispose() {
+  public void dispose() {
     // No resources to dispose
-    return false;
   }
 
   /**

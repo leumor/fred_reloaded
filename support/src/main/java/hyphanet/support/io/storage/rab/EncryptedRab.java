@@ -252,16 +252,6 @@ public final class EncryptedRab implements Rab, Serializable {
   }
 
   /**
-   * Disposes of the encrypted buffer and its resources. Calls close() and disposes of the
-   * underlying buffer.
-   */
-  @Override
-  public boolean dispose() {
-    close();
-    return underlyingBuffer.dispose();
-  }
-
-  /**
    * Acquires a lock on the underlying buffer to prevent premature closure.
    *
    * @return A lock object representing the acquired lock

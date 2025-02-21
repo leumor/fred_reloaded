@@ -107,16 +107,14 @@ public class DelayedDisposeRab implements Rab, Serializable, DelayedDisposable {
   }
 
   @Override
-  public boolean dispose() {
+  public void dispose() {
     synchronized (this) {
       if (disposed) {
-        return false;
+        return;
       }
       disposed = true;
     }
     this.factory.delayedDispose(this, createdCommitID);
-
-    return true;
   }
 
   /**
