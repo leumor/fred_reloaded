@@ -80,7 +80,7 @@ public class DelayedDisposeRandomAccessBucket
    * @throws IOException if an I/O error occurs
    * @throws ResumeFailedException if restoration fails
    */
-  protected DelayedDisposeRandomAccessBucket(
+  public DelayedDisposeRandomAccessBucket(
       DataInputStream dis,
       FilenameGenerator fg,
       PersistentFileTracker persistentFileTracker,

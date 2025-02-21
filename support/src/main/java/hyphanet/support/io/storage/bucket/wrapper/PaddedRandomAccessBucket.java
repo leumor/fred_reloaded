@@ -29,7 +29,7 @@ import java.io.*;
 public class PaddedRandomAccessBucket implements RandomAccessible, Serializable {
 
   /** Magic number for serialization verification. */
-  static final int MAGIC = 0x95c42e34;
+  public static final int MAGIC = 0x95c42e34;
 
   /** Version number for serialization compatibility. */
   static final int VERSION = 1;
@@ -61,12 +61,6 @@ public class PaddedRandomAccessBucket implements RandomAccessible, Serializable 
     this.size = size;
   }
 
-  /** Constructor for serialization purposes. */
-  protected PaddedRandomAccessBucket() {
-    underlying = null;
-    size = 0;
-  }
-
   /**
    * Constructs a {@link PaddedRandomAccessBucket} Bucket from a serialized state.
    *
@@ -88,7 +82,7 @@ public class PaddedRandomAccessBucket implements RandomAccessible, Serializable 
    * @see BucketTools#restoreFrom(DataInputStream, FilenameGenerator, PersistentFileTracker,
    *     MasterSecret)
    */
-  protected PaddedRandomAccessBucket(
+  public PaddedRandomAccessBucket(
       DataInputStream dis,
       FilenameGenerator fg,
       PersistentFileTracker persistentFileTracker,
@@ -102,6 +96,12 @@ public class PaddedRandomAccessBucket implements RandomAccessible, Serializable 
     readOnly = dis.readBoolean();
     underlying =
         (RandomAccessible) BucketTools.restoreFrom(dis, fg, persistentFileTracker, masterKey);
+  }
+
+  /** Constructor for serialization purposes. */
+  protected PaddedRandomAccessBucket() {
+    underlying = null;
+    size = 0;
   }
 
   @Override

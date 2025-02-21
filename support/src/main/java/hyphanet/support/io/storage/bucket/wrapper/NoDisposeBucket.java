@@ -27,7 +27,7 @@ import java.io.*;
 public class NoDisposeBucket implements Bucket, Serializable {
 
   /** Magic number used for serialization to verify the class type during deserialization. */
-  static final int MAGIC = 0xa88da5c2;
+  public static final int MAGIC = 0xa88da5c2;
 
   @Serial private static final long serialVersionUID = 1L;
 
@@ -39,19 +39,6 @@ public class NoDisposeBucket implements Bucket, Serializable {
    */
   public NoDisposeBucket(Bucket orig) {
     proxy = orig;
-  }
-
-  /**
-   * Default constructor for serialization purposes.
-   *
-   * <p>This constructor is intentionally protected and parameterless to be accessible during
-   * deserialization. It initializes the {@link #proxy} to {@code null}, which should be restored
-   * during the deserialization process using constructor {@link #NoDisposeBucket(DataInputStream,
-   * FilenameGenerator, PersistentFileTracker, MasterSecret)}.
-   */
-  protected NoDisposeBucket() {
-    // For serialization.
-    proxy = null;
   }
 
   /**
@@ -71,13 +58,26 @@ public class NoDisposeBucket implements Bucket, Serializable {
    * @see BucketTools#restoreFrom(DataInputStream, FilenameGenerator, PersistentFileTracker,
    *     MasterSecret)
    */
-  protected NoDisposeBucket(
+  public NoDisposeBucket(
       DataInputStream dis,
       FilenameGenerator fg,
       PersistentFileTracker persistentFileTracker,
       MasterSecret masterKey)
       throws IOException, StorageFormatException, ResumeFailedException {
     proxy = BucketTools.restoreFrom(dis, fg, persistentFileTracker, masterKey);
+  }
+
+  /**
+   * Default constructor for serialization purposes.
+   *
+   * <p>This constructor is intentionally protected and parameterless to be accessible during
+   * deserialization. It initializes the {@link #proxy} to {@code null}, which should be restored
+   * during the deserialization process using constructor {@link #NoDisposeBucket(DataInputStream,
+   * FilenameGenerator, PersistentFileTracker, MasterSecret)}.
+   */
+  protected NoDisposeBucket() {
+    // For serialization.
+    proxy = null;
   }
 
   @Override

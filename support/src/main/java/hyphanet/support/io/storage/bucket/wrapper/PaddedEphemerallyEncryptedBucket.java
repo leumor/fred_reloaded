@@ -106,15 +106,6 @@ public class PaddedEphemerallyEncryptedBucket implements Bucket, Serializable {
     iv = orig.iv != null ? Arrays.copyOf(orig.iv, 32) : null;
   }
 
-  /** Default constructor for serialization purposes. */
-  protected PaddedEphemerallyEncryptedBucket() {
-    bucket = null;
-    minPaddedSize = 0;
-    key = null;
-    iv = null;
-    randomSeed = null;
-  }
-
   /**
    * Constructs a {@code PaddedEphemerallyEncryptedBucket} by deserializing its state from a {@link
    * DataInputStream}.
@@ -127,7 +118,7 @@ public class PaddedEphemerallyEncryptedBucket implements Bucket, Serializable {
    * @throws IOException If an I/O error occurs.
    * @throws ResumeFailedException If the bucket cannot be resumed.
    */
-  protected PaddedEphemerallyEncryptedBucket(
+  public PaddedEphemerallyEncryptedBucket(
       DataInputStream dis,
       FilenameGenerator fg,
       PersistentFileTracker persistentFileTracker,
@@ -144,6 +135,15 @@ public class PaddedEphemerallyEncryptedBucket implements Bucket, Serializable {
     dataLength = dis.readLong();
     readOnly = dis.readBoolean();
     bucket = BucketTools.restoreFrom(dis, fg, persistentFileTracker, masterKey);
+  }
+
+  /** Default constructor for serialization purposes. */
+  protected PaddedEphemerallyEncryptedBucket() {
+    bucket = null;
+    minPaddedSize = 0;
+    key = null;
+    iv = null;
+    randomSeed = null;
   }
 
   /**

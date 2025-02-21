@@ -20,7 +20,7 @@ import java.io.*;
 public class PaddedBucket implements Bucket, Serializable {
 
   /** Magic number to identify {@code PaddedBucket} data in storage. */
-  static final int MAGIC = 0xdaff6185;
+  public static final int MAGIC = 0xdaff6185;
 
   /** Version number of the {@code PaddedBucket} serialization format. */
   static final int VERSION = 1;
@@ -52,12 +52,6 @@ public class PaddedBucket implements Bucket, Serializable {
     this.size = size;
   }
 
-  /** Constructor for serialization purposes. */
-  protected PaddedBucket() {
-    underlying = null;
-    size = 0;
-  }
-
   /**
    * Constructor for restoring a {@link PaddedBucket} Bucket from a {@link DataInputStream}. This
    * constructor is used during bucket restoration from persistent storage.
@@ -72,7 +66,7 @@ public class PaddedBucket implements Bucket, Serializable {
    *     expected format.
    * @throws ResumeFailedException If the bucket restoration fails for any reason.
    */
-  protected PaddedBucket(
+  public PaddedBucket(
       DataInputStream dis,
       FilenameGenerator fg,
       PersistentFileTracker persistentFileTracker,
@@ -85,6 +79,12 @@ public class PaddedBucket implements Bucket, Serializable {
     size = dis.readLong();
     readOnly = dis.readBoolean();
     underlying = BucketTools.restoreFrom(dis, fg, persistentFileTracker, masterKey);
+  }
+
+  /** Constructor for serialization purposes. */
+  protected PaddedBucket() {
+    underlying = null;
+    size = 0;
   }
 
   /**

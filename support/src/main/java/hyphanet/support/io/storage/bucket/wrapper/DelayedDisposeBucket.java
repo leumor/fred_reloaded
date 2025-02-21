@@ -87,7 +87,7 @@ public class DelayedDisposeBucket implements Bucket, Serializable, DelayedDispos
    * @throws IOException If an I/O error occurs during data restoration.
    * @throws ResumeFailedException If the bucket cannot be properly resumed.
    */
-  protected DelayedDisposeBucket(
+  public DelayedDisposeBucket(
       DataInputStream dis,
       FilenameGenerator fg,
       PersistentFileTracker persistentFileTracker,
