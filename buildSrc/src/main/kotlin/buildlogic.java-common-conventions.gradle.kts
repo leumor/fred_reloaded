@@ -9,6 +9,7 @@ plugins {
     id("net.ltgt.nullaway")
     id("org.sonarqube")
     id("com.diffplug.spotless")
+    id("org.gradlex.extra-java-module-info")
 }
 
 repositories {
@@ -32,6 +33,10 @@ dependencies {
     implementation("ch.qos.logback:logback-classic:latest.release")
     implementation("com.machinezoo.noexception:noexception:latest.release")
     implementation("org.jspecify:jspecify:latest.release")
+}
+
+extraJavaModuleInfo {
+    deriveAutomaticModuleNamesFromFileNames = true
 }
 
 // Apply a specific Java toolchain to ease working on different environments.
