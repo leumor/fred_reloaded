@@ -167,9 +167,10 @@ public class SimpleFieldSet {
    */
   public SimpleFieldSet(boolean alwaysUseBase64) {
     values = new HashMap<>();
-    subsets = null;
+    subsets = new HashMap<>();
     this.alwaysUseBase64 = alwaysUseBase64;
     header = new String[0];
+    endMarker = "";
   }
 
   /**
@@ -384,7 +385,7 @@ public class SimpleFieldSet {
       String endMarker,
       boolean alwaysUseBase64) {
     this.values = new HashMap<>(values);
-    this.subsets = subsets == null ? null : new HashMap<>(subsets);
+    this.subsets = !subsets.isEmpty() ? subsets : new HashMap<>(subsets);
     this.header = header;
     this.endMarker = endMarker;
     this.alwaysUseBase64 = alwaysUseBase64;
@@ -450,10 +451,11 @@ public class SimpleFieldSet {
 
           if (subsetIterator != null && subsetIterator.hasNext()) {
             String key = subsetIterator.next();
-            assert subsets != null;
             SimpleFieldSet fs = subsets.get(key);
-            String newPrefix = prefix + key + MULTI_LEVEL_CHAR;
-            subIterator = fs.keyIterator(newPrefix);
+            if (fs != null) {
+              String newPrefix = prefix + key + MULTI_LEVEL_CHAR;
+              subIterator = fs.keyIterator(newPrefix);
+            }
           } else {
             return false;
           }
@@ -545,10 +547,11 @@ public class SimpleFieldSet {
       }
 
       String key = subsetIterator.next();
-      assert subsets != null;
       SimpleFieldSet fs = subsets.get(key);
-      String newPrefix = prefix + key + MULTI_LEVEL_CHAR;
-      subIterator = fs.keyIterator(newPrefix);
+      if (fs != null) {
+        String newPrefix = prefix + key + MULTI_LEVEL_CHAR;
+        subIterator = fs.keyIterator(newPrefix);
+      }
       return true;
     }
 
@@ -559,6 +562,7 @@ public class SimpleFieldSet {
      * direct values to iterate over. It handles the complexity of finding the first valid subset to
      * iterate.
      */
+    @SuppressWarnings("NullAway")
     private void initializeSubIterator() {
       // Continue searching if: no direct values left AND subsets exist
       // AND more subsets to
@@ -595,13 +599,13 @@ public class SimpleFieldSet {
     private final Iterator<String> valuesIterator;
 
     /** Iterator for the subset names in the current SimpleFieldSet */
-    private final Iterator<String> subsetIterator;
+    private final @Nullable Iterator<String> subsetIterator;
 
     /** Prefix to be prepended to all keys returned by this iterator */
     private final String prefix;
 
     /** Iterator for the current subset being processed */
-    private KeyIterator subIterator;
+    private @Nullable KeyIterator subIterator;
   }
 
   /**
@@ -1575,7 +1579,7 @@ public class SimpleFieldSet {
    * @param s the new end marker string to use. If null, the default "End" will be used
    * @see #getEndMarker()
    */
-  public void setEndMarker(@Nullable String s) {
+  public void setEndMarker(String s) {
     endMarker = s;
   }
 
@@ -1606,7 +1610,7 @@ public class SimpleFieldSet {
    *
    * @see #getSubset(String)
    */
-  public synchronized SimpleFieldSet subset(String key) {
+  public synchronized @Nullable SimpleFieldSet subset(String key) {
     if (subsets == null) {
       return null;
     }
@@ -1951,9 +1955,6 @@ public class SimpleFieldSet {
     }
 
     subsets.remove(parentKey);
-    if (subsets.isEmpty()) {
-      subsets = null;
-    }
   }
 
   /**
@@ -1991,9 +1992,6 @@ public class SimpleFieldSet {
     int separatorIndex = key.indexOf(MULTI_LEVEL_CHAR);
     if (separatorIndex == -1) {
       subsets.remove(key);
-      if (subsets.isEmpty()) {
-        subsets = null;
-      }
       return;
     }
 
@@ -2006,9 +2004,6 @@ public class SimpleFieldSet {
     childSet.removeSubset(key.substring(separatorIndex + 1));
     if (childSet.isEmpty()) {
       subsets.remove(parentKey);
-      if (subsets.isEmpty()) {
-        subsets = null;
-      }
     }
   }
 
@@ -2057,8 +2052,8 @@ public class SimpleFieldSet {
    * @return an iterator over the names of direct nested subsets in this SimpleFieldSet. Returns an
    *     empty iterator if there are no nested subsets
    */
-  public Iterator<String> directSubsetNameIterator() {
-    return subsets == null ? null : subsets.keySet().iterator();
+  public @Nullable Iterator<String> directSubsetNameIterator() {
+    return subsets.isEmpty() ? null : subsets.keySet().iterator();
   }
 
   /**
@@ -3319,11 +3314,16 @@ public class SimpleFieldSet {
    * @throws IOException if an error occurs while writing to the Writer
    * @see Base64
    */
-  private void writeValue(Writer w, String key, String value, String prefix, boolean useBase64)
+  private void writeValue(
+      Writer w, String key, @Nullable String value, String prefix, boolean useBase64)
       throws IOException {
     // Validate inputs
     if (key.isEmpty()) {
       throw new IllegalArgumentException("Key cannot be null or empty");
+    }
+
+    if (value == null) {
+      value = "";
     }
 
     // Use StringBuilder for better performance
@@ -3551,11 +3551,11 @@ public class SimpleFieldSet {
    * values are the corresponding SimpleFieldSet objects. May be null if there are no nested
    * subsets.
    */
-  private @Nullable Map<String, SimpleFieldSet> subsets;
+  private Map<String, SimpleFieldSet> subsets;
 
   /**
    * Custom end marker for serialization. If null, the default "End" marker will be used when
    * writing the field set.
    */
-  private @Nullable String endMarker;
+  private String endMarker;
 }
