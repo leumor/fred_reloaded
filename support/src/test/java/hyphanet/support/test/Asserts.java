@@ -3,20 +3,22 @@
  * http://www.gnu.org/ for further details of the GPL. */
 package hyphanet.support.test;
 
-import java.util.Arrays;
-
 import static org.junit.jupiter.api.Assertions.fail;
+
+import java.util.Arrays;
 
 public abstract class Asserts {
 
-    private Asserts() {
-    }
+  private Asserts() {}
 
-    public static void assertArrayEquals(byte[] expecteds, byte[] actuals) {
-        if (!Arrays.equals(expecteds, actuals)) {
-            fail("expected:<" + Arrays.toString(expecteds) + "> but was:<" + Arrays.toString(actuals) +
-                 ">");
-        }
+  public static void assertArrayEquals(byte[] expecteds, byte[] actuals) {
+    if (!Arrays.equals(expecteds, actuals)) {
+      fail(
+          "expected:<"
+              + Arrays.toString(expecteds)
+              + "> but was:<"
+              + Arrays.toString(actuals)
+              + ">");
     }
-
+  }
 }

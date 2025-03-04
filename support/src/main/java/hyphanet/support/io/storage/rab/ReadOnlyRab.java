@@ -119,10 +119,9 @@ public class ReadOnlyRab implements Rab {
     if (obj == null) {
       return false;
     }
-    if (getClass() != obj.getClass()) {
+    if (!(obj instanceof ReadOnlyRab other)) {
       return false;
     }
-    ReadOnlyRab other = (ReadOnlyRab) obj;
     return underlying.equals(other.underlying);
   }
 

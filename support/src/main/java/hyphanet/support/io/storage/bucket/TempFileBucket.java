@@ -9,21 +9,21 @@ import hyphanet.support.io.FilenameGenerator;
 import hyphanet.support.io.ResumeContext;
 import hyphanet.support.io.ResumeFailedException;
 import hyphanet.support.io.storage.StorageFormatException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Temporary file handling. {@link TempFileBucket} Buckets start empty and are typically used for
  * short-lived storage.
  *
- * <p>This class extends {@link BaseFileBucket} and implements {@link Serializable} to support persistence
- * and recovery. It manages temporary files based on a provided {@link FilenameGenerator} to
- * determine file paths.
+ * <p>This class extends {@link BaseFileBucket} and implements {@link Serializable} to support
+ * persistence and recovery. It manages temporary files based on a provided {@link
+ * FilenameGenerator} to determine file paths.
  *
  * <p><strong>Important:</strong> Instances of this class may or may not be deleted on JVM exit
  * depending on the constructor used and configuration. However, {@link TempFileBucket} buckets are
@@ -31,7 +31,7 @@ import java.nio.file.Paths;
  *
  * @author giannij
  * @see BaseFileBucket
- * @see RandomAccessible
+ * @see RandomAccessBucket
  * @see FilenameGenerator
  */
 public class TempFileBucket extends BaseFileBucket implements Serializable {
@@ -95,6 +95,7 @@ public class TempFileBucket extends BaseFileBucket implements Serializable {
    * <p><strong>Note:</strong> Should only be used during deserialization. The {@link
    * #deleteOnDispose} flag is set to {@code false} by default.
    */
+  @SuppressWarnings("NullAway.Init") // generate and path fields will be set when resuming
   protected TempFileBucket() {
     // For serialization.
     deleteOnDispose = false;
@@ -111,6 +112,7 @@ public class TempFileBucket extends BaseFileBucket implements Serializable {
    * @throws StorageFormatException If the data in the stream is not in the expected format (e.g.,
    *     bad magic number or version).
    */
+  @SuppressWarnings("NullAway.Init") // generate and path fields will be set when resuming
   protected TempFileBucket(DataInputStream dis) throws IOException, StorageFormatException {
     super(dis);
     int version = dis.readInt();
@@ -156,8 +158,8 @@ public class TempFileBucket extends BaseFileBucket implements Serializable {
   /**
    * {@inheritDoc}
    *
-   * <p>Sets this {@link TempFileBucket} to read-only. Once set to read-only, this operation cannot be
-   * reversed.
+   * <p>Sets this {@link TempFileBucket} to read-only. Once set to read-only, this operation cannot
+   * be reversed.
    */
   @Override
   public void setReadOnly() {
@@ -167,18 +169,18 @@ public class TempFileBucket extends BaseFileBucket implements Serializable {
   /**
    * {@inheritDoc}
    *
-   * <p>Creates a shallow, read-only shadow copy of this {@link TempFileBucket}. The shadow copy shares
-   * the same underlying storage and {@link #filenameId}.
+   * <p>Creates a shallow, read-only shadow copy of this {@link TempFileBucket}. The shadow copy
+   * shares the same underlying storage and {@link #filenameId}.
    *
-   * <p><strong>Warning:</strong> If the original {@link TempFileBucket} is deleted or freed, the shadow
-   * copy may become invalid and operations on it might fail.
+   * <p><strong>Warning:</strong> If the original {@link TempFileBucket} is deleted or freed, the
+   * shadow copy may become invalid and operations on it might fail.
    *
-   * @return A new {@link TempFileBucket} instance representing the shadow copy, or {@code null} if shadow
-   *     creation is not supported. In this implementation, it always returns a new {@link TempFileBucket}
-   *     shadow instance.
+   * @return A new {@link TempFileBucket} instance representing the shadow copy, or {@code null} if
+   *     shadow creation is not supported. In this implementation, it always returns a new {@link
+   *     TempFileBucket} shadow instance.
    */
   @Override
-  public RandomAccessible createShadow() {
+  public RandomAccessBucket createShadow() {
     var ret = new TempFileBucket(filenameId, generator, false);
     ret.setReadOnly();
     if (!Files.exists(getPath())) {
@@ -190,12 +192,12 @@ public class TempFileBucket extends BaseFileBucket implements Serializable {
   /**
    * {@inheritDoc}
    *
-   * <p>Resumes the {@link TempFileBucket} after restart or deserialization. This method is called by the
-   * framework to allow the {@link TempFileBucket} to perform any necessary initialization or recovery
-   * steps.
+   * <p>Resumes the {@link TempFileBucket} after restart or deserialization. This method is called
+   * by the framework to allow the {@link TempFileBucket} to perform any necessary initialization or
+   * recovery steps.
    *
-   * <p>For {@link TempFileBucket}, it checks if the file exists and potentially moves it to the correct
-   * location using the {@link FilenameGenerator}.
+   * <p>For {@link TempFileBucket}, it checks if the file exists and potentially moves it to the
+   * correct location using the {@link FilenameGenerator}.
    *
    * @param context The {@link ResumeContext} providing necessary runtime support for resuming.
    * @throws ResumeFailedException If the resumption process fails, indicating that the {@link
@@ -221,14 +223,14 @@ public class TempFileBucket extends BaseFileBucket implements Serializable {
   /**
    * {@inheritDoc}
    *
-   * <p>Stores the {@link TempFileBucket}'s state and metadata to the provided {@link DataOutputStream}
-   * for persistence or recovery.
+   * <p>Stores the {@link TempFileBucket}'s state and metadata to the provided {@link
+   * DataOutputStream} for persistence or recovery.
    *
    * <p>The stored data includes magic number, version, base class data, {@link #filenameId}, {@link
    * #readOnly} flag, {@link #deleteOnDispose} flag, and the file path as a UTF string.
    *
    * @param dos The {@link DataOutputStream} to write the state to.
-   * @throws java.io.IOException If an I/O error occurs during writing.
+   * @throws IOException If an I/O error occurs during writing.
    */
   @Override
   public void storeTo(DataOutputStream dos) throws IOException {
@@ -238,14 +240,14 @@ public class TempFileBucket extends BaseFileBucket implements Serializable {
     dos.writeLong(filenameId);
     dos.writeBoolean(readOnly);
     dos.writeBoolean(deleteOnDispose);
-    dos.writeUTF(path.toString());
+    dos.writeUTF(path == null ? "" : path.toString());
   }
 
   /**
    * {@inheritDoc}
    *
-   * @return A hash code value for this {@link TempFileBucket} object, based on {@link #deleteOnDispose},
-   *     {@link #filenameId}, and {@link #readOnly} flags.
+   * @return A hash code value for this {@link TempFileBucket} object, based on {@link
+   *     #deleteOnDispose}, {@link #filenameId}, and {@link #readOnly} flags.
    */
   @Override
   public int hashCode() {
@@ -260,9 +262,9 @@ public class TempFileBucket extends BaseFileBucket implements Serializable {
   /**
    * {@inheritDoc}
    *
-   * <p>Compares this {@link TempFileBucket} to another object for equality. Two {@link TempFileBucket} objects
-   * are considered equal if they are the same object or if they have the same class, {@link
-   * #deleteOnDispose}, {@link #filenameId}, and {@link #readOnly} flags.
+   * <p>Compares this {@link TempFileBucket} to another object for equality. Two {@link
+   * TempFileBucket} objects are considered equal if they are the same object or if they have the
+   * same class, {@link #deleteOnDispose}, {@link #filenameId}, and {@link #readOnly} flags.
    *
    * @param obj The reference object with which to compare.
    * @return {@code true} if this object is the same as the {@code obj} argument; {@code false}
@@ -276,10 +278,9 @@ public class TempFileBucket extends BaseFileBucket implements Serializable {
     if (obj == null) {
       return false;
     }
-    if (getClass() != obj.getClass()) {
+    if (!(obj instanceof TempFileBucket other)) {
       return false;
     }
-    TempFileBucket other = (TempFileBucket) obj;
     if (deleteOnDispose != other.deleteOnDispose) {
       return false;
     }
@@ -292,8 +293,8 @@ public class TempFileBucket extends BaseFileBucket implements Serializable {
   /**
    * {@inheritDoc}
    *
-   * @return {@code false} because {@link TempFileBucket} does not enforce creation of a new file only. It
-   *     is designed for temporary files which might be reused or overwritten.
+   * @return {@code false} because {@link TempFileBucket} does not enforce creation of a new file
+   *     only. It is designed for temporary files which might be reused or overwritten.
    */
   @Override
   protected boolean createFileOnly() {
@@ -315,9 +316,9 @@ public class TempFileBucket extends BaseFileBucket implements Serializable {
   /**
    * {@inheritDoc}
    *
-   * @return {@code false} because {@link TempFileBucket} manages its deletion lifecycle differently,
-   *     typically through {@link #dispose()} or JVM restart cleanup, not relying on {@link
-   *     File#deleteOnExit()}.
+   * @return {@code false} because {@link TempFileBucket} manages its deletion lifecycle
+   *     differently, typically through {@link #dispose()} or JVM restart cleanup, not relying on
+   *     {@link File#deleteOnExit()}.
    * @see #deleteOnExit()
    */
   @Override
@@ -384,8 +385,8 @@ public class TempFileBucket extends BaseFileBucket implements Serializable {
    * persistence.
    *
    * <p><strong>Note:</strong> This method is intended to be overridden by subclasses to provide
-   * their specific magic number. {@link TempFileBucket} itself does not define a specific magic number
-   * and throws {@link UnsupportedOperationException}.
+   * their specific magic number. {@link TempFileBucket} itself does not define a specific magic
+   * number and throws {@link UnsupportedOperationException}.
    *
    * @return The magic number as an integer.
    * @throws UnsupportedOperationException if the subclass does not implement this method.
@@ -421,8 +422,7 @@ public class TempFileBucket extends BaseFileBucket implements Serializable {
   @Serial
   private void writeObject(ObjectOutputStream out) throws IOException {
     out.defaultWriteObject();
-    assert path != null;
-    out.writeUTF(path.toString());
+    out.writeUTF(path != null ? path.toString() : "");
   }
 
   @Serial
@@ -468,10 +468,11 @@ public class TempFileBucket extends BaseFileBucket implements Serializable {
    * <p>This path is managed by the {@link FilenameGenerator} and is where the actual file data is
    * stored.
    */
-  private transient Path path;
+  private transient @Nullable Path path;
 
   /**
-   * Flag indicating whether the {@link TempFileBucket} has been resumed after restart or deserialization.
+   * Flag indicating whether the {@link TempFileBucket} has been resumed after restart or
+   * deserialization.
    *
    * <p>Used to ensure that resumption logic (e.g., in {@link #onResume(ResumeContext)}) is executed
    * only once.

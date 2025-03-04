@@ -4,6 +4,7 @@
 package hyphanet.support.io.storage.bucket;
 
 import hyphanet.support.io.storage.StorageFormatException;
+import hyphanet.support.io.stream.NullInputStream;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
@@ -31,7 +32,7 @@ import java.util.Objects;
  *
  * @see Bucket
  */
-public class ReadOnlyFileSliceBucket implements Bucket, Serializable {
+public class ReadOnlyFileSliceBucket implements Bucket {
 
   /** The magic number used for serialization validation. */
   static final int MAGIC = 0x99e54c4;
@@ -109,7 +110,9 @@ public class ReadOnlyFileSliceBucket implements Bucket, Serializable {
   @Override
   public InputStream getInputStream() throws IOException {
     var unbuffered = getInputStreamUnbuffered();
-    return unbuffered != null ? new BufferedInputStream(unbuffered) : null;
+    return !(unbuffered instanceof NullInputStream)
+        ? new BufferedInputStream(unbuffered)
+        : unbuffered;
   }
 
   /**
@@ -158,7 +161,7 @@ public class ReadOnlyFileSliceBucket implements Bucket, Serializable {
     try {
       return new ReadOnlyFileSliceBucket(path, startAt, length);
     } catch (IOException e) {
-      return null;
+      return new NullBucket();
     }
   }
 

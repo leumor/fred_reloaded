@@ -4,8 +4,6 @@
 package hyphanet.support.io.storage.bucket;
 
 import hyphanet.support.io.storage.StorageFormatException;
-import org.jspecify.annotations.Nullable;
-
 import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -15,7 +13,7 @@ import java.nio.file.Paths;
  *
  * @author oskar
  */
-public class RegularFileBucket extends BaseFileBucket implements Bucket, Serializable {
+public class RegularFileBucket extends BaseFileBucket implements Serializable {
 
   public static final int MAGIC = 0x8fe6e41b;
   static final int VERSION = 1;
@@ -60,12 +58,10 @@ public class RegularFileBucket extends BaseFileBucket implements Bucket, Seriali
 
   // JVM caches File.size() and there is no way to flush the cache, so we
   // need to track it ourselves
-
-  @SuppressWarnings("unused")
+  @SuppressWarnings("NullAway.Init") // path field will be set when deserializing
   protected RegularFileBucket() {
     // For serialization.
     super();
-    path = null;
     deleteOnExit = false;
     createFileOnly = false;
   }
@@ -100,7 +96,7 @@ public class RegularFileBucket extends BaseFileBucket implements Bucket, Seriali
   }
 
   @Override
-  public RandomAccessible createShadow() {
+  public RandomAccessBucket createShadow() {
     return new RegularFileBucket(getPath(), true, false, false, false);
   }
 
@@ -139,10 +135,9 @@ public class RegularFileBucket extends BaseFileBucket implements Bucket, Seriali
     if (obj == null) {
       return false;
     }
-    if (getClass() != obj.getClass()) {
+    if (!(obj instanceof RegularFileBucket other)) {
       return false;
     }
-    RegularFileBucket other = (RegularFileBucket) obj;
     if (createFileOnly != other.createFileOnly) {
       return false;
     }
@@ -195,9 +190,9 @@ public class RegularFileBucket extends BaseFileBucket implements Bucket, Seriali
     path = Paths.get(in.readUTF());
   }
 
-  protected final boolean deleteOnExit;
-  protected final boolean createFileOnly;
-  protected transient @Nullable Path path;
-  protected boolean readOnly;
-  protected boolean deleteOnFree;
+  private final boolean deleteOnExit;
+  private final boolean createFileOnly;
+  private transient Path path;
+  private boolean readOnly;
+  private boolean deleteOnFree;
 }

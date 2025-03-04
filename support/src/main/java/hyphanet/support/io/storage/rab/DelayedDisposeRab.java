@@ -156,7 +156,7 @@ public class DelayedDisposeRab implements Rab, Serializable, DelayedDisposable {
    */
   public Rab getUnderlying() {
     if (disposed) {
-      return null;
+      return new NullRab(0);
     }
     return underlying;
   }
@@ -186,10 +186,9 @@ public class DelayedDisposeRab implements Rab, Serializable, DelayedDisposable {
     if (obj == null) {
       return false;
     }
-    if (getClass() != obj.getClass()) {
+    if (!(obj instanceof DelayedDisposeRab other)) {
       return false;
     }
-    DelayedDisposeRab other = (DelayedDisposeRab) obj;
     return underlying.equals(other.underlying);
   }
 

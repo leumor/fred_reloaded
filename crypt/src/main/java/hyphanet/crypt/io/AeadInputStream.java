@@ -1,5 +1,9 @@
 package hyphanet.crypt.io;
 
+import java.io.DataInputStream;
+import java.io.FilterInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import org.bouncycastle.crypto.BlockCipher;
 import org.bouncycastle.crypto.InvalidCipherTextException;
 import org.bouncycastle.crypto.engines.AESEngine;
@@ -8,11 +12,6 @@ import org.bouncycastle.crypto.modes.AEADBlockCipher;
 import org.bouncycastle.crypto.modes.OCBBlockCipher;
 import org.bouncycastle.crypto.params.AEADParameters;
 import org.bouncycastle.crypto.params.KeyParameter;
-
-import java.io.DataInputStream;
-import java.io.FilterInputStream;
-import java.io.IOException;
-import java.io.InputStream;
 
 /**
  * A decrypting and authenticating {@link InputStream} using Authenticated Encryption with
@@ -72,6 +71,8 @@ public class AeadInputStream extends FilterInputStream {
   }
 
   /**
+   * Return IV/nonce size in bytes used by the underlying cipher
+   *
    * @return IV/nonce size in bytes used by the underlying cipher
    */
   public final int getIVSize() {

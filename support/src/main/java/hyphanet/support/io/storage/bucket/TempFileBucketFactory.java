@@ -22,8 +22,8 @@ public class TempFileBucketFactory implements BucketFactory {
   }
 
   @Override
-  public RandomAccessible makeBucket(long size) throws IOException {
-    RandomAccessible ret =
+  public RandomAccessBucket makeBucket(long size) throws IOException {
+    RandomAccessBucket ret =
         new TempFileBucket(filenameGenerator.makeRandomFilename(), filenameGenerator, true);
     // Do we want it to be encrypted?
     if (encrypt) {

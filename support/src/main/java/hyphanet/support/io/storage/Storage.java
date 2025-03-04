@@ -1,16 +1,16 @@
 package hyphanet.support.io.storage;
 
 import hyphanet.support.io.Resumable;
-
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.Serializable;
 
 /**
  * Represents a generic resource for storing and accessing data. This interface is intended to be a
  * common parent for various data storage abstractions like Buckets and Random Access Buffers,
  * providing a unified way to manage data resources.
  */
-public interface Storage extends Resumable, AutoCloseable {
+public interface Storage extends Resumable, AutoCloseable, Serializable {
 
   /** Default encryption type for encrypted storage. */
   EncryptType CRYPT_TYPE = EncryptType.CHACHA_128;

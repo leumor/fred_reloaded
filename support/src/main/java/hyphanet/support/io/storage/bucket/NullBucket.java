@@ -19,7 +19,7 @@ import java.io.*;
  *
  * <p>This class is {@link Serializable}.
  */
-public class NullBucket implements Bucket, Serializable, RandomAccessible {
+public class NullBucket implements RandomAccessBucket, Serializable {
 
   /** A static, shared {@link NullOutputStream} instance for all {@link NullBucket} writes. */
   public static final OutputStream nullOut = new NullOutputStream();
@@ -137,7 +137,7 @@ public class NullBucket implements Bucket, Serializable, RandomAccessible {
    * @return A new {@link NullBucket} with the same size.
    */
   @Override
-  public RandomAccessible createShadow() {
+  public RandomAccessBucket createShadow() {
     return new NullBucket(size);
   }
 

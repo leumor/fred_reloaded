@@ -107,6 +107,7 @@ public class PersistentTempFileBucket extends TempFileBucket implements Serializ
    *
    * <p><strong>Note:</strong> Should only be used during deserialization.
    */
+  @SuppressWarnings("NullAway.Init") // "tracker" field will be set when resuming
   protected PersistentTempFileBucket() {
     // For serialization.
   }
@@ -120,6 +121,7 @@ public class PersistentTempFileBucket extends TempFileBucket implements Serializ
    * @throws StorageFormatException If the data in the stream is not in the expected format (e.g.,
    *     bad magic number or version).
    */
+  @SuppressWarnings("NullAway.Init") // "tracker" field will be set when resuming
   protected PersistentTempFileBucket(DataInputStream dis)
       throws IOException, StorageFormatException {
     super(dis);
@@ -171,7 +173,7 @@ public class PersistentTempFileBucket extends TempFileBucket implements Serializ
    * @return A new {@link PersistentTempFileBucket} instance representing the read-only shadow copy.
    */
   @Override
-  public RandomAccessible createShadow() {
+  public RandomAccessBucket createShadow() {
     PersistentTempFileBucket ret =
         new PersistentTempFileBucket(filenameId, generator, tracker, false);
     ret.setReadOnly();
@@ -211,6 +213,7 @@ public class PersistentTempFileBucket extends TempFileBucket implements Serializ
    * @throws ResumeFailedException If the resumption process fails, including failures in the base
    *     class resumption or tracker registration.
    */
+  @Override
   protected void innerResume(ResumeContext context) throws ResumeFailedException {
     super.innerResume(context);
     logger.info("Resuming {}", this, new Exception("debug"));
@@ -242,6 +245,7 @@ public class PersistentTempFileBucket extends TempFileBucket implements Serializ
    *
    * @return The magic number {@link #MAGIC} for {@link PersistentTempFileBucket}.
    */
+  @Override
   protected int magic() {
     return MAGIC;
   }

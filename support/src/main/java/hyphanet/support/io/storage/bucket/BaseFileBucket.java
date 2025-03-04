@@ -5,10 +5,6 @@ import hyphanet.support.io.storage.rab.PooledFileRab;
 import hyphanet.support.io.storage.rab.Rab;
 import hyphanet.support.io.stream.NullInputStream;
 import hyphanet.support.io.util.FileSystem;
-import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -18,6 +14,9 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Base class for file-based buckets.
@@ -25,7 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * <p>This class provides common functionality for managing file-based buckets, including handling
  * temporary files, managing input/output streams, and performing basic file operations.
  */
-public abstract class BaseFileBucket implements RandomAccessible {
+public abstract class BaseFileBucket implements RandomAccessBucket {
   /** Magic number to identify the file type. */
   public static final int MAGIC = 0xc4b7533d;
 
@@ -47,7 +46,7 @@ public abstract class BaseFileBucket implements RandomAccessible {
    *     both true.
    */
   protected BaseFileBucket() {
-    assert (!(createFileOnly() && tempFileAlreadyExists())); // Mutually incompatible!
+    assert !(createFileOnly() && tempFileAlreadyExists()); // Mutually incompatible!
   }
 
   /**
@@ -214,8 +213,8 @@ public abstract class BaseFileBucket implements RandomAccessible {
   @Override
   public InputStream getInputStream() throws IOException {
     var is = getInputStreamUnbuffered();
-    if (is == null) {
-      return null;
+    if (is instanceof NullInputStream) {
+      return is;
     }
     return new BufferedInputStream(is);
   }

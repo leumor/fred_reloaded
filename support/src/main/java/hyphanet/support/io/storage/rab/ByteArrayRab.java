@@ -64,7 +64,7 @@ public class ByteArrayRab implements Rab, Serializable {
   /** Protected constructor for serialization purposes. Creates an uninitialized buffer. */
   protected ByteArrayRab() {
     // For serialization.
-    data = null;
+    data = new byte[0];
   }
 
   /**

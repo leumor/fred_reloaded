@@ -8,6 +8,7 @@ import hyphanet.support.io.ResumeFailedException;
 import hyphanet.support.io.storage.StorageFormatException;
 import hyphanet.support.io.storage.bucket.Bucket;
 import hyphanet.support.io.storage.bucket.BucketTools;
+import hyphanet.support.io.storage.bucket.NullBucket;
 import java.io.*;
 
 /**
@@ -24,7 +25,7 @@ import java.io.*;
  *
  * @see Bucket
  */
-public class NoDisposeBucket implements Bucket, Serializable {
+public class NoDisposeBucket implements Bucket {
 
   /** Magic number used for serialization to verify the class type during deserialization. */
   public static final int MAGIC = 0xa88da5c2;
@@ -77,7 +78,7 @@ public class NoDisposeBucket implements Bucket, Serializable {
    */
   protected NoDisposeBucket() {
     // For serialization.
-    proxy = null;
+    proxy = new NullBucket();
   }
 
   @Override

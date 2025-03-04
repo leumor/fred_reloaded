@@ -1,25 +1,26 @@
 package hyphanet.support.io.storage;
 
-import static java.util.concurrent.TimeUnit.MINUTES;
-
 import hyphanet.base.TimeUtil;
 import hyphanet.crypt.key.MasterSecret;
 import hyphanet.support.io.FilenameGenerator;
 import hyphanet.support.io.storage.bucket.BucketFactory;
-import hyphanet.support.io.storage.bucket.RandomAccessible;
+import hyphanet.support.io.storage.bucket.RandomAccessBucket;
 import hyphanet.support.io.storage.bucket.TempBucketFactory;
 import hyphanet.support.io.storage.rab.Rab;
 import hyphanet.support.io.storage.rab.RabFactory;
 import hyphanet.support.io.storage.rab.TempRab;
 import hyphanet.support.io.storage.rab.TempRabFactory;
 import hyphanet.support.io.stream.InsufficientDiskSpaceException;
-import java.io.IOException;
-import java.lang.ref.WeakReference;
-import java.util.LinkedList;
-import java.util.Queue;
-import java.util.concurrent.ExecutorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.lang.ref.WeakReference;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+
+import static java.util.concurrent.TimeUnit.MINUTES;
 
 // TODO:  Replace finalizer with Cleaner
 public class TempResourceManager implements RabFactory, BucketFactory {
@@ -70,7 +71,7 @@ public class TempResourceManager implements RabFactory, BucketFactory {
   }
 
   @Override
-  public synchronized RandomAccessible makeBucket(long size) throws IOException {
+  public synchronized RandomAccessBucket makeBucket(long size) throws IOException {
     setCreateRamStorage(size, bucketFactory);
     runCleaner();
     var bucket = bucketFactory.makeBucket(size);
@@ -210,7 +211,7 @@ public class TempResourceManager implements RabFactory, BucketFactory {
             throws InsufficientDiskSpaceException {
           boolean shouldContinue = true;
           // create a new list to avoid race-conditions
-          Queue<TempStorage> toMigrate = null;
+          List<TempStorage> toMigrate = null;
           logger.info("Starting cleanBucketQueue");
           do {
             synchronized (ramTracker) {
@@ -237,7 +238,7 @@ public class TempResourceManager implements RabFactory, BucketFactory {
                       .log();
                   ramTracker.removeFromRamStorageQueue(tmpBucketRef);
                   if (toMigrate == null) {
-                    toMigrate = new LinkedList<>();
+                    toMigrate = new ArrayList<>();
                   }
                   toMigrate.add(tmpBucket);
                   force = false;

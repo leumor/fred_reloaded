@@ -1,7 +1,6 @@
 package hyphanet.support.io.storage.rab;
 
 import hyphanet.support.io.FilenameGenerator;
-
 import java.io.IOException;
 import java.nio.file.Files;
 
@@ -9,8 +8,8 @@ import java.nio.file.Files;
  * A factory for creating pooled temporary files.
  *
  * <p>This factory utilizes a {@link FilenameGenerator} to create unique filenames for temporary
- * files. It produces {@link PooledFileRab} instances, which are {@link Rab}
- * implementations backed by files on disk and managed by a file descriptor pool.
+ * files. It produces {@link PooledFileRab} instances, which are {@link Rab} implementations backed
+ * by files on disk and managed by a file descriptor pool.
  *
  * <p>This factory is designed to be used in environments where a large number of temporary files
  * might be created and accessed concurrently, and where limiting the number of open file

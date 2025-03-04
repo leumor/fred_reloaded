@@ -4,6 +4,7 @@
 package hyphanet.support.io.storage.bucket.wrapper;
 
 import hyphanet.support.io.storage.bucket.Bucket;
+import hyphanet.support.io.storage.bucket.NullBucket;
 import java.io.Serial;
 import java.io.Serializable;
 import org.jspecify.annotations.Nullable;
@@ -42,7 +43,7 @@ public class ReaderBucketFactory implements Serializable {
    */
   protected ReaderBucketFactory() {
     // For serialization.
-    state = null;
+    state = new ReaderBucketState(new NullBucket());
   }
 
   /**
@@ -53,8 +54,8 @@ public class ReaderBucketFactory implements Serializable {
    *     closed.
    * @throws IllegalStateException if the underlying bucket is already closed.
    */
+  @SuppressWarnings("java:S2095")
   public @Nullable Bucket getReaderBucket() {
-    assert state != null;
     try {
       var bucket = new ReaderBucket(state);
       logger.info(

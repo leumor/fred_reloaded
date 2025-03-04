@@ -11,7 +11,6 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import org.jspecify.annotations.Nullable;
 
 /**
  * Represents a temporary data storage container that can hold arbitrary data. A Bucket is
@@ -61,10 +60,10 @@ public interface Bucket extends Storage {
    * <p><strong>Resource Management:</strong> The caller must close the returned stream to prevent
    * resource leaks.
    *
-   * @return An {@link InputStream}, or null if the Bucket is empty
+   * @return An {@link InputStream}, or {@link NullInputStream} if the Bucket is empty
    * @throws IOException if an I/O error occurs
    */
-  @Nullable InputStream getInputStream() throws IOException;
+  InputStream getInputStream() throws IOException;
 
   /**
    * Creates an unbuffered {@link InputStream} to read data from this Bucket.
@@ -89,6 +88,7 @@ public interface Bucket extends Storage {
    *
    * @return The size in bytes
    */
+  @Override
   long size();
 
   /**
@@ -108,9 +108,9 @@ public interface Bucket extends Storage {
    * invalid, potentially throwing {@link IOException} on read operations or returning incomplete
    * data.
    *
-   * @return A new Bucket instance, or null if shadow creation is not supported
+   * @return A new Bucket instance, or {@link NullBucket} if shadow creation is not supported
    */
-  @Nullable Bucket createShadow();
+  Bucket createShadow();
 
   /**
    * Called after restarting. The Bucket should do any necessary housekeeping after resuming, e.g.
@@ -123,6 +123,7 @@ public interface Bucket extends Storage {
    *     cannot be properly initialized.
    * @see ResumeContext
    */
+  @Override
   default void onResume(ResumeContext context) throws ResumeFailedException {
     // Do nothing
   }
@@ -136,6 +137,7 @@ public interface Bucket extends Storage {
    * @throws IOException if an I/O error occurs
    * @throws UnsupportedOperationException if the operation is not supported
    */
+  @Override
   void storeTo(DataOutputStream dos) throws IOException;
 
   /**

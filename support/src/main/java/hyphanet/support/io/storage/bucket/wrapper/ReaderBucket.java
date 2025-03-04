@@ -4,6 +4,7 @@ import hyphanet.support.GlobalCleaner;
 import hyphanet.support.io.ResumeContext;
 import hyphanet.support.io.ResumeFailedException;
 import hyphanet.support.io.storage.bucket.Bucket;
+import hyphanet.support.io.storage.bucket.NullBucket;
 import java.io.*;
 import java.lang.ref.Cleaner;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -20,7 +21,7 @@ import org.slf4j.LoggerFactory;
  * <p>This class implements {@link Serializable} but is not intended to be persisted directly. It is
  * typically created by {@link ReaderBucketFactory} which is serializable.
  */
-class ReaderBucket implements Bucket, Serializable {
+class ReaderBucket implements Bucket {
 
   @Serial private static final long serialVersionUID = 1L;
   private static final Logger logger = LoggerFactory.getLogger(ReaderBucket.class);
@@ -158,7 +159,7 @@ class ReaderBucket implements Bucket, Serializable {
    */
   @Override
   public Bucket createShadow() {
-    return null;
+    return new NullBucket();
   }
 
   /**

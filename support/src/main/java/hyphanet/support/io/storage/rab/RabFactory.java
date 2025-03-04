@@ -33,6 +33,5 @@ public interface RabFactory {
    * @return A RandomAccessBuffer
    * @throws IOException If an I/O error prevented the operation.
    */
-  Rab makeRab(byte[] initialContents, int offset, int size, boolean readOnly)
-      throws IOException;
+  Rab makeRab(byte[] initialContents, int offset, int size, boolean readOnly) throws IOException;
 }

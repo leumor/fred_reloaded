@@ -6,6 +6,9 @@ module hyphanet.support {
   requires org.bouncycastle.provider;
   requires org.jspecify;
   requires com.google.errorprone.annotations;
+  requires com.sun.jna;
+  requires com.sun.jna.platform;
+  requires nullaway.annotations;
 
   exports hyphanet.support.io;
   exports hyphanet.support.io.storage.bucket;

@@ -1,7 +1,5 @@
 package hyphanet.base.inet;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-
 import hyphanet.base.Fields;
 import hyphanet.base.lru.LruCache;
 import java.io.IOException;
@@ -40,7 +38,7 @@ public class InetAddressIpv6FirstComparator implements Comparator<InetAddress> {
    * Default maximum time in milliseconds to wait for a ping response when checking address
    * reachability.
    */
-  public static final long DEFAULT_MAX_PING_TIME = MILLISECONDS.toMillis(1500);
+  public static final long DEFAULT_MAX_PING_TIME = 1500L;
 
   /** Singleton instance of the comparator. */
   public static final InetAddressIpv6FirstComparator COMPARATOR =

@@ -1,7 +1,6 @@
 package hyphanet.support.io.stream;
 
 import hyphanet.support.io.DiskSpaceChecker;
-
 import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;

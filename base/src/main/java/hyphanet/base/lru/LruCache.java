@@ -161,7 +161,7 @@ public final class LruCache<K extends Comparable<K>, V> {
       expirationDate =
           (expirationDelay < Long.MAX_VALUE)
               ? (System.currentTimeMillis() + expirationDelay)
-              : (Long.MAX_VALUE);
+              : Long.MAX_VALUE;
     }
 
     /**

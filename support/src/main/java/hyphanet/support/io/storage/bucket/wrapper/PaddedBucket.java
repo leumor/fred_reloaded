@@ -8,7 +8,9 @@ import hyphanet.support.io.ResumeFailedException;
 import hyphanet.support.io.storage.StorageFormatException;
 import hyphanet.support.io.storage.bucket.Bucket;
 import hyphanet.support.io.storage.bucket.BucketTools;
+import hyphanet.support.io.storage.bucket.NullBucket;
 import hyphanet.support.io.util.Stream;
+
 import java.io.*;
 
 /**
@@ -17,7 +19,7 @@ import java.io.*;
  * Stream#fill(OutputStream, long)}, which is reasonably random but is faster than using
  * SecureRandom, and vastly more secure than using a non-secure Random.
  */
-public class PaddedBucket implements Bucket, Serializable {
+public class PaddedBucket implements Bucket {
 
   /** Magic number to identify {@code PaddedBucket} data in storage. */
   public static final int MAGIC = 0xdaff6185;
@@ -83,7 +85,7 @@ public class PaddedBucket implements Bucket, Serializable {
 
   /** Constructor for serialization purposes. */
   protected PaddedBucket() {
-    underlying = null;
+    underlying = new NullBucket();
     size = 0;
   }
 

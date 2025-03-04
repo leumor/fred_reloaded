@@ -4,6 +4,7 @@
 package hyphanet.support.io;
 
 import java.io.BufferedReader;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Utility class providing adapter implementations for various types of line readers. This class
@@ -43,7 +44,7 @@ public final class ReaderUtil {
   public static LineReader fromStringArray(final String[] lines) {
     return new LineReader() {
       @Override
-      public String readLine(int maxLength, int bufferSize, boolean utf) {
+      public @Nullable String readLine(int maxLength, int bufferSize, boolean utf) {
         return (++currentLine < lines.length) ? lines[currentLine] : null;
       }
 

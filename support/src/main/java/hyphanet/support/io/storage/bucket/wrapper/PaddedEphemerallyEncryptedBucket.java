@@ -12,6 +12,7 @@ import hyphanet.support.io.ResumeFailedException;
 import hyphanet.support.io.storage.StorageFormatException;
 import hyphanet.support.io.storage.bucket.Bucket;
 import hyphanet.support.io.storage.bucket.BucketTools;
+import hyphanet.support.io.storage.bucket.NullBucket;
 import hyphanet.support.io.stream.NullInputStream;
 import java.io.*;
 import java.security.InvalidAlgorithmParameterException;
@@ -26,6 +27,7 @@ import java.util.random.RandomGenerator;
 import javax.crypto.*;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,7 +43,7 @@ import org.slf4j.LoggerFactory;
  * underlying {@link Bucket}. The encryption uses a randomly generated key and initialization vector
  * (IV) for each instance. Padding is added to prevent size correlation attacks.
  */
-public class PaddedEphemerallyEncryptedBucket implements Bucket, Serializable {
+public class PaddedEphemerallyEncryptedBucket implements Bucket {
 
   /** Minimum size the padded data must be, even if the original is smaller. */
   public static final int MIN_PADDED_SIZE = 1024;
@@ -99,7 +101,6 @@ public class PaddedEphemerallyEncryptedBucket implements Bucket, Serializable {
   public PaddedEphemerallyEncryptedBucket(PaddedEphemerallyEncryptedBucket orig, Bucket newBucket) {
     dataLength = orig.dataLength;
     key = orig.key.clone();
-    randomSeed = null; // Will be read-only
     readOnly = true;
     bucket = newBucket;
     minPaddedSize = orig.minPaddedSize;
@@ -139,9 +140,9 @@ public class PaddedEphemerallyEncryptedBucket implements Bucket, Serializable {
 
   /** Default constructor for serialization purposes. */
   protected PaddedEphemerallyEncryptedBucket() {
-    bucket = null;
+    bucket = new NullBucket();
     minPaddedSize = 0;
-    key = null;
+    key = new byte[0];
     iv = null;
     randomSeed = null;
   }
@@ -180,6 +181,7 @@ public class PaddedEphemerallyEncryptedBucket implements Bucket, Serializable {
    * the {@code dataLength} to 0. The returned stream is wrapped in {@link
    * PaddedEphemerallyEncryptedOutputStream}.
    */
+  @Override
   public OutputStream getOutputStreamUnbuffered() throws IOException {
     if (readOnly) {
       throw new IOException("Read only");
@@ -290,9 +292,12 @@ public class PaddedEphemerallyEncryptedBucket implements Bucket, Serializable {
   }
 
   @Override
+  @SuppressWarnings("java:S2095")
   public Bucket createShadow() {
     Bucket newUnderlying = bucket.createShadow();
-    return newUnderlying != null ? new PaddedEphemerallyEncryptedBucket(this, newUnderlying) : null;
+    return !(newUnderlying instanceof NullBucket)
+        ? new PaddedEphemerallyEncryptedBucket(this, newUnderlying)
+        : newUnderlying;
   }
 
   @Override
@@ -599,7 +604,7 @@ public class PaddedEphemerallyEncryptedBucket implements Bucket, Serializable {
         return outputBuffer[outputBufferPos++] & 0xFF; // Return byte from buffer
       }
 
-      if (totalRead >= dataLength || eofReached && finalBlockProcessed) {
+      if (totalRead >= dataLength || (eofReached && finalBlockProcessed)) {
         return -1; // End of stream
       }
 
@@ -724,10 +729,10 @@ public class PaddedEphemerallyEncryptedBucket implements Bucket, Serializable {
   private final byte[] key;
 
   /** The initialization vector (IV) used for encryption. */
-  private final byte[] iv;
+  private final byte @Nullable [] iv;
 
   /** A transient seed for random number generation after deserialization. */
-  private transient byte[] randomSeed;
+  private transient byte @Nullable [] randomSeed;
 
   /** Length of the non-padded (valid) data. */
   private long dataLength;

@@ -11,8 +11,8 @@ import hyphanet.support.io.stream.RabInputStream;
 import java.io.*;
 
 /**
- * This class implements a {@link Bucket} and {@link RandomAccessible} interface using a {@link Rab}
- * as its underlying storage. It is inherently read-only after construction.
+ * This class implements a {@link Bucket} and {@link RandomAccessBucket} interface using a {@link
+ * Rab} as its underlying storage. It is inherently read-only after construction.
  *
  * <p><b>Implementation Details:</b>
  *
@@ -25,11 +25,10 @@ import java.io.*;
  *       a lightweight wrapper around an existing {@link Rab}.
  * </ul>
  *
- * @see Bucket
- * @see RandomAccessible
+ * @see RandomAccessBucket
  * @see Rab
  */
-public class RabBucket implements Bucket, RandomAccessible {
+public class RabBucket implements RandomAccessBucket {
 
   /** Magic number used to identify {@link RabBucket} data in serialized form. */
   static final int MAGIC = 0x892a708a;
@@ -135,14 +134,14 @@ public class RabBucket implements Bucket, RandomAccessible {
   /**
    * {@inheritDoc}
    *
-   * <p>Always returns {@code null} as {@link RabBucket} Bucket does not have a specific name
+   * <p>Always returns empty string as {@link RabBucket} Bucket does not have a specific name
    * associated with it, as it's typically a wrapper around an anonymous {@link Rab}.
    *
-   * @return {@code null}
+   * @return empty string
    */
   @Override
   public String getName() {
-    return null;
+    return "";
   }
 
   /**
@@ -203,7 +202,6 @@ public class RabBucket implements Bucket, RandomAccessible {
    * <p>Closes the underlying {@link Rab}, releasing any resources associated with it. After
    * closing, further operations on the {@link RabBucket} Bucket might throw {@link IOException}.
    *
-   * @throws IOException if an I/O error occurs during closing the underlying buffer.
    * @see Rab#close()
    */
   @Override
@@ -220,8 +218,8 @@ public class RabBucket implements Bucket, RandomAccessible {
    * @return {@code null}, as shadow copies are not supported.
    */
   @Override
-  public RandomAccessible createShadow() {
-    return null;
+  public RandomAccessBucket createShadow() {
+    return new NullBucket();
   }
 
   /**

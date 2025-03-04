@@ -1,16 +1,14 @@
 package hyphanet.support.io.stream;
 
 import hyphanet.support.io.storage.rab.Rab;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Objects;
 
 /**
- * An {@link InputStream} that reads data from a {@link Rab}. This class allows
- * treating a portion of a {@link Rab} as a sequential input stream. It provides
- * methods to read bytes from the underlying buffer, starting from a specified offset and up to a
- * given size.
+ * An {@link InputStream} that reads data from a {@link Rab}. This class allows treating a portion
+ * of a {@link Rab} as a sequential input stream. It provides methods to read bytes from the
+ * underlying buffer, starting from a specified offset and up to a given size.
  */
 public class RabInputStream extends InputStream {
 
@@ -35,8 +33,8 @@ public class RabInputStream extends InputStream {
   /**
    * {@inheritDoc}
    *
-   * <p>This implementation reads a single byte from the underlying {@link Rab}. It
-   * delegates to the {@link #read(byte[], int, int)} method, using a temporary single-byte buffer.
+   * <p>This implementation reads a single byte from the underlying {@link Rab}. It delegates to the
+   * {@link #read(byte[], int, int)} method, using a temporary single-byte buffer.
    */
   @Override
   public int read() throws IOException {
@@ -49,18 +47,18 @@ public class RabInputStream extends InputStream {
   /**
    * {@inheritDoc}
    *
-   * <p>Reads up to {@code length} bytes of data from the underlying {@link Rab} into
-   * an array of bytes. An attempt is made to read as many as {@code length} bytes, but a smaller
-   * number may be read, possibly zero. The number of bytes actually read is returned as an integer.
+   * <p>Reads up to {@code length} bytes of data from the underlying {@link Rab} into an array of
+   * bytes. An attempt is made to read as many as {@code length} bytes, but a smaller number may be
+   * read, possibly zero. The number of bytes actually read is returned as an integer.
    *
    * <p>If {@code rabOffset} is greater than or equal to {@code rabLength}, then EOF is reached and
    * {@code -1} is returned. If {@code length} is zero, then no bytes are read and {@code 0} is
    * returned. Otherwise, the method calculates the number of bytes to read, which is the minimum of
    * {@code length} and the remaining bytes in the stream ({@code rabLength - rabOffset}). It then
-   * uses the {@link Rab#pread(long, byte[], int, int)} method to read data from the
-   * underlying buffer at the current {@code rabOffset}, into the provided buffer {@code buf} at the
-   * specified {@code offset}. Finally, it updates the {@code rabOffset} by the number of bytes read
-   * and returns the number of bytes read.
+   * uses the {@link Rab#pread(long, byte[], int, int)} method to read data from the underlying
+   * buffer at the current {@code rabOffset}, into the provided buffer {@code buf} at the specified
+   * {@code offset}. Finally, it updates the {@code rabOffset} by the number of bytes read and
+   * returns the number of bytes read.
    *
    * @throws IndexOutOfBoundsException if {@code offset} is negative, {@code length} is negative, or
    *     {@code offset + length} is greater than the length of the array {@code buf}.
@@ -86,8 +84,8 @@ public class RabInputStream extends InputStream {
   }
 
   /**
-   * The underlying {@link Rab} from which this {@link InputStream} reads data. This
-   * buffer provides random access capabilities, but this stream reads it sequentially.
+   * The underlying {@link Rab} from which this {@link InputStream} reads data. This buffer provides
+   * random access capabilities, but this stream reads it sequentially.
    */
   private final Rab underlying;
 
@@ -95,14 +93,14 @@ public class RabInputStream extends InputStream {
   private final byte[] oneByte = new byte[1];
 
   /**
-   * The total number of bytes available to read from the underlying {@link Rab}.
-   * This is the maximum size of the stream.
+   * The total number of bytes available to read from the underlying {@link Rab}. This is the
+   * maximum size of the stream.
    */
   private final long rabLength;
 
   /**
-   * The current read offset within the underlying {@link Rab}. This offset is
-   * incremented as bytes are read from the stream.
+   * The current read offset within the underlying {@link Rab}. This offset is incremented as bytes
+   * are read from the stream.
    */
   private long rabOffset;
 }

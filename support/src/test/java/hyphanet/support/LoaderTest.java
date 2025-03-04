@@ -16,11 +16,10 @@
 
 package hyphanet.support;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.lang.reflect.InvocationTargetException;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test case for {@link Loader} class.
@@ -29,22 +28,25 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class LoaderTest {
 
-    @Test
-    void testLoader() {
-        Object o = null;
+  @Test
+  void testLoader() {
+    Object o = null;
 
-        try {
-            o = Loader.getInstance("java.lang.String");
-        } catch (InvocationTargetException | NoSuchMethodException | InstantiationException |
-                 ClassNotFoundException | IllegalAccessException e) {
-            fail("unexpected exception" + e.getMessage());
-        }
-
-        assertInstanceOf(String.class, o);
+    try {
+      o = Loader.getInstance("java.lang.String");
+    } catch (InvocationTargetException
+        | NoSuchMethodException
+        | InstantiationException
+        | ClassNotFoundException
+        | IllegalAccessException e) {
+      fail("unexpected exception" + e.getMessage());
     }
 
-    @Test
-    void testFailedLoad() {
-        assertThrows(ClassNotFoundException.class, () -> Loader.getInstance("java.lang.String2"));
-    }
+    assertInstanceOf(String.class, o);
+  }
+
+  @Test
+  void testFailedLoad() {
+    assertThrows(ClassNotFoundException.class, () -> Loader.getInstance("java.lang.String2"));
+  }
 }

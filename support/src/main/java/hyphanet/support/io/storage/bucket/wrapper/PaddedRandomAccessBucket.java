@@ -8,14 +8,15 @@ import hyphanet.support.io.ResumeFailedException;
 import hyphanet.support.io.storage.StorageFormatException;
 import hyphanet.support.io.storage.bucket.Bucket;
 import hyphanet.support.io.storage.bucket.BucketTools;
-import hyphanet.support.io.storage.bucket.RandomAccessible;
+import hyphanet.support.io.storage.bucket.NullBucket;
+import hyphanet.support.io.storage.bucket.RandomAccessBucket;
 import hyphanet.support.io.storage.rab.PaddedRab;
 import hyphanet.support.io.storage.rab.Rab;
 import hyphanet.support.io.util.Stream;
 import java.io.*;
 
 /**
- * Pads a {@link RandomAccessible} bucket to the next power of 2 file size.
+ * Pads a {@link RandomAccessBucket} bucket to the next power of 2 file size.
  *
  * <p>Self-terminating formats are incompatible with {@link AeadCryptBucket} Bucket as it requires
  * knowing the real length of the data. This class utilizes {@link Stream#fill(OutputStream, long)}
@@ -23,10 +24,10 @@ import java.io.*;
  * and is significantly more secure than using {@link java.util.Random}.
  *
  * @see Stream#fill(OutputStream, long)
- * @see RandomAccessible
+ * @see RandomAccessBucket
  * @see Bucket
  */
-public class PaddedRandomAccessBucket implements RandomAccessible, Serializable {
+public class PaddedRandomAccessBucket implements RandomAccessBucket, Serializable {
 
   /** Magic number for serialization verification. */
   public static final int MAGIC = 0x95c42e34;
@@ -44,19 +45,19 @@ public class PaddedRandomAccessBucket implements RandomAccessible, Serializable 
    *
    * <p>Assumes the underlying bucket is initially empty.
    *
-   * @param underlying The {@link RandomAccessible} bucket to pad.
+   * @param underlying The {@link RandomAccessBucket} bucket to pad.
    */
-  public PaddedRandomAccessBucket(RandomAccessible underlying) {
+  public PaddedRandomAccessBucket(RandomAccessBucket underlying) {
     this(underlying, 0);
   }
 
   /**
    * Creates a {@link PaddedRandomAccessBucket} Bucket with a specified initial data size.
    *
-   * @param underlying The underlying {@link RandomAccessible} bucket.
+   * @param underlying The underlying {@link RandomAccessBucket} bucket.
    * @param size The actual size of the data currently in the underlying bucket.
    */
-  public PaddedRandomAccessBucket(RandomAccessible underlying, long size) {
+  public PaddedRandomAccessBucket(RandomAccessBucket underlying, long size) {
     this.underlying = underlying;
     this.size = size;
   }
@@ -95,12 +96,12 @@ public class PaddedRandomAccessBucket implements RandomAccessible, Serializable 
     size = dis.readLong();
     readOnly = dis.readBoolean();
     underlying =
-        (RandomAccessible) BucketTools.restoreFrom(dis, fg, persistentFileTracker, masterKey);
+        (RandomAccessBucket) BucketTools.restoreFrom(dis, fg, persistentFileTracker, masterKey);
   }
 
   /** Constructor for serialization purposes. */
   protected PaddedRandomAccessBucket() {
-    underlying = null;
+    underlying = new NullBucket();
     size = 0;
   }
 
@@ -192,8 +193,8 @@ public class PaddedRandomAccessBucket implements RandomAccessible, Serializable 
    * @return A new {@code PaddedRandomAccess} Bucket instance representing the shadow copy.
    */
   @Override
-  public RandomAccessible createShadow() {
-    RandomAccessible shadow = underlying.createShadow();
+  public RandomAccessBucket createShadow() {
+    RandomAccessBucket shadow = underlying.createShadow();
     PaddedRandomAccessBucket ret = new PaddedRandomAccessBucket(shadow, size);
     ret.setReadOnly();
     return ret;
@@ -236,14 +237,14 @@ public class PaddedRandomAccessBucket implements RandomAccessible, Serializable 
   }
 
   /**
-   * Returns the underlying {@link RandomAccessible} bucket.
+   * Returns the underlying {@link RandomAccessBucket} bucket.
    *
-   * <p>This method provides access to the wrapped {@link RandomAccessible} bucket. It is intended
+   * <p>This method provides access to the wrapped {@link RandomAccessBucket} bucket. It is intended
    * for advanced use cases where direct interaction with the underlying bucket is necessary.
    *
-   * @return The underlying {@link RandomAccessible} bucket.
+   * @return The underlying {@link RandomAccessBucket} bucket.
    */
-  public RandomAccessible getUnderlying() {
+  public RandomAccessBucket getUnderlying() {
     return underlying;
   }
 
@@ -516,8 +517,8 @@ public class PaddedRandomAccessBucket implements RandomAccessible, Serializable 
     private long counter;
   }
 
-  /** The underlying {@link RandomAccessible} bucket that is being padded. */
-  private final RandomAccessible underlying;
+  /** The underlying {@link RandomAccessBucket} bucket that is being padded. */
+  private final RandomAccessBucket underlying;
 
   /** The actual size of the un-padded data in the bucket. */
   private long size;

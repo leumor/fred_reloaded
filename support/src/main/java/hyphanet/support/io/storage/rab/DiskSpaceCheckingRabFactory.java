@@ -3,19 +3,18 @@ package hyphanet.support.io.storage.rab;
 import hyphanet.support.io.DiskSpaceChecker;
 import hyphanet.support.io.stream.InsufficientDiskSpaceException;
 import hyphanet.support.io.util.FilePath;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Random;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * A Random Access Buffer {@link RabFactory} implementation that wraps another {@link RabFactory} and
- * performs disk space checks before creating {@link Rab} instances.
+ * A Random Access Buffer {@link RabFactory} implementation that wraps another {@link RabFactory}
+ * and performs disk space checks before creating {@link Rab} instances.
  *
  * <p>This factory ensures that there is sufficient disk space available before allowing the
  * creation of new buffers, preventing potential {@link InsufficientDiskSpaceException} errors
@@ -30,8 +29,8 @@ public class DiskSpaceCheckingRabFactory implements RabFactory, DiskSpaceChecker
   /**
    * Global lock used to synchronize disk space checks and prevent fragmentation.
    *
-   * <p>This lock is acquired before any disk space check or {@link Rab} creation to
-   * ensure that operations are performed atomically and that free space estimations are accurate.
+   * <p>This lock is acquired before any disk space check or {@link Rab} creation to ensure that
+   * operations are performed atomically and that free space estimations are accurate.
    *
    * <p><b>LOCKING:</b> This lock is used to synchronize operations across the entire factory.
    *
@@ -83,9 +82,9 @@ public class DiskSpaceCheckingRabFactory implements RabFactory, DiskSpaceChecker
    * @throws InsufficientDiskSpaceException if there is not enough disk space available.
    * @implSpec This implementation first checks if there is enough disk space available in the
    *     directory specified during construction. If sufficient space is available ({@code size} +
-   *     {@link #minDiskSpace}), it delegates the {@link Rab} creation to the
-   *     underlying {@link RabFactory}. The disk space check and buffer creation are performed under a
-   *     global lock to ensure atomicity.
+   *     {@link #minDiskSpace}), it delegates the {@link Rab} creation to the underlying {@link
+   *     RabFactory}. The disk space check and buffer creation are performed under a global lock to
+   *     ensure atomicity.
    * @see #lock
    * @see #getUsableSpace(Path)
    */
@@ -108,9 +107,9 @@ public class DiskSpaceCheckingRabFactory implements RabFactory, DiskSpaceChecker
    * @throws InsufficientDiskSpaceException if there is not enough disk space available.
    * @implSpec This implementation first checks if there is enough disk space available in the
    *     directory specified during construction. If sufficient space is available ({@code size} +
-   *     {@link #minDiskSpace}), it delegates the {@link Rab} creation to the
-   *     underlying {@link RabFactory}. The disk space check and buffer creation are performed under a
-   *     global lock to ensure atomicity.
+   *     {@link #minDiskSpace}), it delegates the {@link Rab} creation to the underlying {@link
+   *     RabFactory}. The disk space check and buffer creation are performed under a global lock to
+   *     ensure atomicity.
    * @see #lock
    * @see #getUsableSpace(Path)
    */
@@ -146,8 +145,8 @@ public class DiskSpaceCheckingRabFactory implements RabFactory, DiskSpaceChecker
    * the file does not meet these criteria or if a {@link PooledFileRab} cannot be created due to
    * insufficient disk space or other I/O errors, the file will be deleted.
    *
-   * @param path The path to the file for which to create a {@link PooledFileRab}. Must not be {@code
-   *     null}.
+   * @param path The path to the file for which to create a {@link PooledFileRab}. Must not be
+   *     {@code null}.
    * @param size The expected size of the {@link PooledFileRab} in bytes.
    * @param random A {@link Random} instance (not used in this method, but kept for interface
    *     compatibility).
@@ -234,9 +233,9 @@ public class DiskSpaceCheckingRabFactory implements RabFactory, DiskSpaceChecker
   }
 
   /**
-   * The underlying {@link RabFactory} used to create {@link Rab} instances after disk
-   * space checks. This factory delegates the actual buffer creation to the wrapped factory if
-   * sufficient disk space is available.
+   * The underlying {@link RabFactory} used to create {@link Rab} instances after disk space checks.
+   * This factory delegates the actual buffer creation to the wrapped factory if sufficient disk
+   * space is available.
    */
   private final RabFactory underlying;
 

@@ -3,7 +3,6 @@ package hyphanet.support.io.storage.bucket;
 import hyphanet.support.io.ResumeContext;
 import hyphanet.support.io.storage.rab.ByteArrayRab;
 import hyphanet.support.io.storage.rab.Rab;
-
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -19,7 +18,7 @@ import java.util.Arrays;
  *
  * @author oskar
  */
-public class ArrayBucket implements Bucket, Serializable, RandomAccessible {
+public class ArrayBucket implements RandomAccessBucket, Serializable {
   @Serial private static final long serialVersionUID = 1L;
 
   /** Constructs a new Array bucket with default name "ArrayBucket". */
@@ -110,7 +109,6 @@ public class ArrayBucket implements Bucket, Serializable, RandomAccessible {
   @Override
   public void close() {
     closed = true;
-    data = null;
     // Not much else we can do.
   }
 
@@ -130,8 +128,8 @@ public class ArrayBucket implements Bucket, Serializable, RandomAccessible {
   }
 
   @Override
-  public RandomAccessible createShadow() {
-    return null;
+  public RandomAccessBucket createShadow() {
+    return new NullBucket();
   }
 
   @Override

@@ -13,10 +13,12 @@ import hyphanet.support.io.storage.DelayedDisposable;
 import hyphanet.support.io.storage.StorageFormatException;
 import hyphanet.support.io.storage.bucket.Bucket;
 import hyphanet.support.io.storage.bucket.BucketTools;
-import hyphanet.support.io.storage.bucket.RandomAccessible;
-import java.io.*;
+import hyphanet.support.io.storage.bucket.RandomAccessBucket;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.*;
 
 /**
  * The {@link DelayedDisposeBucket} class provides a mechanism to delay the disposal of an
@@ -28,7 +30,7 @@ import org.slf4j.LoggerFactory;
  * is decided by {@link PersistentFileTracker}. This allows safe cleanup, preventing premature
  * resource deallocation and potential data loss.
  *
- * <p>This class also supports migration to a {@link RandomAccessible} bucket, if necessary, and
+ * <p>This class also supports migration to a {@link RandomAccessBucket} bucket, if necessary, and
  * avoids disposing of the resource in the migrated state.
  *
  * <p><b>Usage Note:</b> Invoking methods on an already disposed or migrated instance will throw an
@@ -37,9 +39,9 @@ import org.slf4j.LoggerFactory;
  *
  * @see Bucket
  * @see DelayedDisposable
- * @see RandomAccessible
+ * @see RandomAccessBucket
  */
-public class DelayedDisposeBucket implements Bucket, Serializable, DelayedDisposable {
+public class DelayedDisposeBucket implements Bucket, DelayedDisposable {
 
   /**
    * The magic number used to identify serialized instances of this class.
@@ -98,6 +100,7 @@ public class DelayedDisposeBucket implements Bucket, Serializable, DelayedDispos
       throw new StorageFormatException("Bad version");
     }
     bucket = BucketTools.restoreFrom(dis, fg, persistentFileTracker, masterKey);
+    factory = persistentFileTracker;
   }
 
   @Override
@@ -182,7 +185,7 @@ public class DelayedDisposeBucket implements Bucket, Serializable, DelayedDispos
    *
    * @return The underlying {@link Bucket}, or {@code null} if unavailable.
    */
-  public synchronized Bucket getUnderlying() {
+  public synchronized @Nullable Bucket getUnderlying() {
     if (disposed) {
       return null;
     }
@@ -253,20 +256,20 @@ public class DelayedDisposeBucket implements Bucket, Serializable, DelayedDispos
   }
 
   /**
-   * Attempts to migrate the underlying {@link Bucket} to a {@link RandomAccessible} type. If
+   * Attempts to migrate the underlying {@link Bucket} to a {@link RandomAccessBucket} type. If
    * successful, further operations on this instance should be avoided, and the resulting {@link
-   * RandomAccessible} will be managed by a new wrapper.
+   * RandomAccessBucket} will be managed by a new wrapper.
    *
-   * @return A {@link RandomAccessible} if migration succeeds, or {@code null} if not possible.
+   * @return A {@link RandomAccessBucket} if migration succeeds, or {@code null} if not possible.
    * @throws IOException If the resource is already freed (disposed).
    */
-  public synchronized RandomAccessible toRandomAccessBucket() throws IOException {
+  public synchronized @Nullable RandomAccessBucket toRandomAccessBucket() throws IOException {
     if (disposed) {
       throw new IOException("Already freed");
     }
-    if (bucket instanceof RandomAccessible) {
+    if (bucket instanceof RandomAccessBucket randomAccessBucket) {
       migrated = true;
-      return new DelayedDisposeRandomAccessBucket(factory, (RandomAccessible) bucket);
+      return new DelayedDisposeRandomAccessBucket(factory, randomAccessBucket);
       // Underlying file is already registered.
     }
     return null;
@@ -281,9 +284,6 @@ public class DelayedDisposeBucket implements Bucket, Serializable, DelayedDispos
   /**
    * Tracks the factory managing persistent file operations. Used during creation and upon resume to
    * ensure that the reference is reestablished.
-   *
-   * <p>Marked {@code transient} because it is not serialized. It is resolved as part of the resume
-   * process.
    */
   // Only set on construction and on onResume() on startup. So shouldn't need locking.
   private transient PersistentFileTracker factory;
@@ -296,9 +296,9 @@ public class DelayedDisposeBucket implements Bucket, Serializable, DelayedDispos
   private boolean disposed;
 
   /**
-   * Indicates whether the underlying {@link Bucket} has been migrated to a {@link RandomAccessible}
-   * implementation. Once migrated, the original bucket becomes invalid for further I/O operations
-   * and should not be disposed again.
+   * Indicates whether the underlying {@link Bucket} has been migrated to a {@link
+   * RandomAccessBucket} implementation. Once migrated, the original bucket becomes invalid for
+   * further I/O operations and should not be disposed again.
    */
   private boolean migrated;
 

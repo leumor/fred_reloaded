@@ -1,5 +1,6 @@
 package hyphanet.support.io.storage.rab;
 
+import com.uber.nullaway.annotations.EnsuresNonNull;
 import hyphanet.support.io.*;
 import hyphanet.support.io.storage.StorageFormatException;
 import hyphanet.support.io.util.FileSystem;
@@ -13,6 +14,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import org.apache.commons.lang3.ArrayUtils;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -217,6 +219,7 @@ public class PooledFileRab implements Rab, Serializable {
   }
 
   /** Protected constructor for serialization. */
+  @SuppressWarnings("NullAway.Init")
   protected PooledFileRab() {
     // For serialization.
     readOnly = false;
@@ -362,6 +365,7 @@ public class PooledFileRab implements Rab, Serializable {
   }
 
   @Override
+  @EnsuresNonNull({"channel"})
   public RabLock lockOpen() throws IOException {
     return lockOpen(false);
   }
@@ -421,6 +425,7 @@ public class PooledFileRab implements Rab, Serializable {
     }
   }
 
+  @Override
   public String toString() {
     return super.toString() + ":" + path;
   }
@@ -556,6 +561,7 @@ public class PooledFileRab implements Rab, Serializable {
    * @return A {@link RabLock} instance that must be unlocked when operations are complete
    * @throws IOException If the file cannot be opened or locked
    */
+  @EnsuresNonNull({"channel"})
   private RabLock lockOpen(boolean forceWrite) throws IOException {
     RabLock lock =
         new RabLock() {
@@ -607,7 +613,7 @@ public class PooledFileRab implements Rab, Serializable {
    *
    * @return the first PooledFile that can be closed, or null if none available
    */
-  private PooledFileRab pollFirstClosable() {
+  private @Nullable PooledFileRab pollFirstClosable() {
     synchronized (fds) {
       Iterator<PooledFileRab> it = fds.closables.iterator();
       if (it.hasNext()) {
@@ -721,7 +727,7 @@ public class PooledFileRab implements Rab, Serializable {
   private int lockLevel;
 
   /** The underlying file channel for I/O operations */
-  private transient FileChannel channel;
+  private transient @Nullable FileChannel channel;
 
   /** Whether this random access buffer has been closed */
   private boolean closed;

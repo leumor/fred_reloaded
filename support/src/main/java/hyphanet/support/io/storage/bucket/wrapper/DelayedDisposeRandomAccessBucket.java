@@ -13,7 +13,8 @@ import hyphanet.support.io.storage.DelayedDisposable;
 import hyphanet.support.io.storage.StorageFormatException;
 import hyphanet.support.io.storage.bucket.Bucket;
 import hyphanet.support.io.storage.bucket.BucketTools;
-import hyphanet.support.io.storage.bucket.RandomAccessible;
+import hyphanet.support.io.storage.bucket.NullBucket;
+import hyphanet.support.io.storage.bucket.RandomAccessBucket;
 import hyphanet.support.io.storage.rab.DelayedDisposeRab;
 import hyphanet.support.io.storage.rab.Rab;
 import java.io.*;
@@ -36,12 +37,11 @@ import org.slf4j.LoggerFactory;
  *   <li>Maintains thread safety for critical operations
  * </ul>
  *
- * @see RandomAccessible
+ * @see RandomAccessBucket
  * @see DelayedDisposable
  * @see Bucket
  */
-public class DelayedDisposeRandomAccessBucket
-    implements Bucket, Serializable, RandomAccessible, DelayedDisposable {
+public class DelayedDisposeRandomAccessBucket implements RandomAccessBucket, DelayedDisposable {
 
   /** Magic number used for serialization format verification */
   public static final int MAGIC = 0xa28f2a2d;
@@ -60,7 +60,8 @@ public class DelayedDisposeRandomAccessBucket
    * @param factory The tracker responsible for managing persistent files
    * @param bucket The underlying RandomAccessible bucket to be wrapped
    */
-  public DelayedDisposeRandomAccessBucket(PersistentFileTracker factory, RandomAccessible bucket) {
+  public DelayedDisposeRandomAccessBucket(
+      PersistentFileTracker factory, RandomAccessBucket bucket) {
     this.factory = factory;
     this.bucket = bucket;
     this.createdCommitID = factory.commitID();
@@ -90,7 +91,9 @@ public class DelayedDisposeRandomAccessBucket
     if (version != VERSION) {
       throw new StorageFormatException("Bad version");
     }
-    bucket = (RandomAccessible) BucketTools.restoreFrom(dis, fg, persistentFileTracker, masterKey);
+    bucket =
+        (RandomAccessBucket) BucketTools.restoreFrom(dis, fg, persistentFileTracker, masterKey);
+    factory = persistentFileTracker;
   }
 
   @Override
@@ -145,11 +148,11 @@ public class DelayedDisposeRandomAccessBucket
   /**
    * Retrieves the underlying bucket if not freed.
    *
-   * @return The underlying bucket, or null if the bucket has been freed
+   * @return The underlying bucket, or {@link NullBucket} if the bucket has been freed
    */
   public synchronized Bucket getUnderlying() {
     if (disposed.get()) {
-      return null;
+      return new NullBucket();
     }
     return bucket;
   }
@@ -174,7 +177,7 @@ public class DelayedDisposeRandomAccessBucket
   }
 
   @Override
-  public RandomAccessible createShadow() {
+  public RandomAccessBucket createShadow() {
     return bucket.createShadow();
   }
 
@@ -210,7 +213,7 @@ public class DelayedDisposeRandomAccessBucket
   }
 
   /** The underlying bucket being wrapped */
-  private final RandomAccessible bucket;
+  private final RandomAccessBucket bucket;
 
   /** Flag indicating whether this bucket has been disposed */
   private final AtomicBoolean disposed = new AtomicBoolean();

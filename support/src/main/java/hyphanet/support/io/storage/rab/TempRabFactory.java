@@ -6,11 +6,10 @@ import hyphanet.support.io.storage.EncryptType;
 import hyphanet.support.io.storage.RamStorageCapableFactory;
 import hyphanet.support.io.storage.TempStorageRamTracker;
 import hyphanet.support.io.storage.bucket.wrapper.PaddedEphemerallyEncryptedBucket;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TempRabFactory implements RabFactory, RamStorageCapableFactory {
   private static final Logger logger = LoggerFactory.getLogger(TempRabFactory.class);
@@ -100,6 +99,7 @@ public class TempRabFactory implements RabFactory, RamStorageCapableFactory {
     return createRam;
   }
 
+  @Override
   public void setCreateRam(boolean createRam) {
     this.createRam = createRam;
   }

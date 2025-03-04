@@ -1,5 +1,6 @@
 package hyphanet.support.io.storage.bucket.wrapper;
 
+import com.uber.nullaway.annotations.RequiresNonNull;
 import hyphanet.base.Fields;
 import hyphanet.crypt.CryptByteBuffer;
 import hyphanet.crypt.key.KeyGenUtil;
@@ -12,7 +13,7 @@ import hyphanet.support.io.ResumeFailedException;
 import hyphanet.support.io.storage.EncryptType;
 import hyphanet.support.io.storage.StorageFormatException;
 import hyphanet.support.io.storage.bucket.BucketTools;
-import hyphanet.support.io.storage.bucket.RandomAccessible;
+import hyphanet.support.io.storage.bucket.RandomAccessBucket;
 import hyphanet.support.io.storage.rab.EncryptedRab;
 import hyphanet.support.io.storage.rab.Rab;
 import hyphanet.support.io.stream.NullInputStream;
@@ -28,6 +29,7 @@ import org.bouncycastle.crypto.SkippingStreamCipher;
 import org.bouncycastle.crypto.params.KeyParameter;
 import org.bouncycastle.crypto.params.ParametersWithIV;
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 /**
  * A Bucket implementation that provides encryption capabilities using the same format as {@link
@@ -53,10 +55,10 @@ import org.jspecify.annotations.NonNull;
  * </ul>
  *
  * @author toad
- * @see RandomAccessible
+ * @see RandomAccessBucket
  * @see java.io.Serializable
  */
-public class EncryptedBucket implements RandomAccessible, Serializable {
+public class EncryptedBucket implements RandomAccessBucket, Serializable {
 
   /** Magic number used for format validation */
   public static final int MAGIC = 0xd8ba4c7e;
@@ -76,10 +78,9 @@ public class EncryptedBucket implements RandomAccessible, Serializable {
    * @param underlying The underlying storage implementation
    * @param masterKey The master key for encryption
    */
-  public EncryptedBucket(EncryptType type, RandomAccessible underlying, MasterSecret masterKey) {
+  public EncryptedBucket(EncryptType type, RandomAccessBucket underlying, MasterSecret masterKey) {
     this.type = type;
     this.underlying = underlying;
-    this.masterKey = masterKey;
     baseSetup(masterKey);
   }
 
@@ -100,12 +101,13 @@ public class EncryptedBucket implements RandomAccessible, Serializable {
       PersistentFileTracker persistentFileTracker,
       MasterSecret masterKey)
       throws IOException, ResumeFailedException, StorageFormatException {
-    type = EncryptType.getByBitmask(dis.readInt());
-    if (type == null) {
+    var encryptType = EncryptType.getByBitmask(dis.readInt());
+    if (encryptType == null) {
       throw new ResumeFailedException("Unknown EncryptedRandomAccessBucket type");
     }
+    type = encryptType;
     underlying =
-        (RandomAccessible) BucketTools.restoreFrom(dis, fg, persistentFileTracker, masterKey);
+        (RandomAccessBucket) BucketTools.restoreFrom(dis, fg, persistentFileTracker, masterKey);
     this.baseSetup(masterKey);
   }
 
@@ -233,8 +235,8 @@ public class EncryptedBucket implements RandomAccessible, Serializable {
    * @return A new encrypted bucket instance using the same underlying storage
    */
   @Override
-  public RandomAccessible createShadow() {
-    RandomAccessible copy = underlying.createShadow();
+  public RandomAccessBucket createShadow() {
+    RandomAccessBucket copy = underlying.createShadow();
     return new EncryptedBucket(type, copy, masterKey);
   }
 
@@ -327,7 +329,7 @@ public class EncryptedBucket implements RandomAccessible, Serializable {
    *
    * @return The underlying RandomAccessible instance
    */
-  public RandomAccessible getUnderlying() {
+  public RandomAccessBucket getUnderlying() {
     return underlying;
   }
 
@@ -338,6 +340,7 @@ public class EncryptedBucket implements RandomAccessible, Serializable {
    * @param masterKey The master secret for deriving encryption keys
    */
   private void baseSetup(MasterSecret masterKey) {
+    this.masterKey = masterKey;
 
     this.headerEncKey = masterKey.deriveKey(type.encryptKey);
     this.headerMacKey = masterKey.deriveKey(type.macKey);
@@ -371,10 +374,12 @@ public class EncryptedBucket implements RandomAccessible, Serializable {
    * @throws GeneralSecurityException If encryption operations fail
    * @throws IOException If writing fails
    */
+  @RequiresNonNull({"unencryptedBaseKey", "headerEncIV"})
   private void writeHeader(OutputStream os) throws GeneralSecurityException, IOException {
     byte[] header = new byte[type.headerLen];
     int offset = 0;
 
+    assert headerEncIV != null;
     int ivLen = headerEncIV.length;
     System.arraycopy(headerEncIV, 0, header, offset, ivLen);
     offset += ivLen;
@@ -653,25 +658,25 @@ public class EncryptedBucket implements RandomAccessible, Serializable {
   private final EncryptType type;
 
   /** The underlying storage implementation */
-  private final RandomAccessible underlying;
+  private final RandomAccessBucket underlying;
+
+  /** Flag indicating if this bucket has been disposed */
+  private final AtomicBoolean disposed = new AtomicBoolean();
 
   /** Parameters for cipher operations including key and IV */
-  private transient ParametersWithIV cipherParams; // includes key
+  private transient @Nullable ParametersWithIV cipherParams; // includes key
 
   /** Key used for MAC operations on the header */
   private transient SecretKey headerMacKey;
 
-  /** Flag indicating if this bucket has been disposed */
-  private AtomicBoolean disposed = new AtomicBoolean();
-
   /** The unencrypted base key used for derivation */
-  private transient SecretKey unencryptedBaseKey;
+  private transient @Nullable SecretKey unencryptedBaseKey;
 
   /** Key used for header encryption */
   private transient SecretKey headerEncKey;
 
   /** Initialization vector for header encryption */
-  private transient byte[] headerEncIV;
+  private transient byte @Nullable [] headerEncIV;
 
   /** Version identifier for format compatibility */
   private int version;

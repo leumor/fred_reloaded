@@ -18,7 +18,7 @@ public class NullBucketFactory implements BucketFactory {
    * @throws IOException Never, as {@link NullBucket} creation does not throw {@link IOException}.
    */
   @Override
-  public RandomAccessible makeBucket(long size) throws IOException {
+  public RandomAccessBucket makeBucket(long size) throws IOException {
     return new NullBucket(size);
   }
 }

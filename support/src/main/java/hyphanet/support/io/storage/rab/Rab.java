@@ -73,6 +73,7 @@ public interface Rab extends Storage {
    *
    * @return the size of the buffer in bytes
    */
+  @Override
   long size();
 
   /**
@@ -124,6 +125,7 @@ public interface Rab extends Storage {
    * <p>This method may perform no operation in some implementations. Callers should ensure that the
    * object becomes eligible for garbage collection after calling this method.
    */
+  @Override
   default void dispose() {
     close();
   }
@@ -149,6 +151,7 @@ public interface Rab extends Storage {
    * @throws ResumeFailedException if the resume operation cannot be completed
    * @see ResumeContext
    */
+  @Override
   void onResume(ResumeContext context) throws ResumeFailedException;
 
   /**
@@ -163,6 +166,7 @@ public interface Rab extends Storage {
    * @throws IOException if the serialization fails
    * @throws UnsupportedOperationException if serialization is not supported
    */
+  @Override
   void storeTo(DataOutputStream dos) throws IOException;
 
   /**

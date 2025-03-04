@@ -223,7 +223,7 @@ public class LruMap<K, V> {
    */
   public final synchronized boolean removeKey(K key) {
     if (key == null) throw new NullPointerException();
-    QItem<K, V> i = (underlyingMap.remove(key));
+    QItem<K, V> i = underlyingMap.remove(key);
     if (i != null) {
       list.remove(i);
       return true;
@@ -396,13 +396,13 @@ public class LruMap<K, V> {
   }
 
   /**
-   * Doubly linked list to maintain the LRU order of {@link QItem}s.
+   * Array deque to maintain the LRU order of {@link QItem}s.
    *
    * <p>The list stores {@link QItem}s in the order of their last access, with the most recently
-   * used item at the head and the least recently used item at the tail. Using a {@link LinkedList}
+   * used item at the head and the least recently used item at the tail. Using a {@link ArrayDeque}
    * allows for efficient addition and removal of items at both ends.
    */
-  private final LinkedList<QItem<K, V>> list = new LinkedList<>();
+  private final ArrayDeque<QItem<K, V>> list = new ArrayDeque<>();
 
   /**
    * Underlying map to store key to {@link QItem} mappings for fast lookup.

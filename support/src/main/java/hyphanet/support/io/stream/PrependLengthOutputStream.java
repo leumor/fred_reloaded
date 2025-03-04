@@ -3,7 +3,6 @@ package hyphanet.support.io.stream;
 import hyphanet.support.io.storage.bucket.Bucket;
 import hyphanet.support.io.storage.bucket.BucketFactory;
 import hyphanet.support.io.storage.bucket.BucketTools;
-
 import java.io.DataOutputStream;
 import java.io.FilterOutputStream;
 import java.io.IOException;
@@ -54,8 +53,8 @@ public class PrependLengthOutputStream extends FilterOutputStream {
    * Creates a new {@link PrependLengthOutputStream}.
    *
    * <p>This is the factory method for creating instances of {@link PrependLengthOutputStream}. It
-   * creates a temporary {@link Bucket} using the provided {@link BucketFactory} and obtains an {@link
-   * OutputStream} from it to buffer the data.
+   * creates a temporary {@link Bucket} using the provided {@link BucketFactory} and obtains an
+   * {@link OutputStream} from it to buffer the data.
    *
    * @param out The original {@link OutputStream} to which the length and data will be written upon
    *     closing.
@@ -182,8 +181,8 @@ public class PrependLengthOutputStream extends FilterOutputStream {
 
   /**
    * The temporary {@link Bucket} used to buffer the data before writing to the original output
-   * stream. This bucket is created in the {@link #create(OutputStream, BucketFactory, int, boolean)}
-   * method and disposed of in the {@link #close()} method.
+   * stream. This bucket is created in the {@link #create(OutputStream, BucketFactory, int,
+   * boolean)} method and disposed of in the {@link #close()} method.
    */
   private final Bucket temp;
 

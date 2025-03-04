@@ -4,6 +4,7 @@ module hyphanet.crypt {
   requires org.bouncycastle.provider;
   requires ch.qos.logback.classic;
   requires org.slf4j;
+  requires com.google.errorprone.annotations;
 
   exports hyphanet.crypt;
   exports hyphanet.crypt.hash;

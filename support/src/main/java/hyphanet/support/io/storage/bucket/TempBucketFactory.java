@@ -7,14 +7,11 @@ import hyphanet.support.io.storage.RamStorageCapableFactory;
 import hyphanet.support.io.storage.TempStorageRamTracker;
 import hyphanet.support.io.storage.rab.RabFactory;
 import hyphanet.support.io.stream.InsufficientDiskSpaceException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Files;
 
 public class TempBucketFactory implements BucketFactory, RamStorageCapableFactory {
-  private static final Logger logger = LoggerFactory.getLogger(TempBucketFactory.class);
 
   public TempBucketFactory(
       TempStorageRamTracker ramTracker,
@@ -46,7 +43,7 @@ public class TempBucketFactory implements BucketFactory, RamStorageCapableFactor
    */
   @Override
   public TempBucket makeBucket(long size) throws IOException {
-    RandomAccessible realBucket;
+    RandomAccessBucket realBucket;
     long now = System.currentTimeMillis();
 
     var tempFileBucketFactory =
@@ -80,6 +77,7 @@ public class TempBucketFactory implements BucketFactory, RamStorageCapableFactor
     return createRam;
   }
 
+  @Override
   public void setCreateRam(boolean createRam) {
     this.createRam = createRam;
   }

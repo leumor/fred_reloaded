@@ -11,6 +11,7 @@ import hyphanet.support.io.ResumeFailedException;
 import hyphanet.support.io.storage.StorageFormatException;
 import hyphanet.support.io.storage.bucket.Bucket;
 import hyphanet.support.io.storage.bucket.BucketTools;
+import hyphanet.support.io.storage.bucket.NullBucket;
 import java.io.*;
 import java.util.Arrays;
 import java.util.Set;
@@ -36,7 +37,7 @@ import java.util.Set;
  *
  * @author toad
  */
-public class AeadCryptBucket implements Bucket, Serializable {
+public class AeadCryptBucket implements Bucket {
 
   /** Magic number identifying AEADCryptBucket serialization format. */
   public static final int MAGIC = 0xb25b32d6;
@@ -100,8 +101,8 @@ public class AeadCryptBucket implements Bucket, Serializable {
 
   /** For serialization proxies only. */
   protected AeadCryptBucket() {
-    underlying = null;
-    key = null;
+    underlying = new NullBucket();
+    key = new byte[0];
   }
 
   /**
@@ -201,6 +202,9 @@ public class AeadCryptBucket implements Bucket, Serializable {
   @Override
   public Bucket createShadow() {
     Bucket underShadow = underlying.createShadow();
+    if (underShadow instanceof NullBucket) {
+      return underShadow;
+    }
     AeadCryptBucket ret = new AeadCryptBucket(underShadow, key);
     ret.setReadOnly();
     return ret;

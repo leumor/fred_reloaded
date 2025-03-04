@@ -9,6 +9,9 @@ import hyphanet.support.io.storage.StorageFormatException;
 import hyphanet.support.io.storage.bucket.wrapper.*;
 import hyphanet.support.io.storage.rab.*;
 import hyphanet.support.io.util.Stream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
@@ -18,8 +21,6 @@ import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.random.RandomGeneratorFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** Helper functions for working with Buckets. */
 public class BucketTools {
@@ -239,19 +240,19 @@ public class BucketTools {
     }
   }
 
-  public static RandomAccessible makeImmutableBucket(BucketFactory bucketFactory, byte[] data)
+  public static RandomAccessBucket makeImmutableBucket(BucketFactory bucketFactory, byte[] data)
       throws IOException {
     return makeImmutableBucket(bucketFactory, data, data.length);
   }
 
-  public static RandomAccessible makeImmutableBucket(
+  public static RandomAccessBucket makeImmutableBucket(
       BucketFactory bucketFactory, byte[] data, int length) throws IOException {
     return makeImmutableBucket(bucketFactory, data, 0, length);
   }
 
-  public static RandomAccessible makeImmutableBucket(
+  public static RandomAccessBucket makeImmutableBucket(
       BucketFactory bucketFactory, byte[] data, int offset, int length) throws IOException {
-    RandomAccessible bucket = bucketFactory.makeBucket(length);
+    RandomAccessBucket bucket = bucketFactory.makeBucket(length);
     OutputStream os = bucket.getOutputStreamUnbuffered();
     try {
       os.write(data, offset, length);
@@ -661,18 +662,18 @@ public class BucketTools {
     };
   }
 
-  public static RandomAccessible toRandomAccessBucket(Bucket bucket, BucketFactory bf)
+  public static RandomAccessBucket toRandomAccessBucket(Bucket bucket, BucketFactory bf)
       throws IOException {
-    if (bucket instanceof RandomAccessible) {
-      return (RandomAccessible) bucket;
+    if (bucket instanceof RandomAccessBucket) {
+      return (RandomAccessBucket) bucket;
     }
     if (bucket instanceof DelayedDisposeBucket) {
-      RandomAccessible ret = ((DelayedDisposeBucket) bucket).toRandomAccessBucket();
+      RandomAccessBucket ret = ((DelayedDisposeBucket) bucket).toRandomAccessBucket();
       if (ret != null) {
         return ret;
       }
     }
-    RandomAccessible ret = bf.makeBucket(bucket.size());
+    RandomAccessBucket ret = bf.makeBucket(bucket.size());
     BucketTools.copy(bucket, ret);
     bucket.dispose();
     return ret;

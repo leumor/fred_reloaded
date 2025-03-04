@@ -5,43 +5,39 @@ package hyphanet.support.io.storage.bucket;
 
 import java.io.IOException;
 
-
 /**
  * A factory interface for creating bucket instances in the I/O system.
  *
- * <p>This interface defines the contract for creating bucket objects that can
- * store data. Different implementations of this interface can provide various storage
- * mechanisms (e.g., memory-based, file-based, etc.).</p>
+ * <p>This interface defines the contract for creating bucket objects that can store data. Different
+ * implementations of this interface can provide various storage mechanisms (e.g., memory-based,
+ * file-based, etc.).
  *
- * <p>All Factory implementations should ensure proper resource management and
- * handle creation errors appropriately.</p>
+ * <p>All Factory implementations should ensure proper resource management and handle creation
+ * errors appropriately.
  *
- * <p>Example usage:</p>
+ * <p>Example usage:
+ *
  * <pre>
  * Factory factory = new ArrayFactory();
  * RandomAccessable bucket = factory.makeBucket(1024);
  * </pre>
  *
  * @see Bucket
- * @see RandomAccessible
+ * @see RandomAccessBucket
  */
 public interface BucketFactory {
-    /**
-     * Creates a new bucket instance with the specified size hint.
-     *
-     * <p>The size parameter serves as a hint for the expected maximum data size.
-     * Some implementations may enforce this limit strictly, while others might allow exceeding
-     * it. When the size is unknown, use -1 or {@link Long#MAX_VALUE}.</p>
-     *
-     * @param size The suggested maximum size of the data in bytes. Use -1 or
-     *             {@link Long#MAX_VALUE} if the size is unknown
-     *
-     * @return A new {@link RandomAccessible} bucket instance
-     *
-     * @throws IOException If there is an error creating the bucket or if the requested size
-     *                     cannot be accommodated
-     */
-    RandomAccessible makeBucket(long size) throws IOException;
-
+  /**
+   * Creates a new bucket instance with the specified size hint.
+   *
+   * <p>The size parameter serves as a hint for the expected maximum data size. Some implementations
+   * may enforce this limit strictly, while others might allow exceeding it. When the size is
+   * unknown, use -1 or {@link Long#MAX_VALUE}.
+   *
+   * @param size The suggested maximum size of the data in bytes. Use -1 or {@link Long#MAX_VALUE}
+   *     if the size is unknown
+   * @return A new {@link RandomAccessBucket} bucket instance
+   * @throws IOException If there is an error creating the bucket or if the requested size cannot be
+   *     accommodated
+   */
+  RandomAccessBucket makeBucket(long size) throws IOException;
 }
-

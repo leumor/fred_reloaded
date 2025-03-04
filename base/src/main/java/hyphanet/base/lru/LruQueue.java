@@ -1,9 +1,6 @@
 package hyphanet.base.lru;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.Map;
+import java.util.*;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -163,7 +160,7 @@ public class LruQueue<T> {
    * Returns an array containing all the objects in the queue in an arbitrary order.
    *
    * <p>The order of elements in the returned array is not guaranteed to be related to LRU order. If
-   * ordered array is required, use {@link #toArrayOrdered(E[])} instead.
+   * ordered array is required, use {@link #toArrayOrdered()} instead.
    *
    * @param array The array into which the elements of the queue are to be stored, if it is big
    *     enough; otherwise, a new array of the same runtime type is allocated for this purpose.
@@ -263,12 +260,12 @@ public class LruQueue<T> {
   }
 
   /**
-   * The {@link LinkedList} that maintains the LRU order of elements.
+   * The {@link ArrayDeque} that maintains the LRU order of elements.
    *
    * <p>The head of the list is the most recently used element, and the tail is the least recently
    * used element.
    */
-  private final LinkedList<T> list = new LinkedList<>();
+  private final ArrayDeque<T> list = new ArrayDeque<>();
 
   /**
    * The {@link HashMap} used for fast lookups and presence checks of elements in the queue.

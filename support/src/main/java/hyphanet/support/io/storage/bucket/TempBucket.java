@@ -1,7 +1,5 @@
 package hyphanet.support.io.storage.bucket;
 
-import static hyphanet.support.io.storage.TempResourceManager.TRACE_STORAGE_LEAKS;
-
 import hyphanet.base.SizeUtil;
 import hyphanet.support.GlobalCleaner;
 import hyphanet.support.io.ResumeContext;
@@ -11,17 +9,22 @@ import hyphanet.support.io.storage.rab.Rab;
 import hyphanet.support.io.storage.rab.RabFactory;
 import hyphanet.support.io.storage.rab.TempRab;
 import hyphanet.support.io.stream.InsufficientDiskSpaceException;
+import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.*;
 import java.lang.ref.Cleaner;
 import java.lang.ref.WeakReference;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.ListIterator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-public class TempBucket implements TempStorage, RandomAccessible {
+import static hyphanet.support.io.storage.TempResourceManager.TRACE_STORAGE_LEAKS;
+
+public class TempBucket implements TempStorage, RandomAccessBucket {
   /** A timestamp used to evaluate the age of the bucket and maybe consider it for a migration */
   public final long creationTime;
 
@@ -30,7 +33,7 @@ public class TempBucket implements TempStorage, RandomAccessible {
   public TempBucket(
       TempStorageRamTracker ramTracker,
       long now,
-      RandomAccessible cur,
+      RandomAccessBucket cur,
       Path tempFileDir,
       long maxRamSize,
       long ramStoragePoolSize,
@@ -41,11 +44,6 @@ public class TempBucket implements TempStorage, RandomAccessible {
 
     if (cur == null) {
       throw new NullPointerException();
-    }
-    if (TRACE_STORAGE_LEAKS) {
-      tracer = new Throwable();
-    } else {
-      tracer = null;
     }
     this.currentBucket = cur;
     this.creationTime = now;
@@ -69,18 +67,17 @@ public class TempBucket implements TempStorage, RandomAccessible {
   }
 
   /** A blocking method to force-migrate from a RAMBucket to a FileBucket */
+  @Override
   public final boolean migrateToDisk() throws IOException {
     Bucket toMigrate;
     long size;
     synchronized (this) {
-      if (!isRamBucket() || hasBeenDisposed)
-      // Nothing to migrate! We don't want to switch back to ram, do we?
-
-      {
+      if (!isRamBucket() || hasBeenDisposed) {
+        // Nothing to migrate! We don't want to switch back to ram, do we?
         return false;
       }
       toMigrate = currentBucket;
-      RandomAccessible tempFB = fileBucketFactory.makeBucket(currentBucket.size());
+      RandomAccessBucket tempFB = fileBucketFactory.makeBucket(currentBucket.size());
       size = currentSize;
       if (os != null) {
         os.flush();
@@ -139,7 +136,8 @@ public class TempBucket implements TempStorage, RandomAccessible {
     // Hence we don't need to reset currentSize / _hasTaken() if a bucket is reused.
     // FIXME we should migrate to disk rather than throwing.
     hasWritten = true;
-    OutputStream tos = new TempBucketOutputStream(++osIndex);
+    ++osIndex;
+    OutputStream tos = new TempBucketOutputStream();
     logger.info("Got {} for {}", tos, this);
     return tos;
   }
@@ -192,7 +190,6 @@ public class TempBucket implements TempStorage, RandomAccessible {
     hasBeenDisposed = true;
 
     cleanable.clean();
-    currentBucket = null;
   }
 
   @Override
@@ -201,10 +198,11 @@ public class TempBucket implements TempStorage, RandomAccessible {
   }
 
   @Override
-  public RandomAccessible createShadow() {
+  public RandomAccessBucket createShadow() {
     return currentBucket.createShadow();
   }
 
+  @Override
   public WeakReference<TempStorage> getReference() {
     return weakRef;
   }
@@ -295,8 +293,8 @@ public class TempBucket implements TempStorage, RandomAccessible {
     CleaningAction(
         WeakReference<TempStorage> thisRef,
         Bucket currentBucket,
-        ArrayList<TempBucketInputStream> inputStreams,
-        OutputStream outputStream,
+        List<TempBucketInputStream> inputStreams,
+        @Nullable OutputStream outputStream,
         TempStorageRamTracker ramTracker) {
       this.thisRef = thisRef;
       this.currentBucket = currentBucket;
@@ -330,10 +328,12 @@ public class TempBucket implements TempStorage, RandomAccessible {
         }
       }
 
-      try {
-        outputStream.close();
-      } catch (IOException e) {
-        logger.warn("Error closing output stream", e);
+      if (outputStream != null) {
+        try {
+          outputStream.close();
+        } catch (IOException e) {
+          logger.warn("Error closing output stream", e);
+        }
       }
 
       currentBucket.dispose();
@@ -350,16 +350,19 @@ public class TempBucket implements TempStorage, RandomAccessible {
 
     private final WeakReference<TempStorage> thisRef;
     private final Bucket currentBucket;
-    private final ArrayList<TempBucketInputStream> inputStreams;
-    private final OutputStream outputStream;
+    private final List<TempBucketInputStream> inputStreams;
+    private final @Nullable OutputStream outputStream;
     private final TempStorageRamTracker ramTracker;
   }
 
   private class TempBucketOutputStream extends OutputStream {
-    TempBucketOutputStream(short idx) throws IOException {
+    static final long CHECK_DISK_EVERY = 4096;
+
+    TempBucketOutputStream() throws IOException {
       if (os == null) {
         os = currentBucket.getOutputStreamUnbuffered();
       }
+      underlyingOs = os;
     }
 
     @Override
@@ -370,7 +373,7 @@ public class TempBucket implements TempStorage, RandomAccessible {
         }
         long futureSize = currentSize + 1;
         maybeMigrateRamBucket(futureSize);
-        os.write(b);
+        underlyingOs.write(b);
         currentSize = futureSize;
         if (isRamBucket()) // We need to re-check because it might have changed!
         {
@@ -387,7 +390,7 @@ public class TempBucket implements TempStorage, RandomAccessible {
         }
         long futureSize = currentSize + len;
         maybeMigrateRamBucket(futureSize);
-        os.write(b, off, len);
+        underlyingOs.write(b, off, len);
         currentSize = futureSize;
         if (isRamBucket()) // We need to re-check because it might have changed!
         {
@@ -404,7 +407,7 @@ public class TempBucket implements TempStorage, RandomAccessible {
         }
         maybeMigrateRamBucket(currentSize);
         if (!closed) {
-          os.flush();
+          underlyingOs.flush();
         }
       }
     }
@@ -416,9 +419,8 @@ public class TempBucket implements TempStorage, RandomAccessible {
           return;
         }
         maybeMigrateRamBucket(currentSize);
-        os.flush();
-        os.close();
-        os = null;
+        underlyingOs.flush();
+        underlyingOs.close();
         closed = true;
       }
     }
@@ -465,8 +467,8 @@ public class TempBucket implements TempStorage, RandomAccessible {
     }
 
     long lastCheckedSize = 0;
-    long CHECK_DISK_EVERY = 4096;
     boolean closed = false;
+    OutputStream underlyingOs;
   }
 
   private class TempBucketInputStream extends InputStream {
@@ -580,7 +582,6 @@ public class TempBucket implements TempStorage, RandomAccessible {
   /** All the open-streams to reset or close on migration or free() */
   private final ArrayList<TempBucketInputStream> tbis;
 
-  private final Throwable tracer;
   private final WeakReference<TempStorage> weakRef = new WeakReference<>(this);
 
   /**
@@ -598,7 +599,7 @@ public class TempBucket implements TempStorage, RandomAccessible {
   private final Cleaner.Cleanable cleanable;
 
   /** The underlying bucket itself */
-  private RandomAccessible currentBucket;
+  private RandomAccessBucket currentBucket;
 
   /**
    * We have to account the size of the underlying bucket ourselves in order to be able to access it
@@ -610,7 +611,7 @@ public class TempBucket implements TempStorage, RandomAccessible {
   private boolean hasWritten;
 
   /** A link to the "real" underlying outputStream, even if we migrated */
-  private OutputStream os = null;
+  private @Nullable OutputStream os;
 
   /** An identifier used to know when to deprecate the InputStreams */
   private short osIndex;

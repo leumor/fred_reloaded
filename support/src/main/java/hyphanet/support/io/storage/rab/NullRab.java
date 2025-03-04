@@ -146,11 +146,12 @@ public class NullRab implements Rab {
     return 0;
   }
 
+  @Override
   public boolean equals(Object o) {
     if (o == null) {
       return false;
     }
-    return o.getClass() == getClass();
+    return o instanceof NullRab;
   }
 
   /** The pre-configured size of this {@code NullRab}. */

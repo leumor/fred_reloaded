@@ -191,7 +191,7 @@ public class PersistentTempFileBucketFactory implements BucketFactory, Persisten
   /**
    * Create a persistent temporary bucket.
    *
-   * <p>This method creates a new {@link RandomAccessible} bucket that is backed by a persistent
+   * <p>This method creates a new {@link RandomAccessBucket} bucket that is backed by a persistent
    * temporary file. The bucket will be:
    *
    * <ul>
@@ -208,15 +208,15 @@ public class PersistentTempFileBucketFactory implements BucketFactory, Persisten
    *
    * @param size The suggested maximum size of the data in bytes. This is a hint and may not be
    *     strictly enforced.
-   * @return A new {@link RandomAccessible} bucket instance, ready for writing data.
+   * @return A new {@link RandomAccessBucket} bucket instance, ready for writing data.
    * @throws IOException If there is an error creating the bucket or the underlying file.
    */
   @Override
-  public RandomAccessible makeBucket(long size) throws IOException {
-    RandomAccessible rawBucket = new PersistentTempFileBucket(fg.makeRandomFilename(), fg, this);
+  public RandomAccessBucket makeBucket(long size) throws IOException {
+    RandomAccessBucket rawBucket = new PersistentTempFileBucket(fg.makeRandomFilename(), fg, this);
 
     synchronized (encryptLock) {
-      if (encrypt) {
+      if (encrypt && secret != null) {
         rawBucket = new PaddedRandomAccessBucket(rawBucket);
         rawBucket = new EncryptedBucket(CRYPT_TYPE, rawBucket, secret);
       }
@@ -278,7 +278,7 @@ public class PersistentTempFileBucketFactory implements BucketFactory, Persisten
   public DelayedDisposable[] grabBucketsToDispose() {
     synchronized (this) {
       if (bucketsToFree.isEmpty()) {
-        return null;
+        return new DelayedDisposable[0];
       }
       DelayedDisposable[] buckets = bucketsToFree.toArray(new DelayedDisposable[0]);
       bucketsToFree.clear();
@@ -395,6 +395,9 @@ public class PersistentTempFileBucketFactory implements BucketFactory, Persisten
    */
   @Override
   public boolean checkDiskSpace(Path path, int toWrite, int bufferSize) {
+    if (checker == null) {
+      throw new IllegalStateException("No disk space checker set");
+    }
     return checker.checkDiskSpace(path, toWrite, bufferSize);
   }
 
@@ -472,7 +475,7 @@ public class PersistentTempFileBucketFactory implements BucketFactory, Persisten
    * <p><b>Important:</b> This field should only be accessed and modified under synchronization
    * using the {@link #encryptLock} to ensure thread-safety.
    */
-  private MasterSecret secret;
+  private @Nullable MasterSecret secret;
 
   /**
    * Disk space checker.
@@ -483,7 +486,7 @@ public class PersistentTempFileBucketFactory implements BucketFactory, Persisten
    *
    * @see DiskSpaceChecker
    */
-  private DiskSpaceChecker checker;
+  private @Nullable DiskSpaceChecker checker;
 
   /**
    * Commit ID.

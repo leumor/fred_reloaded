@@ -3,6 +3,7 @@
  * http://www.gnu.org/ for further details of the GPL. */
 package hyphanet.support.io.storage.rab;
 
+import com.uber.nullaway.annotations.EnsuresNonNull;
 import hyphanet.base.Fields;
 import hyphanet.crypt.CryptByteBuffer;
 import hyphanet.crypt.key.KeyGenUtil;
@@ -321,6 +322,7 @@ public final class EncryptedRab implements Rab, Serializable {
    * @throws IOException If I/O operations fail
    * @throws GeneralSecurityException If cryptographic operations fail
    */
+  @EnsuresNonNull({"unencryptedBaseKey", "headerEncIV"})
   private void setup(MasterSecret masterKey, boolean newFile)
       throws IOException, GeneralSecurityException {
     this.cipherRead = this.type.get();
@@ -456,6 +458,7 @@ public final class EncryptedRab implements Rab, Serializable {
    * @throws IOException If reading from the underlying buffer fails
    * @throws InvalidKeyException If the decryption key is invalid
    */
+  @EnsuresNonNull({"unencryptedBaseKey", "headerEncIV"})
   private boolean verifyHeader() throws IOException, InvalidKeyException {
     if (isClosed) {
       throw new IOException(
