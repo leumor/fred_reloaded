@@ -9,6 +9,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.EnumSet;
 import java.util.Set;
@@ -55,8 +56,16 @@ public class RegularFileRab implements Rab, Serializable {
             : EnumSet.of(StandardOpenOption.READ, StandardOpenOption.WRITE);
 
     this.channel = FileChannel.open(filePath, options);
-    if (channel.size() != length) {
+    if (channel.size() > length) {
       channel.truncate(length);
+    } else if (channel.size() < length) {
+      // Extend the file: position to newSize - 1 and write a single zero byte.
+      channel.position(length - 1);
+      ByteBuffer buffer = ByteBuffer.allocate(1);
+      buffer.put((byte) 0);
+      buffer.flip();
+      //noinspection ResultOfMethodCallIgnored
+      channel.write(buffer);
     }
   }
 
@@ -296,14 +305,27 @@ public class RegularFileRab implements Rab, Serializable {
     }
   }
 
-  /** The path to the file. */
-  final Path path;
+  @Serial
+  private void writeObject(ObjectOutputStream out) throws IOException {
+    out.defaultWriteObject();
+    assert path != null;
+    out.writeUTF(path.toString());
+  }
+
+  @Serial
+  private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+    in.defaultReadObject();
+    path = Paths.get(in.readUTF());
+  }
 
   /** The length of the file in bytes. */
   private final long length;
 
   /** Whether the file is read-only. */
   private final boolean readOnly;
+
+  /** The path to the file. */
+  private transient Path path;
 
   /** The {@link FileChannel} used to access the file. */
   private transient FileChannel channel;

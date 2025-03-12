@@ -155,7 +155,7 @@ public final class EncryptedRab implements Rab, Serializable {
   public void pread(long fileOffset, byte[] buf, int bufOffset, int length) throws IOException {
     if (isClosed) {
       throw new IOException(
-          "This RandomAccessBuffer has already been closed. It can no longer" + " be read from.");
+          "This RandomAccessBuffer has already been closed. It can no longer be read from.");
     }
 
     if (fileOffset < 0) {
@@ -334,20 +334,20 @@ public final class EncryptedRab implements Rab, Serializable {
 
     if (underlyingBuffer.size() < type.headerLen) {
       throw new IOException(
-          "Underlying RandomAccessBuffer is not long enough to include the " + "footer.");
+          "Underlying RandomAccessBuffer is not long enough to include the footer.");
     }
 
     byte[] header = new byte[VERSION_AND_MAGIC_LENGTH];
     int offset = 0;
     underlyingBuffer.pread(
-        type.headerLen - VERSION_AND_MAGIC_LENGTH, header, offset, VERSION_AND_MAGIC_LENGTH);
+        (long) type.headerLen - VERSION_AND_MAGIC_LENGTH, header, offset, VERSION_AND_MAGIC_LENGTH);
 
     int readVersion = ByteBuffer.wrap(header, offset, 4).getInt();
     offset += 4;
     long magic = ByteBuffer.wrap(header, offset, 8).getLong();
 
     if (!newFile && END_MAGIC != magic) {
-      throw new IOException("This is not an EncryptedRandomAccessBuffer!");
+      throw new IOException("This is not an EncryptedRab");
     }
 
     version = type.bitmask;
