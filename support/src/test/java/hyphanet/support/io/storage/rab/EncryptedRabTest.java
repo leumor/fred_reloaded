@@ -297,5 +297,5 @@ class EncryptedRabTest {
     }
   }
 
-  private final Path base = new File("tmp.encrypted-random-access-thing-test").toPath();
+  private final Path base = Path.of("tmp.encrypted-random-access-thing-test");
 }

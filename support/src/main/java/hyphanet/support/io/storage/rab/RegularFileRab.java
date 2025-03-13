@@ -138,7 +138,7 @@ public class RegularFileRab implements Rab, Serializable {
     validateWriteParameters(fileOffset, length);
     ByteBuffer buffer = ByteBuffer.wrap(buf, bufOffset, length);
     while (buffer.hasRemaining()) {
-      var bytesWritten = channel.write(buffer, fileOffset + buffer.position());
+      var bytesWritten = channel.write(buffer, fileOffset);
       if (bytesWritten == 0) {
         throw new IOException("Failed to write to file. Should not happen.");
       }
