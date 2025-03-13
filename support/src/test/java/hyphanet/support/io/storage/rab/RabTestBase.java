@@ -1,7 +1,6 @@
 package hyphanet.support.io.storage.rab;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -234,23 +233,20 @@ abstract class RabTestBase {
     raf.pwrite(startAt, buf, 0, buf.length); // Should work
   }
 
-  private void readWriteMustFail(Rab raf, long startAt, byte[] buf, int offset, int length)
-      throws IOException {
+  private void readWriteMustFail(Rab raf, long startAt, byte[] buf, int offset, int length) {
     if (length == 0) {
       return; // NOP.
     }
-    try {
-      raf.pread(startAt, buf, 0, buf.length); // Should work
-      fail("Must throw!");
-    } catch (IOException e) {
-      // Ok.
-    }
-    try {
-      raf.pwrite(startAt, buf, 0, buf.length); // Should work
-      fail("Must throw!");
-    } catch (IOException e) {
-      // Ok.
-    }
+    assertThrows(
+        Exception.class,
+        () -> {
+          raf.pread(startAt, buf, 0, buf.length);
+        });
+    assertThrows(
+        Exception.class,
+        () -> {
+          raf.pwrite(startAt, buf, 0, buf.length);
+        });
   }
 
   protected interface Formula {

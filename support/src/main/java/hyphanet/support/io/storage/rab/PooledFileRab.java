@@ -206,8 +206,7 @@ public class PooledFileRab implements Rab, Serializable {
         // freenet-mobile-changed: Passing file descriptor to avoid using
         // reflection
         try (var fis = new FileInputStream(path.toFile())) {
-          FileDescriptor fd = fis.getFD();
-          Fallocate.forChannel(channel, fd, forceLength).fromOffset(currentLength).execute();
+          new Fallocate(channel, forceLength).fromOffset(currentLength).execute();
         }
         //                }
         currentLength = forceLength;
@@ -310,7 +309,7 @@ public class PooledFileRab implements Rab, Serializable {
       throw new IndexOutOfBoundsException("Invalid buffer parameters");
     }
     if (fileOffset + writeLength > this.length) {
-      throw new IOException("Write past end of file");
+      throw new IndexOutOfBoundsException("Write past end of file");
     }
 
     RabLock lock = lockOpen();
@@ -320,7 +319,7 @@ public class PooledFileRab implements Rab, Serializable {
       //  block below only synchronizes on the same channel object.
       var byteBuffer = ByteBuffer.wrap(buf, bufOffset, writeLength);
       while (byteBuffer.hasRemaining()) {
-        var bytesWritten = channel.write(byteBuffer, fileOffset + byteBuffer.position());
+        var bytesWritten = channel.write(byteBuffer, fileOffset);
         if (bytesWritten == 0) {
           throw new IOException("Failed to write to file. Should not happen.");
         }
