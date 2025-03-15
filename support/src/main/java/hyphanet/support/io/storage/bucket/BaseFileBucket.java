@@ -672,17 +672,27 @@ public abstract class BaseFileBucket implements RandomAccessBucket {
 
       try {
         outputStream.close();
-      } finally {
+      } catch (IOException e) {
+        logger.info("Failed closing {} : {}", BaseFileBucket.this, e, e);
         if (renaming) {
-          Files.delete(tempFilePath);
+          try {
+            Files.delete(tempFilePath);
+          } catch (Exception e2) {
+            // Ignore
+          }
+          throw e;
         }
       }
 
-      if (renaming && !FileSystem.renameTo(tempFilePath, path)) {
+      if (renaming && !FileSystem.moveTo(tempFilePath, path)) {
         // getOutputStream() creates the file as a marker, so DON'T check for its
         // existence,
         // even if createFileOnly() is true.
-        Files.delete(tempFilePath);
+        try {
+          Files.delete(tempFilePath);
+        } catch (Exception e) {
+          // Ignore
+        }
         logger.info("Deleted, cannot rename file for {}", this);
         throw new IOException("Cannot rename file");
       }

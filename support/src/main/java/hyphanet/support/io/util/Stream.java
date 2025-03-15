@@ -283,7 +283,7 @@ public final class Stream {
       }
 
       // Attempt atomic move from temp to target
-      return FileSystem.renameTo(tempFile, targetPath);
+      return FileSystem.moveTo(tempFile, targetPath);
     } catch (IOException e) {
       logger.error("Failed to write to {}: {}", targetPath, e.getMessage());
       return false;

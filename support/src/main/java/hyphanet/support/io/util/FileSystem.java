@@ -58,37 +58,10 @@ public final class FileSystem {
    *     original file does not exist.
    */
   public static boolean moveTo(Path orig, Path dest, boolean overwrite) {
-    if (orig.equals(dest)) {
-      throw new IllegalArgumentException("Huh? the two file descriptors are the same!");
+    if (!overwrite && Files.exists(dest)) {
+      return false;
     }
-    if (!Files.exists(orig)) {
-      throw new IllegalArgumentException("Original doesn't exist!");
-    }
-    if (Files.exists(dest)) {
-      if (overwrite) {
-        try {
-          Files.delete(dest);
-        } catch (IOException e) {
-          logger.error(
-              "Not overwriting {} - already exists moving {} and unable to delete " + "it",
-              dest,
-              orig,
-              e);
-          return false;
-        }
-      } else {
-        logger.error("Not overwriting {} - already exists moving {}", dest, orig);
-        return false;
-      }
-    }
-    try {
-      Files.move(orig, dest);
-    } catch (IOException e) {
-      logger.warn("Unable to move {} to {}. Copying instead.", orig, dest, e);
-      return copyFile(orig, dest);
-    }
-
-    return true;
+    return moveTo(orig, dest);
   }
 
   /**
@@ -366,9 +339,9 @@ public final class FileSystem {
   }
 
   /**
-   * Renames a file with atomic move support. This method attempts to perform an atomic move
-   * operation first, falling back to a regular move if atomic operations are not supported by the
-   * filesystem.
+   * Moves or renames a file with atomic move support. This method attempts to perform an atomic
+   * move operation first, falling back to a regular move if atomic operations are not supported by
+   * the filesystem.
    *
    * @param source The source Path to move from
    * @param target The target Path to move to
@@ -376,13 +349,14 @@ public final class FileSystem {
    * @throws IllegalArgumentException if the source and target paths are the same or if the source
    *     path does not exist
    */
-  public static boolean renameTo(Path source, Path target) {
+  public static boolean moveTo(Path source, Path target) {
     if (source.equals(target)) {
-      throw new IllegalArgumentException("Source and target paths are the same");
+      return true;
     }
 
     if (!Files.exists(source)) {
-      throw new IllegalArgumentException("Source path does not exist: " + source);
+      logger.warn("Source path does not exist: {}", source);
+      return false;
     }
 
     try {
@@ -396,29 +370,6 @@ public final class FileSystem {
       logMoveError(source, target, e);
       return false;
     }
-  }
-
-  /**
-   * Renames a file with atomic move support. This is a convenience method that delegates to {@link
-   * #renameTo(Path, Path)}.
-   *
-   * @param orig The source File to move from
-   * @param dest The target File to move to
-   * @return {@code true} if the rename was successful, {@code false} if the operation failed
-   * @throws IllegalArgumentException if the source and destination files are the same or if the
-   *     source file does not exist
-   * @see #renameTo(Path, Path)
-   */
-  public static boolean renameTo(File orig, File dest) {
-    if (orig.equals(dest)) {
-      throw new IllegalArgumentException("Source and destination files are the same");
-    }
-
-    if (!orig.exists()) {
-      throw new IllegalArgumentException("Source file does not exist: " + orig);
-    }
-
-    return renameTo(orig.toPath(), dest.toPath());
   }
 
   /**

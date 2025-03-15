@@ -8,7 +8,7 @@ import java.util.Random;
 import org.junit.jupiter.api.Test;
 
 /** Base class for testing Rab's. */
-abstract class RabTestBase {
+public abstract class RabTestBase {
 
   private static final int BUFFER_SIZE = 65536;
 
@@ -26,7 +26,7 @@ abstract class RabTestBase {
   }
 
   /** Check that the array section equals the read data, then write it and repeat the check. */
-  static void checkArraySectionEqualsReadData(
+  public static void checkArraySectionEqualsReadData(
       byte[] buf, Rab rab, int start, int end, boolean readOnly) throws IOException {
     int len = end - start;
     if (len == 0) {
