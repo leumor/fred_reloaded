@@ -478,9 +478,10 @@ public class PaddedEphemerallyEncryptedBucket implements Bucket {
             throw new IOException("Error finalizing encryption", e);
           }
 
-          // Modified part: Call encryptAndWrite with the final output
+          // Write the final output and update the data length
           if (finalEncryptedOutput != null && finalEncryptedOutput.length > 0) {
-            encryptAndWrite(finalEncryptedOutput, 0, finalEncryptedOutput.length);
+            out.write(finalEncryptedOutput);
+            dataLength += finalEncryptedOutput.length;
           }
 
           // Write random padding
@@ -599,42 +600,17 @@ public class PaddedEphemerallyEncryptedBucket implements Bucket {
      */
     @Override
     public int read() throws IOException {
-      if (outputBufferPos < outputBufferCount) {
-        totalRead++;
-        return outputBuffer[outputBufferPos++] & 0xFF; // Return byte from buffer
+      if (hasBufferedData()) {
+        return getNextBufferedByte();
       }
-
-      if (totalRead >= dataLength || (eofReached && finalBlockProcessed)) {
-        return -1; // End of stream
+      if (isEndOfStream()) {
+        return -1;
       }
-
-      outputBufferPos = 0;
-      outputBufferCount = 0;
-
-      int bytesRead = in.read(inputBuffer);
-      if (bytesRead == -1) {
-        eofReached = true;
-        try {
-          outputBufferCount = cipher.doFinal(outputBuffer, 0); // Finalize
-          finalBlockProcessed = true;
-        } catch (ShortBufferException | IllegalBlockSizeException | BadPaddingException e) {
-          throw new IOException("Decryption error", e);
-        }
-        return outputBufferCount > 0 ? outputBuffer[outputBufferPos++] & 0xFF : -1;
-      } else {
-        try {
-          outputBufferCount = cipher.update(inputBuffer, 0, bytesRead, outputBuffer, 0);
-        } catch (ShortBufferException e) {
-          throw new IOException("Decryption buffer error", e);
-        }
-        return outputBufferCount > 0
-            ? outputBuffer[outputBufferPos++] & 0xFF
-            :
-            // Try to read again (could be EOF or more input needed)
-            // This might happen if cipher.update produces no output for input.
-            // In CFB, update should generally produce output, but handle just in case.
-            read();
+      if (!fillBuffer()) {
+        // If fillBuffer didn't produce any data, try reading again.
+        return read();
       }
+      return getNextBufferedByte();
     }
 
     /**
@@ -650,7 +626,7 @@ public class PaddedEphemerallyEncryptedBucket implements Bucket {
       if (x <= 0) return -1;
 
       int bytesReadTotal = 0;
-      while (bytesReadTotal < len) {
+      while (bytesReadTotal < len && bytesReadTotal < dataLength) {
         int nextByte = read();
         if (nextByte == -1) {
           if (bytesReadTotal == 0) {
@@ -662,7 +638,7 @@ public class PaddedEphemerallyEncryptedBucket implements Bucket {
         b[off + bytesReadTotal] = (byte) nextByte;
         bytesReadTotal++;
       }
-      totalRead += bytesReadTotal;
+      //      totalRead += bytesReadTotal;
       return bytesReadTotal;
     }
 
@@ -689,6 +665,41 @@ public class PaddedEphemerallyEncryptedBucket implements Bucket {
     @Override
     public void close() throws IOException {
       in.close();
+    }
+
+    private boolean fillBuffer() throws IOException {
+      outputBufferPos = 0;
+      outputBufferCount = 0;
+      int bytesRead = in.read(inputBuffer);
+      if (bytesRead == -1) {
+        eofReached = true;
+        try {
+          outputBufferCount = cipher.doFinal(outputBuffer, 0);
+          finalBlockProcessed = true;
+        } catch (ShortBufferException | IllegalBlockSizeException | BadPaddingException e) {
+          throw new IOException("Decryption error", e);
+        }
+      } else {
+        try {
+          outputBufferCount = cipher.update(inputBuffer, 0, bytesRead, outputBuffer, 0);
+        } catch (ShortBufferException e) {
+          throw new IOException("Decryption buffer error", e);
+        }
+      }
+      return outputBufferCount > 0;
+    }
+
+    private boolean hasBufferedData() {
+      return outputBufferPos < outputBufferCount;
+    }
+
+    private boolean isEndOfStream() {
+      return totalRead >= dataLength || (eofReached && finalBlockProcessed);
+    }
+
+    private int getNextBufferedByte() {
+      totalRead++;
+      return outputBuffer[outputBufferPos++] & 0xFF;
     }
 
     /** The underlying {@link InputStream}. */

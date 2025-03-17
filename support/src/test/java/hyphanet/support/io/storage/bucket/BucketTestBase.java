@@ -190,7 +190,9 @@ public abstract class BucketTestBase {
     Bucket bucket = makeBucket(DATA_LONG.length * 16L);
     try (OutputStream os = bucket.getOutputStream()) {
       // Write
-      for (int i = 0; i < 16; i++) os.write(DATA_LONG);
+      for (int i = 0; i < 16; i++) {
+        os.write(DATA_LONG);
+      }
     }
 
     try (DataInputStream is = new DataInputStream(bucket.getInputStream())) {
