@@ -3,14 +3,15 @@
  * http://www.gnu.org/ for further details of the GPL. */
 package hyphanet.support.io.storage.bucket;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import hyphanet.support.io.FilenameGenerator;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Random;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TempFileBucketTest extends BucketTestBase {
   @Override

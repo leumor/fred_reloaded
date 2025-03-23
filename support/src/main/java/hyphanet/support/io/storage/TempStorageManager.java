@@ -1,43 +1,41 @@
 package hyphanet.support.io.storage;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
+
 import hyphanet.base.TimeUtil;
 import hyphanet.crypt.key.MasterSecret;
 import hyphanet.support.io.FilenameGenerator;
 import hyphanet.support.io.storage.bucket.BucketFactory;
-import hyphanet.support.io.storage.bucket.RandomAccessBucket;
+import hyphanet.support.io.storage.bucket.TempBucket;
 import hyphanet.support.io.storage.bucket.TempBucketFactory;
 import hyphanet.support.io.storage.rab.Rab;
 import hyphanet.support.io.storage.rab.RabFactory;
 import hyphanet.support.io.storage.rab.TempRab;
 import hyphanet.support.io.storage.rab.TempRabFactory;
 import hyphanet.support.io.stream.InsufficientDiskSpaceException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import static java.util.concurrent.TimeUnit.MINUTES;
-
-// TODO:  Replace finalizer with Cleaner
-public class TempResourceManager implements RabFactory, BucketFactory {
+public class TempStorageManager implements RabFactory, BucketFactory {
 
   public static final boolean TRACE_STORAGE_LEAKS = false;
 
   /** How many times the maxRamStorageSize can a RAM storage be before it gets migrated? */
-  private static final int RAMSTORAGE_CONVERSION_FACTOR = 4;
+  public static final int RAMSTORAGE_CONVERSION_FACTOR = 4;
 
   /** How old is a long-lived RAM storage? */
   private static final long RAM_STORAGE_MAX_AGE = MINUTES.toMillis(5);
 
   private static final double MAX_USAGE_LOW = 0.8;
   private static final double MAX_USAGE_HIGH = 0.9;
-  private static final Logger logger = LoggerFactory.getLogger(TempResourceManager.class);
+  private static final Logger logger = LoggerFactory.getLogger(TempStorageManager.class);
 
-  public TempResourceManager(
+  public TempStorageManager(
       ExecutorService executor,
       FilenameGenerator filenameGenerator,
       long maxInitSingleRamStorageSize,
@@ -61,7 +59,7 @@ public class TempResourceManager implements RabFactory, BucketFactory {
         new TempBucketFactory(
             ramTracker,
             filenameGenerator,
-            ramStoragePoolSize * RAMSTORAGE_CONVERSION_FACTOR,
+            maxInitSingleRamStorageSize * RAMSTORAGE_CONVERSION_FACTOR,
             ramStoragePoolSize,
             minDiskSpace,
             encrypt,
@@ -71,9 +69,9 @@ public class TempResourceManager implements RabFactory, BucketFactory {
   }
 
   @Override
-  public synchronized RandomAccessBucket makeBucket(long size) throws IOException {
+  public synchronized TempBucket makeBucket(long size) throws IOException {
     setCreateRamStorage(size, bucketFactory);
-    runCleaner();
+    runRamReleaser();
     var bucket = bucketFactory.makeBucket(size);
     if (bucketFactory.isCreateRam()) {
       ramTracker.addToRamStorageQueue(bucket);
@@ -84,7 +82,7 @@ public class TempResourceManager implements RabFactory, BucketFactory {
   @Override
   public synchronized Rab makeRab(long size) throws IOException {
     setCreateRamStorage(size, rabFactory);
-    runCleaner();
+    runRamReleaser();
     var rab = rabFactory.makeRab(size);
     if (rabFactory.isCreateRam()) {
       ramTracker.addToRamStorageQueue((TempRab) rab);
@@ -96,7 +94,7 @@ public class TempResourceManager implements RabFactory, BucketFactory {
   public synchronized Rab makeRab(byte[] initialContents, int offset, int size, boolean readOnly)
       throws IOException {
     setCreateRamStorage(size, rabFactory);
-    runCleaner();
+    runRamReleaser();
     var rab = rabFactory.makeRab(initialContents, offset, size, readOnly);
     if (rabFactory.isCreateRam()) {
       ramTracker.addToRamStorageQueue((TempRab) rab);
@@ -110,14 +108,14 @@ public class TempResourceManager implements RabFactory, BucketFactory {
         && (ramTracker.getRamBytesInUse() < ramStoragePoolSize)
         && (ramTracker.getRamBytesInUse() + size <= ramStoragePoolSize)) {
       factory.setCreateRam(true);
-      ramTracker.takeRam(size);
     }
   }
 
-  private synchronized void runCleaner() {
-    if (ramTracker.getRamBytesInUse() >= ramStoragePoolSize * MAX_USAGE_HIGH && !runningCleaner) {
-      runningCleaner = true;
-      executor.execute(cleaner);
+  private synchronized void runRamReleaser() {
+    if (ramTracker.getRamBytesInUse() >= ramStoragePoolSize * MAX_USAGE_HIGH
+        && !runningRamReleaser) {
+      runningRamReleaser = true;
+      executor.execute(ramReleaser);
     }
   }
 
@@ -139,8 +137,8 @@ public class TempResourceManager implements RabFactory, BucketFactory {
   private final TempStorageRamTracker ramTracker = new TempStorageRamTracker();
 
   private final ExecutorService executor;
-  private boolean runningCleaner = false;
-  private final Runnable cleaner =
+  private boolean runningRamReleaser = false;
+  private final Runnable ramReleaser =
       new Runnable() {
 
         @Override
@@ -169,7 +167,7 @@ public class TempResourceManager implements RabFactory, BucketFactory {
             saidSo = false;
             while (true) {
               // Now migrate buckets until usage is below the lower threshold.
-              synchronized (TempResourceManager.this) {
+              synchronized (TempStorageManager.this) {
                 if (ramTracker.getRamBytesInUse() <= ramStoragePoolSize * MAX_USAGE_LOW) {
                   return;
                 }
@@ -191,8 +189,8 @@ public class TempResourceManager implements RabFactory, BucketFactory {
               }
             }
           } finally {
-            synchronized (TempResourceManager.this) {
-              runningCleaner = false;
+            synchronized (TempStorageManager.this) {
+              runningRamReleaser = false;
             }
           }
         }

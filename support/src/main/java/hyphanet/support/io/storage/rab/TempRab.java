@@ -1,22 +1,23 @@
 package hyphanet.support.io.storage.rab;
 
-import static hyphanet.support.io.storage.TempResourceManager.TRACE_STORAGE_LEAKS;
-
 import com.uber.nullaway.annotations.EnsuresNonNull;
 import hyphanet.support.GlobalCleaner;
 import hyphanet.support.io.ResumeContext;
 import hyphanet.support.io.storage.TempStorage;
 import hyphanet.support.io.storage.TempStorageRamTracker;
 import hyphanet.support.io.storage.bucket.TempBucket;
+import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.lang.ref.Cleaner;
 import java.lang.ref.WeakReference;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import static hyphanet.support.io.storage.TempStorageManager.TRACE_STORAGE_LEAKS;
 
 /**
  * A proxy class for {@link Rab} that allows switching the underlying {@link Rab} instance.

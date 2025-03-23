@@ -1,5 +1,7 @@
 package hyphanet.support.io.storage.bucket;
 
+import static hyphanet.support.io.storage.TempStorageManager.TRACE_STORAGE_LEAKS;
+
 import hyphanet.base.SizeUtil;
 import hyphanet.support.GlobalCleaner;
 import hyphanet.support.io.ResumeContext;
@@ -9,10 +11,6 @@ import hyphanet.support.io.storage.rab.Rab;
 import hyphanet.support.io.storage.rab.RabFactory;
 import hyphanet.support.io.storage.rab.TempRab;
 import hyphanet.support.io.stream.InsufficientDiskSpaceException;
-import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.*;
 import java.lang.ref.Cleaner;
 import java.lang.ref.WeakReference;
@@ -21,8 +19,9 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
-
-import static hyphanet.support.io.storage.TempResourceManager.TRACE_STORAGE_LEAKS;
+import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TempBucket implements TempStorage, RandomAccessBucket {
   /** A timestamp used to evaluate the age of the bucket and maybe consider it for a migration */
@@ -453,6 +452,7 @@ public class TempBucket implements TempStorage, RandomAccessBucket {
             logger.info("The bucketpool is full: force-migrate before " + "we go over the limit");
           }
           migrateToDisk();
+          underlyingOs = os;
         }
       } else {
         // Check for excess disk usage.
