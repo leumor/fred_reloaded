@@ -9,6 +9,7 @@ import hyphanet.support.io.FilenameGenerator;
 import hyphanet.support.io.PersistentFileTracker;
 import hyphanet.support.io.ResumeContext;
 import hyphanet.support.io.ResumeFailedException;
+import hyphanet.support.io.storage.AbstractStorage;
 import hyphanet.support.io.storage.DelayedDisposable;
 import hyphanet.support.io.storage.StorageFormatException;
 import hyphanet.support.io.storage.bucket.Bucket;
@@ -18,7 +19,6 @@ import hyphanet.support.io.storage.bucket.RandomAccessBucket;
 import hyphanet.support.io.storage.rab.DelayedDisposeRab;
 import hyphanet.support.io.storage.rab.Rab;
 import java.io.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,7 +41,8 @@ import org.slf4j.LoggerFactory;
  * @see DelayedDisposable
  * @see Bucket
  */
-public class DelayedDisposeRandomAccessBucket implements RandomAccessBucket, DelayedDisposable {
+public class DelayedDisposeRandomAccessBucket extends AbstractStorage
+    implements RandomAccessBucket, DelayedDisposable {
 
   /** Magic number used for serialization format verification */
   public static final int MAGIC = 0xa28f2a2d;
@@ -98,7 +99,7 @@ public class DelayedDisposeRandomAccessBucket implements RandomAccessBucket, Del
 
   @Override
   public boolean toDispose() {
-    return disposed.get();
+    return disposed();
   }
 
   @Override
@@ -151,22 +152,19 @@ public class DelayedDisposeRandomAccessBucket implements RandomAccessBucket, Del
    * @return The underlying bucket, or {@link NullBucket} if the bucket has been freed
    */
   public synchronized Bucket getUnderlying() {
-    if (disposed.get()) {
+    if (disposed()) {
       return new NullBucket();
     }
     return bucket;
   }
 
   @Override
-  public void close() {
-    // Do nothing. The disposal of underlying bucket is delayed.
-  }
-
-  @Override
   public void dispose() {
-    if (disposed.compareAndSet(false, true)) {
+    if (!setDisposed()) {
       return;
     }
+    close();
+
     logger.info("Freeing {} underlying={}", this, bucket, new Exception("debug"));
     this.factory.delayedDispose(this, createdCommitID);
   }
@@ -207,16 +205,13 @@ public class DelayedDisposeRandomAccessBucket implements RandomAccessBucket, Del
   }
 
   private void checkDisposed() throws IOException {
-    if (disposed.get()) {
+    if (disposed()) {
       throw new IOException("Already disposed");
     }
   }
 
   /** The underlying bucket being wrapped */
   private final RandomAccessBucket bucket;
-
-  /** Flag indicating whether this bucket has been disposed */
-  private final AtomicBoolean disposed = new AtomicBoolean();
 
   /** Factory for tracking persistent files */
   // Only set on construction and on onResume() on startup. So shouldn't need locking.

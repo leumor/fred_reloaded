@@ -5,6 +5,7 @@ import hyphanet.support.io.FilenameGenerator;
 import hyphanet.support.io.PersistentFileTracker;
 import hyphanet.support.io.ResumeContext;
 import hyphanet.support.io.ResumeFailedException;
+import hyphanet.support.io.storage.AbstractStorage;
 import hyphanet.support.io.storage.StorageFormatException;
 import hyphanet.support.io.storage.bucket.Bucket;
 import hyphanet.support.io.storage.bucket.BucketTools;
@@ -27,7 +28,8 @@ import java.io.*;
  * @see RandomAccessBucket
  * @see Bucket
  */
-public class PaddedRandomAccessBucket implements RandomAccessBucket, Serializable {
+public class PaddedRandomAccessBucket extends AbstractStorage
+    implements RandomAccessBucket, Serializable {
 
   /** Magic number for serialization verification. */
   public static final int MAGIC = 0x95c42e34;
@@ -175,11 +177,17 @@ public class PaddedRandomAccessBucket implements RandomAccessBucket, Serializabl
 
   @Override
   public void dispose() {
+    if (!setDisposed()) {
+      return;
+    }
     underlying.dispose();
   }
 
   @Override
   public void close() {
+    if (!setClosed()) {
+      return;
+    }
     underlying.close();
   }
 

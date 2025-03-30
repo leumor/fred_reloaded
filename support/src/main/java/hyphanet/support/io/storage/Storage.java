@@ -1,6 +1,7 @@
 package hyphanet.support.io.storage;
 
 import hyphanet.support.io.Resumable;
+
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
@@ -41,6 +42,8 @@ public interface Storage extends Resumable, AutoCloseable, Serializable {
   @Override
   void close();
 
+  boolean closed();
+
   /**
    * Releases the underlying resources and securely deletes data associated with this Storage.
    *
@@ -48,4 +51,6 @@ public interface Storage extends Resumable, AutoCloseable, Serializable {
    * object becomes eligible for garbage collection after calling this method.
    */
   void dispose();
+
+  boolean disposed();
 }

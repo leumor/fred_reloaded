@@ -7,7 +7,6 @@ import hyphanet.support.io.storage.RamStorageCapableFactory;
 import hyphanet.support.io.storage.TempStorageRamTracker;
 import hyphanet.support.io.storage.rab.RabFactory;
 import hyphanet.support.io.stream.InsufficientDiskSpaceException;
-
 import java.io.IOException;
 import java.nio.file.Files;
 
@@ -82,9 +81,16 @@ public class TempBucketFactory implements BucketFactory, RamStorageCapableFactor
     this.createRam = createRam;
   }
 
+  public boolean isEncrypt() {
+    return encrypt;
+  }
+
+  public void setEncrypt(boolean encrypt) {
+    this.encrypt = encrypt;
+  }
+
   private final TempStorageRamTracker ramTracker;
   private final FilenameGenerator filenameGenerator;
-  private final boolean encrypt;
   private final EncryptType encryptType;
   private final MasterSecret secret;
 
@@ -96,8 +102,7 @@ public class TempBucketFactory implements BucketFactory, RamStorageCapableFactor
 
   private final long ramStoragePoolSize;
   private final long minDiskSpace;
-
   private final RabFactory rabMigrateToFactory;
-
+  private boolean encrypt;
   private boolean createRam;
 }

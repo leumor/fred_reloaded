@@ -4,6 +4,7 @@
 package hyphanet.support.io.storage.bucket;
 
 import hyphanet.support.io.ResumeContext;
+import hyphanet.support.io.storage.AbstractStorage;
 import hyphanet.support.io.storage.rab.NullRab;
 import hyphanet.support.io.storage.rab.Rab;
 import hyphanet.support.io.stream.NullInputStream;
@@ -19,7 +20,7 @@ import java.io.*;
  *
  * <p>This class is {@link Serializable}.
  */
-public class NullBucket implements RandomAccessBucket, Serializable {
+public class NullBucket extends AbstractStorage implements RandomAccessBucket, Serializable {
 
   /** A static, shared {@link NullOutputStream} instance for all {@link NullBucket} writes. */
   public static final OutputStream nullOut = new NullOutputStream();
@@ -122,16 +123,6 @@ public class NullBucket implements RandomAccessBucket, Serializable {
   }
 
   /**
-   * Does nothing. No resources are held by a {@link NullBucket}.
-   *
-   * <p>{@inheritDoc}
-   */
-  @Override
-  public void dispose() {
-    // Do nothing
-  }
-
-  /**
    * Creates a new {@link NullBucket} instance as a shadow copy.
    *
    * @return A new {@link NullBucket} with the same size.
@@ -160,16 +151,6 @@ public class NullBucket implements RandomAccessBucket, Serializable {
   @Override
   public void storeTo(DataOutputStream dos) throws IOException {
     throw new UnsupportedOperationException();
-  }
-
-  /**
-   * Does nothing. No resources are held by a {@link NullBucket}.
-   *
-   * <p>{@inheritDoc}
-   */
-  @Override
-  public void close() {
-    // Do nothing
   }
 
   /**

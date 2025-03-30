@@ -1,23 +1,24 @@
 package hyphanet.support.io.storage.rab;
 
+import static hyphanet.support.io.storage.TempStorageManager.TRACE_STORAGE_LEAKS;
+
 import com.uber.nullaway.annotations.EnsuresNonNull;
 import hyphanet.support.GlobalCleaner;
 import hyphanet.support.io.ResumeContext;
+import hyphanet.support.io.storage.AbstractStorage;
 import hyphanet.support.io.storage.TempStorage;
 import hyphanet.support.io.storage.TempStorageRamTracker;
 import hyphanet.support.io.storage.bucket.TempBucket;
-import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.lang.ref.Cleaner;
 import java.lang.ref.WeakReference;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-
-import static hyphanet.support.io.storage.TempStorageManager.TRACE_STORAGE_LEAKS;
+import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A proxy class for {@link Rab} that allows switching the underlying {@link Rab} instance.
@@ -33,7 +34,7 @@ import static hyphanet.support.io.storage.TempStorageManager.TRACE_STORAGE_LEAKS
  *
  * <p>Unlike a TempBucket, the size is fixed, so migrate only happens on the migration thread.
  */
-public class TempRab implements Rab, TempStorage {
+public class TempRab extends AbstractStorage implements Rab, TempStorage {
 
   private static final Logger logger = LoggerFactory.getLogger(TempRab.class);
 
@@ -52,8 +53,8 @@ public class TempRab implements Rab, TempStorage {
         size,
         creationTime,
         migrateToFactory,
-        null);
-    hasMigrated = false;
+        null,
+        false);
   }
 
   public TempRab(
@@ -64,15 +65,21 @@ public class TempRab implements Rab, TempStorage {
       boolean migrated,
       @Nullable TempBucket tempBucket)
       throws IOException {
-    this(ramTracker, underlying, underlying.size(), creationTime, migrateToFactory, tempBucket);
-    hasMigrated = hasFreedRam = migrated;
+    this(
+        ramTracker,
+        underlying,
+        underlying.size(),
+        creationTime,
+        migrateToFactory,
+        tempBucket,
+        migrated);
+    hasMigrated = new AtomicBoolean(migrated);
   }
 
   public TempRab(
       TempStorageRamTracker ramTracker, int size, long creationTime, RabFactory migrateToFactory)
       throws IOException {
-    this(ramTracker, new ByteArrayRab(size), size, creationTime, migrateToFactory, null);
-    hasMigrated = false;
+    this(ramTracker, new ByteArrayRab(size), size, creationTime, migrateToFactory, null, false);
   }
 
   /**
@@ -91,7 +98,8 @@ public class TempRab implements Rab, TempStorage {
       long size,
       long creationTime,
       RabFactory migrateToFactory,
-      @Nullable TempBucket tempBucket)
+      @Nullable TempBucket tempBucket,
+      boolean isRamFreed)
       throws IOException {
     this.ramTracker = ramTracker;
     this.underlying = initialWrap;
@@ -101,6 +109,7 @@ public class TempRab implements Rab, TempStorage {
     this.creationTime = creationTime;
     this.migrateToFactory = migrateToFactory;
     this.tempBucket = tempBucket;
+    this.isRamFreed = new AtomicBoolean(isRamFreed);
 
     if (underlying.size() < size) {
       throw new IOException("Underlying must be >= size given");
@@ -108,8 +117,13 @@ public class TempRab implements Rab, TempStorage {
 
     registerCleaner();
 
-    this.ramTracker.takeRam(size);
-    this.ramTracker.addToRamStorageQueue(getReference());
+    if (!isRamFreed) {
+      synchronized (this.ramTracker) {
+        this.ramTracker.addToRamStorageQueue(getReference());
+        // TempRab takes memory immediately after creation.
+        this.ramTracker.takeRam(size);
+      }
+    }
   }
 
   /**
@@ -149,7 +163,7 @@ public class TempRab implements Rab, TempStorage {
     }
     lock.readLock().lock();
     try {
-      if (underlying == null || closed) {
+      if (underlying == null || closed()) {
         throw new IOException("Already closed");
       }
       underlying.pread(fileOffset, buf, bufOffset, length);
@@ -181,7 +195,7 @@ public class TempRab implements Rab, TempStorage {
     }
     lock.readLock().lock();
     try {
-      if (underlying == null || closed) {
+      if (underlying == null || closed()) {
         throw new IOException("Already closed");
       }
       underlying.pwrite(fileOffset, buf, bufOffset, length);
@@ -203,36 +217,21 @@ public class TempRab implements Rab, TempStorage {
    */
   @Override
   public void close() {
+    if (!setClosed()) {
+      return;
+    }
+
     lock.writeLock().lock();
+
+    setRamFreed();
+    if (underlying == null) {
+      return;
+    }
+
     try {
-      if (underlying == null) {
-        return;
-      }
-      if (closed) {
-        return;
-      }
-      closed = true;
       underlying.close();
     } finally {
       lock.writeLock().unlock();
-    }
-  }
-
-  /**
-   * Checks if the underlying {@link Rab} has been disposed.
-   *
-   * <p><b>Thread Safety:</b> Uses a read lock to ensure consistent access to the {@code underlying}
-   * field.
-   *
-   * @return {@code true} if the underlying buffer is {@code null}, indicating it has been disposed;
-   *     {@code false} otherwise.
-   */
-  public boolean hasBeenDisposed() {
-    lock.readLock().lock();
-    try {
-      return underlying == null;
-    } finally {
-      lock.readLock().unlock();
     }
   }
 
@@ -252,7 +251,7 @@ public class TempRab implements Rab, TempStorage {
   public RabLock lockOpen() throws IOException {
     lock.writeLock().lock();
     try {
-      if (closed || underlying == null) {
+      if (closed() || underlying == null) {
         throw new IOException("Already closed");
       }
       lockOpenCount++;
@@ -274,14 +273,23 @@ public class TempRab implements Rab, TempStorage {
 
   @Override
   public void dispose() {
-    if (!innerDispose()) {
+    if (!setDisposed()) {
       return;
     }
-    logger.info("Disposed {}", this);
-    if (tempBucket != null) {
-      // Tell the TempBucket to prevent log spam. Don't call free().
-      tempBucket.onDisposed();
+
+    close();
+    lock.writeLock().lock();
+    try {
+      // Write lock as we're going to change the underlying pointer.
+      if (underlying == null) {
+        return;
+      }
+      GlobalCleaner.getInstance().clean(cleanable);
+    } finally {
+      lock.writeLock().unlock();
     }
+
+    logger.info("Disposed {}", this);
   }
 
   @Override
@@ -296,18 +304,16 @@ public class TempRab implements Rab, TempStorage {
 
   @Override
   public boolean migrateToDisk() throws IOException {
-    synchronized (this) {
-      if (hasMigrated) {
-        return false;
-      }
-      hasMigrated = true;
+    if (!setMigrated()) {
+      return false;
     }
+
     migrate();
     return true;
   }
 
-  public synchronized boolean hasMigrated() {
-    return hasMigrated;
+  public boolean hasMigrated() {
+    return hasMigrated.get();
   }
 
   @Override
@@ -335,31 +341,6 @@ public class TempRab implements Rab, TempStorage {
     } finally {
       lock.readLock().unlock();
     }
-  }
-
-  /**
-   * Disposes the underlying {@link Rab} and sets the internal reference to {@code null}.
-   *
-   * <p><b>Thread Safety:</b> Acquires a write lock to ensure exclusive access during the freeing
-   * process.
-   *
-   * @return {@code true} if the underlying buffer was successfully freed (or was already null);
-   *     {@code false} if it was already freed.
-   */
-  protected boolean innerDispose() {
-    lock.writeLock().lock();
-    try {
-      // Write lock as we're going to change the underlying pointer.
-      closed = true; // Effectively ...
-      if (underlying == null) {
-        return false;
-      }
-      cleanable.clean();
-    } finally {
-      lock.writeLock().unlock();
-    }
-    afterDisposeUnderlying();
-    return true;
   }
 
   /**
@@ -408,8 +389,6 @@ public class TempRab implements Rab, TempStorage {
    *   <li><b>Switch Underlying:</b> Closes and disposes of the old underlying buffer, and then
    *       replaces it with the new successor buffer, updating {@code underlying} and {@code
    *       underlyingLock}.
-   *   <li><b>Post-Migration Hook:</b> Calls {@link #afterDisposeUnderlying()} to allow subclasses
-   *       to perform actions after the underlying buffer has been switched.
    * </ol>
    *
    * @throws IOException If an I/O error occurs during migration, such as if creating the new
@@ -419,7 +398,7 @@ public class TempRab implements Rab, TempStorage {
   protected final void migrate() throws IOException {
     lock.writeLock().lock();
     try {
-      if (closed) {
+      if (closed()) {
         return;
       }
       if (underlying == null) {
@@ -443,13 +422,26 @@ public class TempRab implements Rab, TempStorage {
         underlyingLock.unlock();
       }
 
-      cleanable.clean();
+      underlying.close();
+      underlying.dispose();
       underlying = successor;
+
+      // Register a new cleaner for the new underlying Rab.
+      registerCleaner();
+
       underlyingLock = newLock;
     } finally {
       lock.writeLock().unlock();
     }
-    afterDisposeUnderlying();
+
+    if (!setRamFreed()) {
+      return;
+    }
+
+    synchronized (ramTracker) {
+      ramTracker.removeFromRamStorageQueue(getReference());
+      ramTracker.freeRam(size);
+    }
   }
 
   protected Rab innerMigrate(Rab underlying) throws IOException {
@@ -458,46 +450,45 @@ public class TempRab implements Rab, TempStorage {
     return migrateToFactory.makeRab(buf, 0, (int) size(), b.isReadOnly());
   }
 
-  protected void afterDisposeUnderlying() {
-    // Called when the in-RAM storage has been freed.
-    synchronized (this) {
-      if (hasFreedRam) {
-        return;
-      }
-      hasFreedRam = true;
-    }
-  }
-
   @EnsuresNonNull("cleanable")
   protected void registerCleaner() {
     cleanable =
         GlobalCleaner.getInstance()
             .register(
                 this,
-                new CleaningAction(
-                    getReference(), getUnderlying(), tempBucket != null, ramTracker, size));
+                new CleaningAction(getReference(), getUnderlying(), tempBucket, ramTracker, size));
+  }
+
+  private boolean setMigrated() {
+    return hasMigrated.compareAndSet(false, true);
+  }
+
+  private boolean setRamFreed() {
+    return isRamFreed.compareAndSet(false, true);
   }
 
   static class CleaningAction implements Runnable {
     CleaningAction(
         WeakReference<TempStorage> thisRef,
         Rab underlyingRab,
-        boolean hasTempBucket,
+        TempBucket tempBucket,
         TempStorageRamTracker ramTracker,
         long size) {
       this.thisRef = thisRef;
       this.underlyingRab = underlyingRab;
-      this.hasTempBucket = hasTempBucket;
+      this.tempBucket = tempBucket;
       this.ramTracker = ramTracker;
       this.size = size;
     }
 
     @Override
     public void run() {
-      if (hasTempBucket) {
-        return;
-      }
       if (underlyingRab != null) {
+        if (underlyingRab.disposed()) {
+          // Already disposed while migrating to disk.
+          return;
+        }
+
         String msg = "TempRandomAccessBuffer not freed, size={} : {}";
         if (TRACE_STORAGE_LEAKS) {
           logger.error(msg, size, this, new Throwable());
@@ -513,17 +504,21 @@ public class TempRab implements Rab, TempStorage {
           }
         }
       }
+
+      if (tempBucket != null) {
+        tempBucket.dispose();
+      }
       logger.info("Cleaner run.");
     }
 
     private final WeakReference<TempStorage> thisRef;
     private final Rab underlyingRab;
-    private final boolean hasTempBucket;
+    private final TempBucket tempBucket;
     private final TempStorageRamTracker ramTracker;
     private final long size;
   }
 
-  protected final RabFactory migrateToFactory;
+  protected final transient RabFactory migrateToFactory;
   protected final long creationTime;
 
   /**
@@ -533,7 +528,7 @@ public class TempRab implements Rab, TempStorage {
    */
   protected final @Nullable TempBucket tempBucket;
 
-  private final TempStorageRamTracker ramTracker;
+  private final transient TempStorageRamTracker ramTracker;
 
   /**
    * The logical size of this proxy buffer.
@@ -546,20 +541,14 @@ public class TempRab implements Rab, TempStorage {
   /**
    * Read/write lock to protect concurrent access to the {@code underlying} {@link Rab}, {@code
    * lockOpenCount}, and {@code closed} flag.
-   *
-   * <p>A read lock is acquired for read and write operations ({@link #pread(long, byte[], int,
-   * int)}, {@link #pwrite(long, byte[], int, int)}, {@link #hasBeenDisposed()}, {@link
-   * #getUnderlying()}). A write lock is acquired for operations that modify the internal state,
-   * such as {@link #close()}, {@link #dispose()}, {@link #innerDispose()}, {@link
-   * #externalUnlock()}, {@link #migrate()}, and {@link #lockOpen()}.
    */
   private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
-  private final WeakReference<TempStorage> weakRef = new WeakReference<>(this);
-  protected boolean hasMigrated = false;
+  private final transient WeakReference<TempStorage> weakRef = new WeakReference<>(this);
+  protected AtomicBoolean hasMigrated = new AtomicBoolean();
 
   /** If false, there is in-memory storage that needs to be freed. */
-  protected boolean hasFreedRam = false;
+  protected AtomicBoolean isRamFreed;
 
   /**
    * The underlying {@link Rab} instance to which operations are delegated.
@@ -588,16 +577,5 @@ public class TempRab implements Rab, TempStorage {
    */
   private transient @Nullable RabLock underlyingLock;
 
-  /**
-   * Flag indicating whether this proxy buffer has been closed.
-   *
-   * <p>Once closed, further operations (except {@link #close()} and {@link #dispose()}) may throw
-   * {@link IOException}.
-   */
-  private boolean closed;
-
-  private Cleaner.Cleanable cleanable;
-
-  // Default hashCode() and equals() i.e. comparison by identity are correct for this type.
-
+  private transient Cleaner.Cleanable cleanable;
 }

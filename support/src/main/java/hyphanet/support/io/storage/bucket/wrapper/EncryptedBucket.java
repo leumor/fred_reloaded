@@ -10,6 +10,7 @@ import hyphanet.support.io.FilenameGenerator;
 import hyphanet.support.io.PersistentFileTracker;
 import hyphanet.support.io.ResumeContext;
 import hyphanet.support.io.ResumeFailedException;
+import hyphanet.support.io.storage.AbstractStorage;
 import hyphanet.support.io.storage.EncryptType;
 import hyphanet.support.io.storage.StorageFormatException;
 import hyphanet.support.io.storage.bucket.BucketTools;
@@ -17,20 +18,18 @@ import hyphanet.support.io.storage.bucket.RandomAccessBucket;
 import hyphanet.support.io.storage.rab.EncryptedRab;
 import hyphanet.support.io.storage.rab.Rab;
 import hyphanet.support.io.stream.NullInputStream;
-import org.bouncycastle.crypto.SkippingStreamCipher;
-import org.bouncycastle.crypto.params.KeyParameter;
-import org.bouncycastle.crypto.params.ParametersWithIV;
-import org.jspecify.annotations.NonNull;
-import org.jspecify.annotations.Nullable;
-
-import javax.crypto.SecretKey;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.security.GeneralSecurityException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.util.Arrays;
-import java.util.concurrent.atomic.AtomicBoolean;
+import javax.crypto.SecretKey;
+import org.bouncycastle.crypto.SkippingStreamCipher;
+import org.bouncycastle.crypto.params.KeyParameter;
+import org.bouncycastle.crypto.params.ParametersWithIV;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 /**
  * A Bucket implementation that provides encryption capabilities using the same format as {@link
@@ -59,7 +58,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @see RandomAccessBucket
  * @see java.io.Serializable
  */
-public class EncryptedBucket implements RandomAccessBucket, Serializable {
+public class EncryptedBucket extends AbstractStorage implements RandomAccessBucket, Serializable {
 
   /** Magic number used for format validation */
   public static final int MAGIC = 0xd8ba4c7e;
@@ -130,7 +129,7 @@ public class EncryptedBucket implements RandomAccessBucket, Serializable {
    */
   @Override
   public OutputStream getOutputStreamUnbuffered() throws IOException {
-    if (disposed.get()) {
+    if (disposed()) {
       throw new IOException(
           "This RandomAccessBuffer has already been closed. This should not" + " happen.");
     }
@@ -163,7 +162,7 @@ public class EncryptedBucket implements RandomAccessBucket, Serializable {
     if (size() == 0) {
       return new NullInputStream();
     }
-    if (disposed.get()) {
+    if (disposed()) {
       throw new IOException(
           "This RandomAccessBuffer has already been closed. This should not" + " happen.");
     }
@@ -218,12 +217,15 @@ public class EncryptedBucket implements RandomAccessBucket, Serializable {
 
   @Override
   public void close() {
+    if (!setClosed()) {
+      return;
+    }
     underlying.close();
   }
 
   @Override
   public void dispose() {
-    if (disposed.compareAndSet(false, true)) {
+    if (!setDisposed()) {
       return;
     }
     underlying.dispose();
@@ -660,9 +662,6 @@ public class EncryptedBucket implements RandomAccessBucket, Serializable {
 
   /** The underlying storage implementation */
   private final RandomAccessBucket underlying;
-
-  /** Flag indicating if this bucket has been disposed */
-  private final AtomicBoolean disposed = new AtomicBoolean();
 
   /** Parameters for cipher operations including key and IV */
   private transient @Nullable ParametersWithIV cipherParams; // includes key

@@ -8,6 +8,7 @@ import hyphanet.support.io.FilenameGenerator;
 import hyphanet.support.io.PersistentFileTracker;
 import hyphanet.support.io.ResumeContext;
 import hyphanet.support.io.ResumeFailedException;
+import hyphanet.support.io.storage.AbstractStorage;
 import hyphanet.support.io.storage.StorageFormatException;
 import hyphanet.support.io.storage.bucket.Bucket;
 import hyphanet.support.io.storage.bucket.BucketTools;
@@ -37,7 +38,7 @@ import java.util.Set;
  *
  * @author toad
  */
-public class AeadCryptBucket implements Bucket {
+public class AeadCryptBucket extends AbstractStorage implements Bucket {
 
   /** Magic number identifying AEADCryptBucket serialization format. */
   public static final int MAGIC = 0xb25b32d6;
@@ -185,11 +186,19 @@ public class AeadCryptBucket implements Bucket {
    */
   @Override
   public void dispose() {
+    if (!setDisposed()) {
+      return;
+    }
+
     underlying.dispose();
   }
 
   @Override
   public void close() {
+    if (!setClosed()) {
+      return;
+    }
+
     underlying.close();
   }
 

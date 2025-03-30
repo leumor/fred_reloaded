@@ -3,6 +3,7 @@
  * http://www.gnu.org/ for further details of the GPL. */
 package hyphanet.support.io.storage.bucket;
 
+import hyphanet.support.io.storage.AbstractStorage;
 import hyphanet.support.io.storage.StorageFormatException;
 import hyphanet.support.io.stream.NullInputStream;
 import java.io.*;
@@ -32,7 +33,7 @@ import java.util.Objects;
  *
  * @see Bucket
  */
-public class ReadOnlyFileSliceBucket implements Bucket {
+public class ReadOnlyFileSliceBucket extends AbstractStorage implements Bucket {
 
   /** The magic number used for serialization validation. */
   static final int MAGIC = 0x99e54c4;
@@ -144,11 +145,6 @@ public class ReadOnlyFileSliceBucket implements Bucket {
   @Override
   public void setReadOnly() {
     // Already read-only
-  }
-
-  @Override
-  public void close() {
-    // No resources to close
   }
 
   /**

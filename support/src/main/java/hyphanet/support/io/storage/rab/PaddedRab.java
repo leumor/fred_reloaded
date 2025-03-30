@@ -5,6 +5,7 @@ import hyphanet.support.io.FilenameGenerator;
 import hyphanet.support.io.PersistentFileTracker;
 import hyphanet.support.io.ResumeContext;
 import hyphanet.support.io.ResumeFailedException;
+import hyphanet.support.io.storage.AbstractStorage;
 import hyphanet.support.io.storage.StorageFormatException;
 import hyphanet.support.io.storage.bucket.BucketTools;
 import java.io.*;
@@ -27,7 +28,7 @@ import java.util.Objects;
  *
  * @see Rab
  */
-public class PaddedRab implements Rab, Serializable {
+public class PaddedRab extends AbstractStorage implements Rab, Serializable {
 
   /** Magic number used for serialization verification */
   public static final int MAGIC = 0x1eaaf330;
@@ -141,12 +142,18 @@ public class PaddedRab implements Rab, Serializable {
   /** Closes the underlying buffer. */
   @Override
   public void close() {
+    if (!setClosed()) {
+      return;
+    }
     rab.close();
   }
 
   /** Disposes of the underlying buffer's resources. */
   @Override
   public void dispose() {
+    if (!setDisposed()) {
+      return;
+    }
     rab.dispose();
   }
 

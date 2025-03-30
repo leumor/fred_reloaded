@@ -126,9 +126,7 @@ public interface Rab extends Storage {
    * object becomes eligible for garbage collection after calling this method.
    */
   @Override
-  default void dispose() {
-    close();
-  }
+  void dispose();
 
   /**
    * Acquires a lock on the RAB to keep it open.

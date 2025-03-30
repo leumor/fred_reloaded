@@ -1,5 +1,6 @@
 package hyphanet.support.io.storage.bucket;
 
+import hyphanet.support.io.storage.AbstractStorage;
 import hyphanet.support.io.storage.StorageFormatException;
 import hyphanet.support.io.storage.rab.PooledFileRab;
 import hyphanet.support.io.storage.rab.Rab;
@@ -24,7 +25,7 @@ import org.slf4j.LoggerFactory;
  * <p>This class provides common functionality for managing file-based buckets, including handling
  * temporary files, managing input/output streams, and performing basic file operations.
  */
-public abstract class BaseFileBucket implements RandomAccessBucket {
+public abstract class BaseFileBucket extends AbstractStorage implements RandomAccessBucket {
   /** Magic number to identify the file type. */
   public static final int MAGIC = 0xc4b7533d;
 
@@ -68,7 +69,10 @@ public abstract class BaseFileBucket implements RandomAccessBucket {
     if (version != VERSION) {
       throw new StorageFormatException("Bad version");
     }
-    freed = dis.readBoolean();
+    var closed = dis.readBoolean();
+    if (closed) {
+      setClosed();
+    }
   }
 
   /**
@@ -118,8 +122,8 @@ public abstract class BaseFileBucket implements RandomAccessBucket {
   public OutputStream getOutputStreamUnbuffered() throws IOException {
     synchronized (this) {
       var path = getPath();
-      if (freed) {
-        throw new IOException("File already freed: " + this);
+      if (closed()) {
+        throw new IOException("File already closed: " + this);
       }
       if (isReadOnly()) {
         throw new IOException("Bucket is read-only: " + this);
@@ -186,7 +190,7 @@ public abstract class BaseFileBucket implements RandomAccessBucket {
    */
   @Override
   public synchronized InputStream getInputStreamUnbuffered() throws IOException {
-    if (freed) {
+    if (closed()) {
       throw new IOException("File already freed: " + this);
     }
 
@@ -276,40 +280,33 @@ public abstract class BaseFileBucket implements RandomAccessBucket {
         .toArray(Bucket[]::new);
   }
 
-  /**
-   * Closes the bucket and releases any associated resources.
-   *
-   * <p>This method is equivalent to calling {@link #free(boolean)} with <code>false</code>.
-   */
+  /** Closes the bucket and releases any associated resources. */
   @Override
   public void close() {
-    free(false);
-  }
+    if (!setClosed()) {
+      return;
+    }
 
-  /**
-   * Frees the bucket and releases any associated resources.
-   *
-   * <p>Closes all open streams and optionally deletes the underlying file.
-   *
-   * @param forceFree if true, the underlying file will be deleted even if {@link
-   *     #deleteOnDispose()} is false.
-   */
-  public void free(boolean forceFree) {
     Set<Closeable> toClose;
-    logger.info("Freeing {}", this);
+    logger.info("Closing File Bucket {}", this);
 
     synchronized (this) {
-      if (freed) {
-        return;
-      }
-      freed = true;
       toClose = new HashSet<>(streams);
       streams.clear();
     }
     closeStreams(toClose);
+  }
+
+  @Override
+  public void dispose() {
+    if (setDisposed()) {
+      return;
+    }
+
+    close();
 
     var path = getPath();
-    if ((deleteOnDispose() || forceFree) && Files.exists(path)) {
+    if ((deleteOnDispose()) && Files.exists(path)) {
       logger.debug("Deleting bucket {}", path);
       deleteFile();
       if (Files.exists(path)) {
@@ -351,7 +348,7 @@ public abstract class BaseFileBucket implements RandomAccessBucket {
   public void storeTo(DataOutputStream dos) throws IOException {
     dos.writeInt(MAGIC);
     dos.writeInt(VERSION);
-    dos.writeBoolean(freed);
+    dos.writeBoolean(closed());
   }
 
   /**
@@ -367,8 +364,8 @@ public abstract class BaseFileBucket implements RandomAccessBucket {
    */
   @Override
   public Rab toRandomAccessBuffer() throws IOException {
-    if (freed) {
-      throw new IOException("Already freed");
+    if (closed()) {
+      throw new IOException("Already closed");
     }
     setReadOnly();
     long size = size();
@@ -668,7 +665,7 @@ public abstract class BaseFileBucket implements RandomAccessBucket {
       boolean renaming = !tempFileAlreadyExists();
       removeStream(this);
 
-      logger.info("Closing {}", BaseFileBucket.this);
+      logger.info("Closing Bucket OutputStream {}", BaseFileBucket.this);
 
       try {
         outputStream.close();
@@ -719,7 +716,7 @@ public abstract class BaseFileBucket implements RandomAccessBucket {
         if (fileRestartCounter > restartCount) {
           throw new IllegalStateException("writing to file after restart");
         }
-        if (freed) {
+        if (closed()) {
           throw new IOException("writing to file after it has been freed");
         }
       }
@@ -823,7 +820,4 @@ public abstract class BaseFileBucket implements RandomAccessBucket {
 
   /** Counter for output stream restarts. Incremented each time getOutputStream() is called. */
   protected volatile long fileRestartCounter;
-
-  /** Has the bucket been freed? If so, no further operations may be done */
-  private volatile boolean freed;
 }

@@ -9,6 +9,7 @@ import hyphanet.support.io.FilenameGenerator;
 import hyphanet.support.io.PersistentFileTracker;
 import hyphanet.support.io.ResumeContext;
 import hyphanet.support.io.ResumeFailedException;
+import hyphanet.support.io.storage.AbstractStorage;
 import hyphanet.support.io.storage.StorageFormatException;
 import hyphanet.support.io.storage.bucket.Bucket;
 import hyphanet.support.io.storage.bucket.BucketTools;
@@ -43,7 +44,7 @@ import org.slf4j.LoggerFactory;
  * underlying {@link Bucket}. The encryption uses a randomly generated key and initialization vector
  * (IV) for each instance. Padding is added to prevent size correlation attacks.
  */
-public class PaddedEphemerallyEncryptedBucket implements Bucket {
+public class PaddedEphemerallyEncryptedBucket extends AbstractStorage implements Bucket {
 
   /** Minimum size the padded data must be, even if the original is smaller. */
   public static final int MIN_PADDED_SIZE = 1024;
@@ -269,6 +270,9 @@ public class PaddedEphemerallyEncryptedBucket implements Bucket {
    */
   @Override
   public void dispose() {
+    if (!setDisposed()) {
+      return;
+    }
     bucket.dispose();
   }
 
@@ -279,6 +283,9 @@ public class PaddedEphemerallyEncryptedBucket implements Bucket {
    */
   @Override
   public void close() {
+    if (!setClosed()) {
+      return;
+    }
     bucket.close();
   }
 

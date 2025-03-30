@@ -5,9 +5,9 @@ import static hyphanet.support.io.storage.TempStorageManager.TRACE_STORAGE_LEAKS
 import hyphanet.base.SizeUtil;
 import hyphanet.support.GlobalCleaner;
 import hyphanet.support.io.ResumeContext;
+import hyphanet.support.io.storage.AbstractStorage;
 import hyphanet.support.io.storage.TempStorage;
 import hyphanet.support.io.storage.TempStorageRamTracker;
-import hyphanet.support.io.storage.rab.Rab;
 import hyphanet.support.io.storage.rab.RabFactory;
 import hyphanet.support.io.storage.rab.TempRab;
 import hyphanet.support.io.stream.InsufficientDiskSpaceException;
@@ -23,7 +23,7 @@ import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class TempBucket implements TempStorage, RandomAccessBucket {
+public class TempBucket extends AbstractStorage implements TempStorage, RandomAccessBucket {
   /** A timestamp used to evaluate the age of the bucket and maybe consider it for a migration */
   public final long creationTime;
 
@@ -71,7 +71,7 @@ public class TempBucket implements TempStorage, RandomAccessBucket {
     Bucket toMigrate;
     long size;
     synchronized (this) {
-      if (!isRamBucket() || hasBeenDisposed) {
+      if (!isRamBucket() || disposed()) {
         // Nothing to migrate! We don't want to switch back to ram, do we?
         return false;
       }
@@ -129,7 +129,7 @@ public class TempBucket implements TempStorage, RandomAccessBucket {
     if (os != null) {
       throw new IOException("Only one OutputStream per bucket on " + this + " !");
     }
-    if (hasBeenDisposed) {
+    if (disposed()) {
       throw new IOException("Already freed");
     }
     // Hence we don't need to reset currentSize / _hasTaken() if a bucket is reused.
@@ -152,8 +152,8 @@ public class TempBucket implements TempStorage, RandomAccessBucket {
       throw new IOException(
           "No OutputStream has been openned! Why would you want an InputStream " + "then?");
     }
-    if (hasBeenDisposed) {
-      throw new IOException("Already freed");
+    if (disposed()) {
+      throw new IOException("Already disposed");
     }
     TempBucketInputStream is = new TempBucketInputStream(osIndex);
     tbis.add(is);
@@ -183,16 +183,20 @@ public class TempBucket implements TempStorage, RandomAccessBucket {
 
   @Override
   public synchronized void dispose() {
-    if (hasBeenDisposed) {
+    if (!setDisposed()) {
       return;
     }
-    hasBeenDisposed = true;
 
-    cleanable.clean();
+    close();
+
+    GlobalCleaner.getInstance().clean(cleanable);
   }
 
   @Override
   public void close() {
+    if (!setClosed()) {
+      return;
+    }
     currentBucket.close();
   }
 
@@ -223,10 +227,10 @@ public class TempBucket implements TempStorage, RandomAccessBucket {
   }
 
   @Override
-  public Rab toRandomAccessBuffer() throws IOException {
+  public TempRab toRandomAccessBuffer() throws IOException {
     synchronized (this) {
-      if (hasBeenDisposed) {
-        throw new IOException("Already freed");
+      if (disposed()) {
+        throw new IOException("Already disposed");
       }
       if (os != null) {
         throw new IOException("Can't migrate with open OutputStream's");
@@ -235,31 +239,23 @@ public class TempBucket implements TempStorage, RandomAccessBucket {
         throw new IOException("Can't migrate with open InputStream's");
       }
       setReadOnly();
+      var underlyingRab = currentBucket.toRandomAccessBuffer();
       TempRab rab =
           new TempRab(
-              ramTracker,
-              currentBucket.toRandomAccessBuffer(),
-              creationTime,
-              rabMigrateToFactory,
-              !isRamBucket(),
-              this);
+              ramTracker, underlyingRab, creationTime, rabMigrateToFactory, !isRamBucket(), this);
       if (isRamBucket()) {
-        // No change in space usage.
-        ramTracker.removeFromRamStorageQueue(getReference());
-        ramTracker.addToRamStorageQueue(rab.getReference());
+        synchronized (ramTracker) {
+          ramTracker.removeFromRamStorageQueue(getReference());
+          ramTracker.freeRam(underlyingRab.size());
+        }
       }
       currentBucket = new RabBucket(rab);
       return rab;
     }
   }
 
-  /** Called only by TempRandomAccessBuffer */
-  public synchronized void onDisposed() {
-    hasBeenDisposed = true;
-  }
-
   /** Only for testing */
-  synchronized Bucket getUnderlying() {
+  public synchronized Bucket getUnderlying() {
     return currentBucket;
   }
 
@@ -297,7 +293,7 @@ public class TempBucket implements TempStorage, RandomAccessBucket {
         TempStorageRamTracker ramTracker) {
       this.thisRef = thisRef;
       this.currentBucket = currentBucket;
-      this.inputStreams = inputStreams;
+      this.inputStreams = new ArrayList<>(inputStreams);
       this.outputStream = outputStream;
       this.ramTracker = ramTracker;
     }
@@ -367,8 +363,8 @@ public class TempBucket implements TempStorage, RandomAccessBucket {
     @Override
     public final void write(int b) throws IOException {
       synchronized (TempBucket.this) {
-        if (hasBeenDisposed) {
-          throw new IOException("Already freed");
+        if (disposed()) {
+          throw new IOException("Already disposed");
         }
         long futureSize = currentSize + 1;
         maybeMigrateRamBucket(futureSize);
@@ -384,8 +380,8 @@ public class TempBucket implements TempStorage, RandomAccessBucket {
     @Override
     public final void write(byte[] b, int off, int len) throws IOException {
       synchronized (TempBucket.this) {
-        if (hasBeenDisposed) {
-          throw new IOException("Already freed");
+        if (disposed()) {
+          throw new IOException("Already disposed");
         }
         long futureSize = currentSize + len;
         maybeMigrateRamBucket(futureSize);
@@ -401,7 +397,7 @@ public class TempBucket implements TempStorage, RandomAccessBucket {
     @Override
     public final void flush() throws IOException {
       synchronized (TempBucket.this) {
-        if (hasBeenDisposed) {
+        if (disposed()) {
           return;
         }
         maybeMigrateRamBucket(currentSize);
@@ -420,6 +416,7 @@ public class TempBucket implements TempStorage, RandomAccessBucket {
         maybeMigrateRamBucket(currentSize);
         underlyingOs.flush();
         underlyingOs.close();
+        os = null;
         closed = true;
       }
     }
@@ -497,8 +494,8 @@ public class TempBucket implements TempStorage, RandomAccessBucket {
     @Override
     public final int read() throws IOException {
       synchronized (TempBucket.this) {
-        if (hasBeenDisposed) {
-          throw new IOException("Already freed");
+        if (disposed()) {
+          throw new IOException("Already disposed");
         }
         int toReturn = currentIS.read();
         if (toReturn != -1) {
@@ -511,8 +508,8 @@ public class TempBucket implements TempStorage, RandomAccessBucket {
     @Override
     public int read(byte[] b) throws IOException {
       synchronized (TempBucket.this) {
-        if (hasBeenDisposed) {
-          throw new IOException("Already freed");
+        if (disposed()) {
+          throw new IOException("Already disposed");
         }
         return read(b, 0, b.length);
       }
@@ -521,8 +518,8 @@ public class TempBucket implements TempStorage, RandomAccessBucket {
     @Override
     public int read(byte[] b, int off, int len) throws IOException {
       synchronized (TempBucket.this) {
-        if (hasBeenDisposed) {
-          throw new IOException("Already freed");
+        if (disposed()) {
+          throw new IOException("Already disposed");
         }
         int toReturn = currentIS.read(b, off, len);
         if (toReturn > 0) {
@@ -535,7 +532,7 @@ public class TempBucket implements TempStorage, RandomAccessBucket {
     @Override
     public long skip(long n) throws IOException {
       synchronized (TempBucket.this) {
-        if (hasBeenDisposed) {
+        if (disposed()) {
           throw new IOException("Already disposed");
         }
         long skipped = currentIS.skip(n);
@@ -547,16 +544,11 @@ public class TempBucket implements TempStorage, RandomAccessBucket {
     @Override
     public int available() throws IOException {
       synchronized (TempBucket.this) {
-        if (hasBeenDisposed) {
+        if (disposed()) {
           throw new IOException("Already disposed");
         }
         return currentIS.available();
       }
-    }
-
-    @Override
-    public boolean markSupported() {
-      return false;
     }
 
     @Override
@@ -615,6 +607,4 @@ public class TempBucket implements TempStorage, RandomAccessBucket {
 
   /** An identifier used to know when to deprecate the InputStreams */
   private short osIndex;
-
-  private volatile boolean hasBeenDisposed = false;
 }

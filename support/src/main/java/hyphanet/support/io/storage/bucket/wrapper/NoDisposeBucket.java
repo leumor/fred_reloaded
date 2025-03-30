@@ -5,6 +5,7 @@ import hyphanet.support.io.FilenameGenerator;
 import hyphanet.support.io.PersistentFileTracker;
 import hyphanet.support.io.ResumeContext;
 import hyphanet.support.io.ResumeFailedException;
+import hyphanet.support.io.storage.AbstractStorage;
 import hyphanet.support.io.storage.StorageFormatException;
 import hyphanet.support.io.storage.bucket.Bucket;
 import hyphanet.support.io.storage.bucket.BucketTools;
@@ -25,7 +26,7 @@ import java.io.*;
  *
  * @see Bucket
  */
-public class NoDisposeBucket implements Bucket {
+public class NoDisposeBucket extends AbstractStorage implements Bucket {
 
   /** Magic number used for serialization to verify the class type during deserialization. */
   public static final int MAGIC = 0xa88da5c2;
@@ -121,19 +122,11 @@ public class NoDisposeBucket implements Bucket {
     proxy.setReadOnly();
   }
 
-  /**
-   * {@inheritDoc}
-   *
-   * <p><b>Implementation Note:</b> This method intentionally does nothing to prevent the disposal
-   * of the underlying bucket. This is the core purpose of the {@code NoDispose} class.
-   */
-  @Override
-  public void dispose() {
-    // Do nothing.
-  }
-
   @Override
   public void close() {
+    if (!setClosed()) {
+      return;
+    }
     proxy.close();
   }
 

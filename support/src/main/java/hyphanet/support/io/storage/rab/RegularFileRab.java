@@ -2,6 +2,7 @@ package hyphanet.support.io.storage.rab;
 
 import hyphanet.support.io.ResumeContext;
 import hyphanet.support.io.ResumeFailedException;
+import hyphanet.support.io.storage.AbstractStorage;
 import hyphanet.support.io.storage.StorageFormatException;
 import hyphanet.support.io.util.FileSystem;
 import java.io.*;
@@ -25,7 +26,7 @@ import org.slf4j.LoggerFactory;
  * <p>The file can be opened in read-only or read-write mode. In read-write mode, the file is
  * truncated to the specified length upon creation.
  */
-public class RegularFileRab implements Rab, Serializable {
+public class RegularFileRab extends AbstractStorage implements Rab, Serializable {
 
   /** Magic number used to identify serialized {@link RegularFileRab} objects. */
   public static final int MAGIC = 0xdd0f4ab2;
@@ -152,15 +153,10 @@ public class RegularFileRab implements Rab, Serializable {
 
   @Override
   public void close() {
-    if (closed) {
+    if (!setClosed()) {
       return;
     }
-    synchronized (this) {
-      if (closed) {
-        return;
-      }
-      closed = true;
-    }
+
     try {
       channel.close();
     } catch (IOException e) {
@@ -180,6 +176,10 @@ public class RegularFileRab implements Rab, Serializable {
 
   @Override
   public void dispose() {
+    if (!setDisposed()) {
+      return;
+    }
+
     close();
     try {
       if (secureDelete) {
@@ -329,9 +329,6 @@ public class RegularFileRab implements Rab, Serializable {
 
   /** The {@link FileChannel} used to access the file. */
   private transient FileChannel channel;
-
-  /** Whether the file has been closed. */
-  private boolean closed = false;
 
   /** Whether to securely delete the file on {@link #dispose()}. */
   private boolean secureDelete;

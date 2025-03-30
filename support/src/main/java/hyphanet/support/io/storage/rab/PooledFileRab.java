@@ -2,6 +2,7 @@ package hyphanet.support.io.storage.rab;
 
 import com.uber.nullaway.annotations.EnsuresNonNull;
 import hyphanet.support.io.*;
+import hyphanet.support.io.storage.AbstractStorage;
 import hyphanet.support.io.storage.StorageFormatException;
 import hyphanet.support.io.util.FileSystem;
 import java.io.*;
@@ -42,7 +43,7 @@ import org.slf4j.LoggerFactory;
  *
  * @see Rab
  */
-public class PooledFileRab implements Rab, Serializable {
+public class PooledFileRab extends AbstractStorage implements Rab, Serializable {
 
   /** Magic number for serialization validation */
   public static final int MAGIC = 0x297c550a;
@@ -346,15 +347,15 @@ public class PooledFileRab implements Rab, Serializable {
    */
   @Override
   public void close() {
+    if (!setClosed()) {
+      return;
+    }
+
     logger.info("Closing {}", this);
     synchronized (fds) {
       if (lockLevel != 0) {
         throw new IllegalStateException("Must unlock first!");
       }
-      if (closed) {
-        return; // Avoid double closing
-      }
-      closed = true;
       // Essential to avoid memory leak!
       // Potentially slow but only happens on close(). Plus the size of closables is
       // bounded anyway by the fd limit.
@@ -386,6 +387,10 @@ public class PooledFileRab implements Rab, Serializable {
    */
   @Override
   public void dispose() {
+    if (!setDisposed()) {
+      return;
+    }
+
     close();
     if (!deleteOnFree) {
       return;
@@ -494,6 +499,10 @@ public class PooledFileRab implements Rab, Serializable {
         && secureDelete == other.secureDelete;
   }
 
+  public Path getPath() {
+    return path;
+  }
+
   /**
    * Checks if this file is currently open.
    *
@@ -572,7 +581,7 @@ public class PooledFileRab implements Rab, Serializable {
     synchronized (fds) {
       while (true) {
         fds.closables.remove(this);
-        if (closed) {
+        if (closed()) {
           throw new IOException("Already closed " + this);
         }
         if (channel != null) {
@@ -727,9 +736,6 @@ public class PooledFileRab implements Rab, Serializable {
 
   /** The underlying file channel for I/O operations */
   private transient @Nullable FileChannel channel;
-
-  /** Whether this random access buffer has been closed */
-  private boolean closed;
 
   /** Whether to use secure deletion when freeing the file */
   private boolean secureDelete;

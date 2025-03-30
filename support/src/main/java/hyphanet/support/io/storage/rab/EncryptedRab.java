@@ -13,6 +13,7 @@ import hyphanet.support.io.FilenameGenerator;
 import hyphanet.support.io.PersistentFileTracker;
 import hyphanet.support.io.ResumeContext;
 import hyphanet.support.io.ResumeFailedException;
+import hyphanet.support.io.storage.AbstractStorage;
 import hyphanet.support.io.storage.EncryptType;
 import hyphanet.support.io.storage.StorageFormatException;
 import hyphanet.support.io.storage.bucket.BucketTools;
@@ -46,7 +47,7 @@ import org.bouncycastle.crypto.params.ParametersWithIV;
  * @see Rab
  * @see Serializable
  */
-public final class EncryptedRab implements Rab, Serializable {
+public final class EncryptedRab extends AbstractStorage implements Rab, Serializable {
 
   /** Magic number used to identify encrypted buffer format */
   public static final int MAGIC = 0x39ea94c2;
@@ -153,7 +154,7 @@ public final class EncryptedRab implements Rab, Serializable {
    */
   @Override
   public void pread(long fileOffset, byte[] buf, int bufOffset, int length) throws IOException {
-    if (isClosed) {
+    if (closed()) {
       throw new IOException(
           "This RandomAccessBuffer has already been closed. It can no longer be read from.");
     }
@@ -203,7 +204,7 @@ public final class EncryptedRab implements Rab, Serializable {
    */
   @Override
   public void pwrite(long fileOffset, byte[] buf, int bufOffset, int length) throws IOException {
-    if (isClosed) {
+    if (closed()) {
       throw new IOException(
           "This RandomAccessBuffer has already been closed. It can no longer" + " be written to.");
     }
@@ -246,10 +247,10 @@ public final class EncryptedRab implements Rab, Serializable {
    */
   @Override
   public void close() {
-    if (!isClosed) {
-      isClosed = true;
-      underlyingBuffer.close();
+    if (!setClosed()) {
+      return;
     }
+    underlyingBuffer.close();
   }
 
   /**
@@ -407,7 +408,7 @@ public final class EncryptedRab implements Rab, Serializable {
    * @throws GeneralSecurityException If encryption operations fail
    */
   private void writeHeader() throws IOException, GeneralSecurityException {
-    if (isClosed) {
+    if (closed()) {
       throw new IOException(
           "This RandomAccessBuffer has already been closed. This should not" + " happen.");
     }
@@ -460,7 +461,7 @@ public final class EncryptedRab implements Rab, Serializable {
    */
   @EnsuresNonNull({"unencryptedBaseKey", "headerEncIV"})
   private boolean verifyHeader() throws IOException, InvalidKeyException {
-    if (isClosed) {
+    if (closed()) {
       throw new IOException(
           "This RandomAccessBuffer has already been closed. This should not" + " happen.");
     }
@@ -512,9 +513,6 @@ public final class EncryptedRab implements Rab, Serializable {
 
   /** Key used for MAC generation */
   private transient SecretKey headerMacKey;
-
-  /** Flag indicating if the buffer is closed */
-  private transient volatile boolean isClosed = false;
 
   /** Base key before encryption */
   private transient SecretKey unencryptedBaseKey;

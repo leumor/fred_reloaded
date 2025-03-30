@@ -9,16 +9,16 @@ import hyphanet.support.io.FilenameGenerator;
 import hyphanet.support.io.PersistentFileTracker;
 import hyphanet.support.io.ResumeContext;
 import hyphanet.support.io.ResumeFailedException;
+import hyphanet.support.io.storage.AbstractStorage;
 import hyphanet.support.io.storage.DelayedDisposable;
 import hyphanet.support.io.storage.StorageFormatException;
 import hyphanet.support.io.storage.bucket.Bucket;
 import hyphanet.support.io.storage.bucket.BucketTools;
 import hyphanet.support.io.storage.bucket.RandomAccessBucket;
+import java.io.*;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.*;
 
 /**
  * The {@link DelayedDisposeBucket} class provides a mechanism to delay the disposal of an
@@ -41,7 +41,7 @@ import java.io.*;
  * @see DelayedDisposable
  * @see RandomAccessBucket
  */
-public class DelayedDisposeBucket implements Bucket, DelayedDisposable {
+public class DelayedDisposeBucket extends AbstractStorage implements Bucket, DelayedDisposable {
 
   /**
    * The magic number used to identify serialized instances of this class.
@@ -105,7 +105,7 @@ public class DelayedDisposeBucket implements Bucket, DelayedDisposable {
 
   @Override
   public synchronized boolean toDispose() {
-    return disposed;
+    return disposed();
   }
 
   @Override
@@ -114,8 +114,8 @@ public class DelayedDisposeBucket implements Bucket, DelayedDisposable {
       if (migrated) {
         throw new IOException("Already migrated to a RandomAccessBucket");
       }
-      if (disposed) {
-        throw new IOException("Already freed");
+      if (disposed()) {
+        throw new IOException("Already disposed");
       }
     }
     return bucket.getOutputStream();
@@ -127,8 +127,8 @@ public class DelayedDisposeBucket implements Bucket, DelayedDisposable {
       if (migrated) {
         throw new IOException("Already migrated to a RandomAccessBucket");
       }
-      if (disposed) {
-        throw new IOException("Already freed");
+      if (disposed()) {
+        throw new IOException("Already disposed");
       }
     }
     return bucket.getOutputStreamUnbuffered();
@@ -140,8 +140,8 @@ public class DelayedDisposeBucket implements Bucket, DelayedDisposable {
       if (migrated) {
         throw new IOException("Already migrated to a RandomAccessBucket");
       }
-      if (disposed) {
-        throw new IOException("Already freed");
+      if (disposed()) {
+        throw new IOException("Already disposed");
       }
     }
     return bucket.getInputStream();
@@ -153,8 +153,8 @@ public class DelayedDisposeBucket implements Bucket, DelayedDisposable {
       if (migrated) {
         throw new IOException("Already migrated to a RandomAccessBucket");
       }
-      if (disposed) {
-        throw new IOException("Already freed");
+      if (disposed()) {
+        throw new IOException("Already disposed");
       }
     }
     return bucket.getInputStreamUnbuffered();
@@ -186,7 +186,7 @@ public class DelayedDisposeBucket implements Bucket, DelayedDisposable {
    * @return The underlying {@link Bucket}, or {@code null} if unavailable.
    */
   public synchronized @Nullable Bucket getUnderlying() {
-    if (disposed) {
+    if (disposed()) {
       return null;
     }
     if (migrated) {
@@ -196,26 +196,19 @@ public class DelayedDisposeBucket implements Bucket, DelayedDisposable {
   }
 
   /**
-   * Closes this {@link DelayedDisposeBucket}. Since the disposal is delayed, this method does not
-   * immediately free resources unless the appropriate lifecycle step has been reached.
-   */
-  @Override
-  public void close() {
-    // Do nothing. The disposal of underlying bucket is delayed.
-  }
-
-  /**
    * Marks this {@link DelayedDisposeBucket} for disposal. Resources will remain allocated until
    * {@link #realDispose()} is called. If already disposed or migrated, this method has no effect.
    */
   @Override
   public void dispose() {
-    synchronized (this) {
-      if (disposed || migrated) {
-        return;
-      }
-      disposed = true;
+    if (!setDisposed()) {
+      return;
     }
+
+    if (migrated) {
+      return;
+    }
+
     logger.info("Freeing {} underlying={}", this, bucket);
     this.factory.delayedDispose(this, createdCommitID);
   }
@@ -264,8 +257,8 @@ public class DelayedDisposeBucket implements Bucket, DelayedDisposable {
    * @throws IOException If the resource is already freed (disposed).
    */
   public synchronized @Nullable RandomAccessBucket toRandomAccessBucket() throws IOException {
-    if (disposed) {
-      throw new IOException("Already freed");
+    if (disposed()) {
+      throw new IOException("Already disposed");
     }
     if (bucket instanceof RandomAccessBucket randomAccessBucket) {
       migrated = true;
@@ -289,18 +282,11 @@ public class DelayedDisposeBucket implements Bucket, DelayedDisposable {
   private transient PersistentFileTracker factory;
 
   /**
-   * Indicates whether the underlying resource has been marked for disposal. If {@code true}, the
-   * resource should not be accessed or migrated. However, actual resource cleanup only happens
-   * after calling {@link #realDispose()}.
-   */
-  private boolean disposed;
-
-  /**
    * Indicates whether the underlying {@link Bucket} has been migrated to a {@link
    * RandomAccessBucket} implementation. Once migrated, the original bucket becomes invalid for
    * further I/O operations and should not be disposed again.
    */
-  private boolean migrated;
+  private volatile boolean migrated;
 
   /**
    * Records the commit ID active when this {@link DelayedDisposeBucket} was created. Used to ensure

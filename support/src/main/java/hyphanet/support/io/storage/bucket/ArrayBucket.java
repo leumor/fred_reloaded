@@ -1,6 +1,7 @@
 package hyphanet.support.io.storage.bucket;
 
 import hyphanet.support.io.ResumeContext;
+import hyphanet.support.io.storage.AbstractStorage;
 import hyphanet.support.io.storage.rab.ByteArrayRab;
 import hyphanet.support.io.storage.rab.Rab;
 import java.io.*;
@@ -18,7 +19,7 @@ import java.util.Arrays;
  *
  * @author oskar
  */
-public class ArrayBucket implements RandomAccessBucket, Serializable {
+public class ArrayBucket extends AbstractStorage implements RandomAccessBucket, Serializable {
   @Serial private static final long serialVersionUID = 1L;
 
   /** Constructs a new Array bucket with default name "ArrayBucket". */
@@ -56,7 +57,7 @@ public class ArrayBucket implements RandomAccessBucket, Serializable {
     if (readOnly) {
       throw new IOException("Read only");
     }
-    if (closed) {
+    if (closed()) {
       throw new IOException("Already closed");
     }
     return new ArrayBucketOutputStream();
@@ -69,7 +70,7 @@ public class ArrayBucket implements RandomAccessBucket, Serializable {
    */
   @Override
   public InputStream getInputStream() throws IOException {
-    if (closed) {
+    if (closed()) {
       throw new IOException("Already closed");
     }
     return new ByteArrayInputStream(data);
@@ -105,13 +106,6 @@ public class ArrayBucket implements RandomAccessBucket, Serializable {
     readOnly = true;
   }
 
-  /** {@inheritDoc} Frees the internal byte array and marks the bucket as closed. */
-  @Override
-  public void close() {
-    closed = true;
-    // Not much else we can do.
-  }
-
   /**
    * Creates a copy of the internal byte array.
    *
@@ -119,7 +113,7 @@ public class ArrayBucket implements RandomAccessBucket, Serializable {
    * @throws IOException if the bucket has been closed
    */
   public byte[] toByteArray() throws IOException {
-    if (closed) {
+    if (closed()) {
       throw new IOException("Already closed");
     }
     long sz = size();
@@ -210,7 +204,4 @@ public class ArrayBucket implements RandomAccessBucket, Serializable {
 
   /** Flag indicating whether this bucket is read-only. */
   private boolean readOnly;
-
-  /** Flag indicating whether this bucket has been closed. */
-  private boolean closed;
 }

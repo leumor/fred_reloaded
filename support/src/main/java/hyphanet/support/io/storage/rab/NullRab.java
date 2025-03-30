@@ -2,6 +2,7 @@ package hyphanet.support.io.storage.rab;
 
 import hyphanet.support.io.ResumeContext;
 import hyphanet.support.io.ResumeFailedException;
+import hyphanet.support.io.storage.AbstractStorage;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
@@ -15,7 +16,7 @@ import java.io.IOException;
  * {@link #size()} which returns the configured size. {@link #onResume(ResumeContext)} and {@link
  * #storeTo(DataOutputStream)} throw {@link UnsupportedOperationException}.
  */
-public class NullRab implements Rab {
+public class NullRab extends AbstractStorage implements Rab {
 
   /**
    * Constructs a {@link NullRab} with the specified size.
@@ -63,31 +64,6 @@ public class NullRab implements Rab {
    */
   @Override
   public void pwrite(long fileOffset, byte[] buf, int bufOffset, int length) throws IOException {
-    // Do nothing.
-  }
-
-  /**
-   * No-op implementation of close operation.
-   *
-   * <p>This method does nothing as there are no resources to release in this null implementation.
-   *
-   * <p>{@inheritDoc}
-   */
-  @Override
-  public void close() {
-    // Do nothing.
-  }
-
-  /**
-   * No-op implementation of dispose operation.
-   *
-   * <p>This method does nothing as there are no resources to dispose of in this null
-   * implementation.
-   *
-   * <p>{@inheritDoc}
-   */
-  @Override
-  public void dispose() {
     // Do nothing.
   }
 

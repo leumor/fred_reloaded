@@ -3,11 +3,11 @@ package hyphanet.support.io.storage.bucket.wrapper;
 import hyphanet.support.GlobalCleaner;
 import hyphanet.support.io.ResumeContext;
 import hyphanet.support.io.ResumeFailedException;
+import hyphanet.support.io.storage.AbstractStorage;
 import hyphanet.support.io.storage.bucket.Bucket;
 import hyphanet.support.io.storage.bucket.NullBucket;
 import java.io.*;
 import java.lang.ref.Cleaner;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
  * <p>This class implements {@link Serializable} but is not intended to be persisted directly. It is
  * typically created by {@link ReaderBucketFactory} which is serializable.
  */
-class ReaderBucket implements Bucket {
+class ReaderBucket extends AbstractStorage implements Bucket {
 
   @Serial private static final long serialVersionUID = 1L;
   private static final Logger logger = LoggerFactory.getLogger(ReaderBucket.class);
@@ -51,19 +51,10 @@ class ReaderBucket implements Bucket {
    */
   @Override
   public void dispose() {
-    if (disposed.compareAndSet(false, true)) {
-      cleanable.clean();
+    if (!setDisposed()) {
+      return;
     }
-  }
-
-  /**
-   * {@inheritDoc}
-   *
-   * <p>This method is equivalent to {@link #dispose()}.
-   */
-  @Override
-  public void close() {
-    dispose();
+    cleanable.clean();
   }
 
   /**
@@ -186,10 +177,9 @@ class ReaderBucket implements Bucket {
    * Checks if this {@link ReaderBucket} has been disposed of.
    *
    * @throws IOException if the bucket is already disposed.
-   * @see #disposed
    */
   private synchronized void checkDisposed() throws IOException {
-    if (disposed.get()) {
+    if (disposed()) {
       throw new IOException("Already disposed");
     }
   }
@@ -306,12 +296,6 @@ class ReaderBucket implements Bucket {
    * and the reference count of readers.
    */
   private final ReaderBucketState state;
-
-  /**
-   * Indicates whether this {@link ReaderBucket} has been disposed of. Used to prevent operations on
-   * a disposed bucket.
-   */
-  private final AtomicBoolean disposed = new AtomicBoolean();
 
   /**
    * A {@link Cleaner.Cleanable} instance registered with {@link GlobalCleaner}. This is used to

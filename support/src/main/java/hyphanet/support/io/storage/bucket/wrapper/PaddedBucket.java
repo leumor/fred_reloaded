@@ -5,12 +5,12 @@ import hyphanet.support.io.FilenameGenerator;
 import hyphanet.support.io.PersistentFileTracker;
 import hyphanet.support.io.ResumeContext;
 import hyphanet.support.io.ResumeFailedException;
+import hyphanet.support.io.storage.AbstractStorage;
 import hyphanet.support.io.storage.StorageFormatException;
 import hyphanet.support.io.storage.bucket.Bucket;
 import hyphanet.support.io.storage.bucket.BucketTools;
 import hyphanet.support.io.storage.bucket.NullBucket;
 import hyphanet.support.io.util.Stream;
-
 import java.io.*;
 
 /**
@@ -19,7 +19,7 @@ import java.io.*;
  * Stream#fill(OutputStream, long)}, which is reasonably random but is faster than using
  * SecureRandom, and vastly more secure than using a non-secure Random.
  */
-public class PaddedBucket implements Bucket {
+public class PaddedBucket extends AbstractStorage implements Bucket {
 
   /** Magic number to identify {@code PaddedBucket} data in storage. */
   public static final int MAGIC = 0xdaff6185;
@@ -201,6 +201,10 @@ public class PaddedBucket implements Bucket {
    */
   @Override
   public void dispose() {
+    if (!setDisposed()) {
+      return;
+    }
+
     underlying.dispose();
   }
 
@@ -211,6 +215,10 @@ public class PaddedBucket implements Bucket {
    */
   @Override
   public void close() {
+    if (!setClosed()) {
+      return;
+    }
+
     underlying.close();
   }
 

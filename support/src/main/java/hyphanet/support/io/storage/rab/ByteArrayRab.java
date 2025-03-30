@@ -1,6 +1,7 @@
 package hyphanet.support.io.storage.rab;
 
 import hyphanet.support.io.ResumeContext;
+import hyphanet.support.io.storage.AbstractStorage;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.Serial;
@@ -16,7 +17,7 @@ import java.util.Arrays;
  *
  * @see Rab
  */
-public class ByteArrayRab implements Rab, Serializable {
+public class ByteArrayRab extends AbstractStorage implements Rab, Serializable {
 
   @Serial private static final long serialVersionUID = 1L;
 
@@ -65,16 +66,6 @@ public class ByteArrayRab implements Rab, Serializable {
   protected ByteArrayRab() {
     // For serialization.
     data = new byte[0];
-  }
-
-  /**
-   * {@inheritDoc}
-   *
-   * <p>Marks this buffer as closed. Further operations will fail.
-   */
-  @Override
-  public synchronized void close() {
-    closed = true;
   }
 
   /**
@@ -145,16 +136,6 @@ public class ByteArrayRab implements Rab, Serializable {
   /**
    * {@inheritDoc}
    *
-   * <p>No-op as there are no resources to dispose.
-   */
-  @Override
-  public void dispose() {
-    // No resources to dispose
-  }
-
-  /**
-   * {@inheritDoc}
-   *
    * <p>No-op as no resume action is needed.
    */
   @Override
@@ -189,7 +170,7 @@ public class ByteArrayRab implements Rab, Serializable {
    * @throws IOException if the buffer is closed
    */
   private void validateState() throws IOException {
-    if (closed) {
+    if (closed()) {
       throw new IOException("Buffer is closed");
     }
   }
@@ -233,10 +214,4 @@ public class ByteArrayRab implements Rab, Serializable {
 
   /** Flag indicating if this buffer is read-only */
   private volatile boolean readOnly;
-
-  /** Flag indicating if this buffer is closed */
-  private volatile boolean closed;
-
-  // Default hashCode() and equals() are correct for this type.
-
 }

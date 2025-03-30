@@ -83,11 +83,7 @@ public class TempStorageManager implements RabFactory, BucketFactory {
   public synchronized Rab makeRab(long size) throws IOException {
     setCreateRamStorage(size, rabFactory);
     runRamReleaser();
-    var rab = rabFactory.makeRab(size);
-    if (rabFactory.isCreateRam()) {
-      ramTracker.addToRamStorageQueue((TempRab) rab);
-    }
-    return rab;
+    return rabFactory.makeRab(size);
   }
 
   @Override
@@ -100,6 +96,23 @@ public class TempStorageManager implements RabFactory, BucketFactory {
       ramTracker.addToRamStorageQueue((TempRab) rab);
     }
     return rab;
+  }
+
+  public TempRabFactory getRabFactory() {
+    return rabFactory;
+  }
+
+  public TempBucketFactory getBucketFactory() {
+    return bucketFactory;
+  }
+
+  public void setEncrypt(boolean encrypt) {
+    bucketFactory.setEncrypt(encrypt);
+    rabFactory.setEncrypt(encrypt);
+  }
+
+  public TempStorageRamTracker getRamTracker() {
+    return ramTracker;
   }
 
   private synchronized void setCreateRamStorage(long size, RamStorageCapableFactory factory) {

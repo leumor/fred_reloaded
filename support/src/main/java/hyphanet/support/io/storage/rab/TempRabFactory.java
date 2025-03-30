@@ -104,10 +104,18 @@ public class TempRabFactory implements RabFactory, RamStorageCapableFactory {
     this.createRam = createRam;
   }
 
+  public boolean isEncrypt() {
+    return encrypt;
+  }
+
+  public void setEncrypt(boolean encrypt) {
+    this.encrypt = encrypt;
+  }
+
   private final TempStorageRamTracker ramTracker;
   private final DiskSpaceCheckingRabFactory diskRabFactory;
-  private final boolean encrypt;
   private final EncryptType encryptType;
   private final MasterSecret secret;
+  private boolean encrypt;
   private boolean createRam;
 }

@@ -5,6 +5,7 @@ import hyphanet.support.io.FilenameGenerator;
 import hyphanet.support.io.PersistentFileTracker;
 import hyphanet.support.io.ResumeContext;
 import hyphanet.support.io.ResumeFailedException;
+import hyphanet.support.io.storage.AbstractStorage;
 import hyphanet.support.io.storage.DelayedDisposable;
 import hyphanet.support.io.storage.StorageFormatException;
 import hyphanet.support.io.storage.bucket.BucketTools;
@@ -21,7 +22,8 @@ import java.io.*;
  * @see Rab
  * @see DelayedDisposable
  */
-public class DelayedDisposeRab implements Rab, Serializable, DelayedDisposable {
+public class DelayedDisposeRab extends AbstractStorage
+    implements Rab, Serializable, DelayedDisposable {
 
   /** Magic number for serialization verification */
   public static final int MAGIC = 0x3fb645de;
@@ -74,7 +76,7 @@ public class DelayedDisposeRab implements Rab, Serializable, DelayedDisposable {
   @Override
   public void pread(long fileOffset, byte[] buf, int bufOffset, int length) throws IOException {
     synchronized (this) {
-      if (disposed) {
+      if (disposed()) {
         throw new IOException("Already disposed");
       }
     }
@@ -89,7 +91,7 @@ public class DelayedDisposeRab implements Rab, Serializable, DelayedDisposable {
   @Override
   public void pwrite(long fileOffset, byte[] buf, int bufOffset, int length) throws IOException {
     synchronized (this) {
-      if (disposed) {
+      if (disposed()) {
         throw new IOException("Already disposed");
       }
     }
@@ -98,21 +100,16 @@ public class DelayedDisposeRab implements Rab, Serializable, DelayedDisposable {
 
   @Override
   public void close() {
-    synchronized (this) {
-      if (disposed) {
-        return;
-      }
+    if (!setClosed()) {
+      return;
     }
     underlying.close();
   }
 
   @Override
   public void dispose() {
-    synchronized (this) {
-      if (disposed) {
-        return;
-      }
-      disposed = true;
+    if (!setDisposed()) {
+      return;
     }
     this.factory.delayedDispose(this, createdCommitID);
   }
@@ -124,10 +121,8 @@ public class DelayedDisposeRab implements Rab, Serializable, DelayedDisposable {
    */
   @Override
   public RabLock lockOpen() throws IOException {
-    synchronized (this) {
-      if (disposed) {
-        throw new IOException("Already disposed");
-      }
+    if (disposed()) {
+      throw new IOException("Already disposed");
     }
     return underlying.lockOpen();
   }
@@ -146,7 +141,7 @@ public class DelayedDisposeRab implements Rab, Serializable, DelayedDisposable {
 
   @Override
   public boolean toDispose() {
-    return disposed;
+    return disposed();
   }
 
   /**
@@ -155,7 +150,7 @@ public class DelayedDisposeRab implements Rab, Serializable, DelayedDisposable {
    * @return the underlying buffer, or {@code null} if disposed
    */
   public Rab getUnderlying() {
-    if (disposed) {
+    if (disposed()) {
       return new NullRab(0);
     }
     return underlying;
@@ -198,9 +193,6 @@ public class DelayedDisposeRab implements Rab, Serializable, DelayedDisposable {
    * @see Rab
    */
   final Rab underlying;
-
-  /** Flag indicating whether this buffer has been marked for disposal */
-  private boolean disposed;
 
   /** The file tracker managing this buffer's lifecycle */
   private transient PersistentFileTracker factory;
