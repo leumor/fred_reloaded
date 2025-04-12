@@ -46,7 +46,7 @@ public class TempRabFactory implements RabFactory, RamStorageCapableFactory {
     long now = System.currentTimeMillis();
 
     if (createRam) {
-      return new TempRab(ramTracker, (int) size, now, diskRabFactory);
+      return new TempRab(ramTracker, (int) size, now, this);
     } else {
       long realSize = size;
       long paddedSize = size;
@@ -81,7 +81,7 @@ public class TempRabFactory implements RabFactory, RamStorageCapableFactory {
     long now = System.currentTimeMillis();
 
     if (createRam) {
-      return new TempRab(ramTracker, initialContents, offset, size, now, diskRabFactory, readOnly);
+      return new TempRab(ramTracker, initialContents, offset, size, now, this, readOnly);
     } else {
       if (encrypt) {
         // FIXME do the encryption in memory? Test it ...
@@ -94,6 +94,11 @@ public class TempRabFactory implements RabFactory, RamStorageCapableFactory {
       }
       return diskRabFactory.makeRab(initialContents, offset, size, readOnly);
     }
+  }
+
+  public Rab makeDiskRab(byte[] initialContents, int offset, int size, boolean readOnly)
+      throws IOException {
+    return diskRabFactory.makeRab(initialContents, offset, size, readOnly);
   }
 
   public boolean isCreateRam() {

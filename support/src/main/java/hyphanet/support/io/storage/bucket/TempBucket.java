@@ -8,8 +8,8 @@ import hyphanet.support.io.ResumeContext;
 import hyphanet.support.io.storage.AbstractStorage;
 import hyphanet.support.io.storage.TempStorage;
 import hyphanet.support.io.storage.TempStorageTracker;
-import hyphanet.support.io.storage.rab.RabFactory;
 import hyphanet.support.io.storage.rab.TempRab;
+import hyphanet.support.io.storage.rab.TempRabFactory;
 import hyphanet.support.io.stream.InsufficientDiskSpaceException;
 import java.io.*;
 import java.lang.ref.Cleaner;
@@ -34,7 +34,7 @@ public class TempBucket extends AbstractStorage implements TempStorage, RandomAc
       long ramStoragePoolSize,
       long minDiskSpace,
       BucketFactory fileBucketFactory,
-      RabFactory rabMigrateToFactory) {
+      TempRabFactory rabMigrateToFactory) {
     this.ramTracker = ramTracker;
 
     if (cur == null) {
@@ -554,7 +554,7 @@ public class TempBucket extends AbstractStorage implements TempStorage, RandomAc
   private final long minDiskSpace;
 
   private final BucketFactory fileBucketFactory;
-  private final RabFactory rabMigrateToFactory;
+  private final TempRabFactory rabMigrateToFactory;
   private Cleaner.Cleanable cleanable;
 
   /** The underlying bucket itself */

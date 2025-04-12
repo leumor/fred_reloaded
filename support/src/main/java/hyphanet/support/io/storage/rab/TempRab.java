@@ -42,7 +42,7 @@ public class TempRab extends AbstractStorage implements Rab, TempStorage {
       int offset,
       int size,
       long creationTime,
-      RabFactory migrateToFactory,
+      TempRabFactory migrateToFactory,
       boolean readOnly)
       throws IOException {
     this(
@@ -58,14 +58,14 @@ public class TempRab extends AbstractStorage implements Rab, TempStorage {
       TempStorageTracker ramTracker,
       Rab underlying,
       long creationTime,
-      RabFactory migrateToFactory,
+      TempRabFactory migrateToFactory,
       @Nullable TempBucket tempBucket)
       throws IOException {
     this(ramTracker, underlying, underlying.size(), creationTime, migrateToFactory, tempBucket);
   }
 
   public TempRab(
-      TempStorageTracker ramTracker, int size, long creationTime, RabFactory migrateToFactory)
+      TempStorageTracker ramTracker, int size, long creationTime, TempRabFactory migrateToFactory)
       throws IOException {
     this(ramTracker, new ArrayRab(size), size, creationTime, migrateToFactory, null);
   }
@@ -85,7 +85,7 @@ public class TempRab extends AbstractStorage implements Rab, TempStorage {
       Rab initialWrap,
       long size,
       long creationTime,
-      RabFactory migrateToFactory,
+      TempRabFactory migrateToFactory,
       @Nullable TempBucket tempBucket)
       throws IOException {
     this.ramTracker = ramTracker;
@@ -419,7 +419,7 @@ public class TempRab extends AbstractStorage implements Rab, TempStorage {
   protected Rab innerMigrate(Rab underlying) throws IOException {
     ArrayRab b = (ArrayRab) underlying;
     byte[] buf = b.toByteArray();
-    return migrateToFactory.makeRab(buf, 0, (int) size(), b.isReadOnly());
+    return migrateToFactory.makeDiskRab(buf, 0, (int) size(), b.isReadOnly());
   }
 
   @EnsuresNonNull("cleanable")
@@ -464,7 +464,7 @@ public class TempRab extends AbstractStorage implements Rab, TempStorage {
     private final long size;
   }
 
-  protected final transient RabFactory migrateToFactory;
+  protected final transient TempRabFactory migrateToFactory;
   protected final long creationTime;
 
   /**

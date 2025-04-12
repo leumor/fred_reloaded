@@ -253,6 +253,14 @@ public final class EncryptedRab extends AbstractStorage implements Rab, Serializ
     underlyingBuffer.close();
   }
 
+  @Override
+  public void dispose() {
+    if (!setDisposed()) {
+      return;
+    }
+    underlyingBuffer.dispose();
+  }
+
   /**
    * Acquires a lock on the underlying buffer to prevent premature closure.
    *
