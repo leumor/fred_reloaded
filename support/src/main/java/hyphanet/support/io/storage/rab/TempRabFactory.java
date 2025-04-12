@@ -4,18 +4,19 @@ import hyphanet.crypt.key.MasterSecret;
 import hyphanet.support.io.FilenameGenerator;
 import hyphanet.support.io.storage.EncryptType;
 import hyphanet.support.io.storage.RamStorageCapableFactory;
-import hyphanet.support.io.storage.TempStorageRamTracker;
+import hyphanet.support.io.storage.TempStorageTracker;
 import hyphanet.support.io.storage.bucket.wrapper.PaddedEphemerallyEncryptedBucket;
-import java.io.IOException;
-import java.security.GeneralSecurityException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.security.GeneralSecurityException;
 
 public class TempRabFactory implements RabFactory, RamStorageCapableFactory {
   private static final Logger logger = LoggerFactory.getLogger(TempRabFactory.class);
 
   public TempRabFactory(
-      TempStorageRamTracker ramTracker,
+      TempStorageTracker ramTracker,
       FilenameGenerator filenameGenerator,
       long minDiskSpace,
       boolean encrypt,
@@ -112,7 +113,7 @@ public class TempRabFactory implements RabFactory, RamStorageCapableFactory {
     this.encrypt = encrypt;
   }
 
-  private final TempStorageRamTracker ramTracker;
+  private final TempStorageTracker ramTracker;
   private final DiskSpaceCheckingRabFactory diskRabFactory;
   private final EncryptType encryptType;
   private final MasterSecret secret;

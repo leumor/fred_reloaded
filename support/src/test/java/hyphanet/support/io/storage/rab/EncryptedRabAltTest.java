@@ -2,10 +2,11 @@ package hyphanet.support.io.storage.rab;
 
 import hyphanet.crypt.key.MasterSecret;
 import hyphanet.support.io.storage.EncryptType;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.Security;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 public class EncryptedRabAltTest extends RabTestBase {
 
@@ -25,7 +26,7 @@ public class EncryptedRabAltTest extends RabTestBase {
 
   @Override
   protected Rab construct(long size) throws IOException {
-    ByteArrayRab barat = new ByteArrayRab((int) (size + types[0].headerLen));
+    ArrayRab barat = new ArrayRab((int) (size + types[0].headerLen));
     try {
       return new EncryptedRab(types[0], barat, secret, true);
     } catch (GeneralSecurityException e) {

@@ -1,5 +1,7 @@
 package hyphanet.support.io.storage.rab;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import hyphanet.crypt.key.MasterSecret;
 import hyphanet.support.io.FilenameGenerator;
 import hyphanet.support.io.storage.TempStorageManager;
@@ -9,11 +11,6 @@ import hyphanet.support.io.storage.bucket.TempFileBucket;
 import hyphanet.support.io.storage.bucket.wrapper.EncryptedBucket;
 import hyphanet.support.io.storage.bucket.wrapper.PaddedRandomAccessBucket;
 import hyphanet.support.io.util.FileSystem;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,8 +21,10 @@ import java.security.Security;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 abstract class TempRabTestBase extends RabTestBase {
 
@@ -46,7 +45,7 @@ abstract class TempRabTestBase extends RabTestBase {
 
   @BeforeEach
   void setUp() throws IOException {
-    FilenameGenerator fg = new FilenameGenerator(weakPRNG, true, path, "temp-raf-test-");
+    FilenameGenerator fg = new FilenameGenerator(weakPRNG, true, path, "temp-rab-test-");
     manager = new TempStorageManager(exec, fg, 4096, 65536, 1024 * 1024 * 2, false, secret);
     manager.setEncrypt(enableCrypto());
     assertEquals(0, manager.getRamTracker().getRamBytesInUse());
@@ -81,7 +80,7 @@ abstract class TempRabTestBase extends RabTestBase {
     OutputStream os = bucket.getOutputStream();
     os.write(buf.clone());
     os.close();
-    assertTrue(bucket.isRamBucket());
+    assertTrue(bucket.isRamStorage());
     assertEquals(len, bucket.size());
     TempRab rab = bucket.toRandomAccessBuffer();
     bucket.getInputStream().close(); // Can read.
@@ -113,7 +112,7 @@ abstract class TempRabTestBase extends RabTestBase {
     OutputStream os = bucket.getOutputStream();
     os.write(buf.clone());
     os.close();
-    assertTrue(bucket.isRamBucket());
+    assertTrue(bucket.isRamStorage());
     assertEquals(len, bucket.size());
     TempRab rab = bucket.toRandomAccessBuffer();
     assertNotNull(rab);
@@ -133,7 +132,7 @@ abstract class TempRabTestBase extends RabTestBase {
     OutputStream os = bucket.getOutputStream();
     os.write(buf.clone());
     os.close();
-    assertTrue(bucket.isRamBucket());
+    assertTrue(bucket.isRamStorage());
     assertEquals(len, bucket.size());
     assertTrue(bucket.migrateToDisk());
     TempRab rab = bucket.toRandomAccessBuffer();
@@ -154,7 +153,7 @@ abstract class TempRabTestBase extends RabTestBase {
     OutputStream os = bucket.getOutputStream();
     os.write(buf.clone());
     os.close();
-    assertTrue(bucket.isRamBucket());
+    assertTrue(bucket.isRamStorage());
     assertEquals(len, bucket.size());
     bucket.getInputStream().close();
     bucket.dispose();
@@ -171,7 +170,7 @@ abstract class TempRabTestBase extends RabTestBase {
     OutputStream os = bucket.getOutputStream();
     os.write(buf.clone());
     os.close();
-    assertTrue(bucket.isRamBucket());
+    assertTrue(bucket.isRamStorage());
     assertEquals(len, bucket.size());
     bucket.getInputStream().close();
     TempRab rab = bucket.toRandomAccessBuffer();
@@ -190,7 +189,7 @@ abstract class TempRabTestBase extends RabTestBase {
     OutputStream os = bucket.getOutputStream();
     os.write(buf.clone());
     os.close();
-    assertTrue(bucket.isRamBucket());
+    assertTrue(bucket.isRamStorage());
     assertEquals(len, bucket.size());
     bucket.getInputStream().close();
     TempRab rab = bucket.toRandomAccessBuffer();
@@ -207,7 +206,7 @@ abstract class TempRabTestBase extends RabTestBase {
   }
 
   @Test
-  void testBucketToRabFreeWhileFileFreeRAF() throws IOException {
+  void testBucketToRabFreeWhileFileFreeRab() throws IOException {
     int len = 4095;
     Random r = new Random(21162101);
     TempBucket bucket = manager.makeBucket(1024);
@@ -216,7 +215,7 @@ abstract class TempRabTestBase extends RabTestBase {
     OutputStream os = bucket.getOutputStream();
     os.write(buf.clone());
     os.close();
-    assertTrue(bucket.isRamBucket());
+    assertTrue(bucket.isRamStorage());
     assertEquals(len, bucket.size());
     bucket.getInputStream().close();
     TempRab rab = bucket.toRandomAccessBuffer();
@@ -227,9 +226,7 @@ abstract class TempRabTestBase extends RabTestBase {
     rab.dispose();
     assertFalse(Files.exists(underlyingPath));
     assertThrows(IOException.class, () -> rab.pread(0, new byte[len], 0, buf.length));
-    InputStream is = bucket.getInputStream();
-    // Tricky to make it fail on getInputStream()
-    assertThrows(IOException.class, is::read);
+    assertThrows(IOException.class, bucket::getInputStream);
   }
 
   @Test
@@ -242,7 +239,7 @@ abstract class TempRabTestBase extends RabTestBase {
     OutputStream os = bucket.getOutputStream();
     os.write(buf.clone());
     os.close();
-    assertTrue(bucket.isRamBucket());
+    assertTrue(bucket.isRamStorage());
     assertEquals(len, bucket.size());
     bucket.getInputStream().close();
     bucket.migrateToDisk();
@@ -266,11 +263,11 @@ abstract class TempRabTestBase extends RabTestBase {
     OutputStream os = bucket.getOutputStream();
     os.write(buf.clone());
     os.close();
-    assertTrue(bucket.isRamBucket());
+    assertTrue(bucket.isRamStorage());
     assertEquals(len, bucket.size());
     // Migrate to disk
     bucket.migrateToDisk();
-    assertFalse(bucket.isRamBucket());
+    assertFalse(bucket.isRamStorage());
     Path underlyingPath = getPath(bucket);
     assertTrue(Files.exists(underlyingPath));
     if (enableCrypto()) {
@@ -303,7 +300,7 @@ abstract class TempRabTestBase extends RabTestBase {
     r.nextBytes(buf);
     OutputStream os = bucket.getOutputStream();
     os.write(buf.clone());
-    assertTrue(bucket.isRamBucket());
+    assertTrue(bucket.isRamStorage());
     assertThrows(IOException.class, bucket::toRandomAccessBuffer);
     os.close();
     InputStream is = bucket.getInputStream();
@@ -374,6 +371,6 @@ abstract class TempRabTestBase extends RabTestBase {
 
   private final Random weakPRNG = new Random(12340);
   private final ExecutorService exec = Executors.newSingleThreadExecutor();
-  private final Path path = Path.of("temp-bucket-raf-test");
+  private final Path path = Path.of("temp-bucket-rab-test");
   private TempStorageManager manager;
 }

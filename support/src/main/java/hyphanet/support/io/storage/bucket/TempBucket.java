@@ -7,13 +7,12 @@ import hyphanet.support.GlobalCleaner;
 import hyphanet.support.io.ResumeContext;
 import hyphanet.support.io.storage.AbstractStorage;
 import hyphanet.support.io.storage.TempStorage;
-import hyphanet.support.io.storage.TempStorageRamTracker;
+import hyphanet.support.io.storage.TempStorageTracker;
 import hyphanet.support.io.storage.rab.RabFactory;
 import hyphanet.support.io.storage.rab.TempRab;
 import hyphanet.support.io.stream.InsufficientDiskSpaceException;
 import java.io.*;
 import java.lang.ref.Cleaner;
-import java.lang.ref.WeakReference;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -24,13 +23,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class TempBucket extends AbstractStorage implements TempStorage, RandomAccessBucket {
-  /** A timestamp used to evaluate the age of the bucket and maybe consider it for a migration */
-  public final long creationTime;
-
   private static final Logger logger = LoggerFactory.getLogger(TempBucket.class);
 
   public TempBucket(
-      TempStorageRamTracker ramTracker,
+      TempStorageTracker ramTracker,
       long now,
       RandomAccessBucket cur,
       Path tempFileDir,
@@ -44,7 +40,7 @@ public class TempBucket extends AbstractStorage implements TempStorage, RandomAc
     if (cur == null) {
       throw new NullPointerException();
     }
-    this.currentBucket = cur;
+    this.underlyingBucket = cur;
     this.creationTime = now;
 
     this.tempFileDir = tempFileDir;
@@ -59,10 +55,9 @@ public class TempBucket extends AbstractStorage implements TempStorage, RandomAc
     this.tbis = new ArrayList<>(1);
     logger.info("Created {}", this);
 
-    cleanable =
-        GlobalCleaner.getInstance()
-            .register(
-                this, new CleaningAction(getReference(), this.currentBucket, tbis, os, ramTracker));
+    ramTracker.addToQueue(this);
+
+    registerCleaner();
   }
 
   /** A blocking method to force-migrate from a RAMBucket to a FileBucket */
@@ -71,12 +66,12 @@ public class TempBucket extends AbstractStorage implements TempStorage, RandomAc
     Bucket toMigrate;
     long size;
     synchronized (this) {
-      if (!isRamBucket() || disposed()) {
+      if (!isRamStorage() || disposed()) {
         // Nothing to migrate! We don't want to switch back to ram, do we?
         return false;
       }
-      toMigrate = currentBucket;
-      RandomAccessBucket tempFB = fileBucketFactory.makeBucket(currentBucket.size());
+      toMigrate = underlyingBucket;
+      RandomAccessBucket tempFB = fileBucketFactory.makeBucket(underlyingBucket.size());
       size = currentSize;
       if (os != null) {
         os.flush();
@@ -99,24 +94,19 @@ public class TempBucket extends AbstractStorage implements TempStorage, RandomAc
 
       closeInputStreams(false);
 
-      currentBucket = tempFB;
+      ramTracker.removeFromQueue(this);
+
+      underlyingBucket = tempFB;
       // We need streams to be reset to point to the new bucket
+
+      registerCleaner();
     }
     logger.info("We have migrated {}", toMigrate.hashCode());
-
-    synchronized (ramTracker) {
-      ramTracker.removeFromRamStorageQueue(getReference());
-      ramTracker.freeRam(size);
-    }
 
     // We can free it on-thread as it's a rambucket
     toMigrate.dispose();
     // Might have changed already so we can't rely on currentSize!
     return true;
-  }
-
-  public final synchronized boolean isRamBucket() {
-    return (currentBucket instanceof ArrayBucket);
   }
 
   @Override
@@ -163,7 +153,7 @@ public class TempBucket extends AbstractStorage implements TempStorage, RandomAc
 
   @Override
   public synchronized String getName() {
-    return currentBucket.getName();
+    return underlyingBucket.getName();
   }
 
   @Override
@@ -173,12 +163,12 @@ public class TempBucket extends AbstractStorage implements TempStorage, RandomAc
 
   @Override
   public synchronized boolean isReadOnly() {
-    return currentBucket.isReadOnly();
+    return underlyingBucket.isReadOnly();
   }
 
   @Override
   public synchronized void setReadOnly() {
-    currentBucket.setReadOnly();
+    underlyingBucket.setReadOnly();
   }
 
   @Override
@@ -197,17 +187,13 @@ public class TempBucket extends AbstractStorage implements TempStorage, RandomAc
     if (!setClosed()) {
       return;
     }
-    currentBucket.close();
+    underlyingBucket.close();
+    ramTracker.removeFromQueue(this);
   }
 
   @Override
   public RandomAccessBucket createShadow() {
-    return currentBucket.createShadow();
-  }
-
-  @Override
-  public WeakReference<TempStorage> getReference() {
-    return weakRef;
+    return underlyingBucket.createShadow();
   }
 
   @Override
@@ -239,24 +225,27 @@ public class TempBucket extends AbstractStorage implements TempStorage, RandomAc
         throw new IOException("Can't migrate with open InputStream's");
       }
       setReadOnly();
-      var underlyingRab = currentBucket.toRandomAccessBuffer();
-      TempRab rab =
-          new TempRab(
-              ramTracker, underlyingRab, creationTime, rabMigrateToFactory, !isRamBucket(), this);
-      if (isRamBucket()) {
-        synchronized (ramTracker) {
-          ramTracker.removeFromRamStorageQueue(getReference());
-          ramTracker.freeRam(underlyingRab.size());
-        }
-      }
-      currentBucket = new RabBucket(rab);
+      var underlyingRab = underlyingBucket.toRandomAccessBuffer();
+      TempRab rab = new TempRab(ramTracker, underlyingRab, creationTime, rabMigrateToFactory, this);
+      ramTracker.removeFromQueue(this);
+
+      underlyingBucket = new RabBucket(rab);
+      // Register a cleanup action to dispose the new underlying bucket when disposing this bucket.
+      registerCleaner();
+
       return rab;
     }
   }
 
   /** Only for testing */
   public synchronized Bucket getUnderlying() {
-    return currentBucket;
+    return underlyingBucket;
+  }
+
+  private void registerCleaner() {
+    cleanable =
+        GlobalCleaner.getInstance()
+            .register(this, new CleaningAction(this.underlyingBucket, tbis, os));
   }
 
   private synchronized void closeInputStreams(boolean forFree) {
@@ -286,16 +275,12 @@ public class TempBucket extends AbstractStorage implements TempStorage, RandomAc
 
   static class CleaningAction implements Runnable {
     CleaningAction(
-        WeakReference<TempStorage> thisRef,
         Bucket currentBucket,
         List<TempBucketInputStream> inputStreams,
-        @Nullable OutputStream outputStream,
-        TempStorageRamTracker ramTracker) {
-      this.thisRef = thisRef;
+        @Nullable OutputStream outputStream) {
       this.currentBucket = currentBucket;
       this.inputStreams = new ArrayList<>(inputStreams);
       this.outputStream = outputStream;
-      this.ramTracker = ramTracker;
     }
 
     @Override
@@ -332,22 +317,11 @@ public class TempBucket extends AbstractStorage implements TempStorage, RandomAc
       }
 
       currentBucket.dispose();
-
-      if (currentBucket instanceof ArrayBucket) { // Is Ram bucket
-        synchronized (ramTracker) {
-          if (ramTracker.ramStorageRefInQueue(thisRef)) {
-            ramTracker.freeRam(size);
-            ramTracker.removeFromRamStorageQueue(thisRef);
-          }
-        }
-      }
     }
 
-    private final WeakReference<TempStorage> thisRef;
     private final Bucket currentBucket;
     private final List<TempBucketInputStream> inputStreams;
     private final @Nullable OutputStream outputStream;
-    private final TempStorageRamTracker ramTracker;
   }
 
   private class TempBucketOutputStream extends OutputStream {
@@ -355,7 +329,7 @@ public class TempBucket extends AbstractStorage implements TempStorage, RandomAc
 
     TempBucketOutputStream() throws IOException {
       if (os == null) {
-        os = currentBucket.getOutputStreamUnbuffered();
+        os = underlyingBucket.getOutputStreamUnbuffered();
       }
       underlyingOs = os;
     }
@@ -370,10 +344,6 @@ public class TempBucket extends AbstractStorage implements TempStorage, RandomAc
         maybeMigrateRamBucket(futureSize);
         underlyingOs.write(b);
         currentSize = futureSize;
-        if (isRamBucket()) // We need to re-check because it might have changed!
-        {
-          ramTracker.takeRam(1);
-        }
       }
     }
 
@@ -387,10 +357,6 @@ public class TempBucket extends AbstractStorage implements TempStorage, RandomAc
         maybeMigrateRamBucket(futureSize);
         underlyingOs.write(b, off, len);
         currentSize = futureSize;
-        if (isRamBucket()) // We need to re-check because it might have changed!
-        {
-          ramTracker.takeRam(len);
-        }
       }
     }
 
@@ -425,7 +391,7 @@ public class TempBucket extends AbstractStorage implements TempStorage, RandomAc
       if (closed) {
         return;
       }
-      if (isRamBucket()) {
+      if (isRamStorage()) {
         boolean shouldMigrate = false;
         boolean isOversized = false;
 
@@ -471,7 +437,7 @@ public class TempBucket extends AbstractStorage implements TempStorage, RandomAc
   private class TempBucketInputStream extends InputStream {
     TempBucketInputStream(short idx) throws IOException {
       this.idx = idx;
-      this.currentIS = currentBucket.getInputStreamUnbuffered();
+      this.currentIS = underlyingBucket.getInputStreamUnbuffered();
     }
 
     public void maybeResetInputStream() throws IOException {
@@ -483,7 +449,7 @@ public class TempBucket extends AbstractStorage implements TempStorage, RandomAc
         } catch (IOException e) {
           logger.warn("Failed to close input stream", e);
         }
-        currentIS = currentBucket.getInputStreamUnbuffered();
+        currentIS = underlyingBucket.getInputStreamUnbuffered();
         long toSkip = index;
         while (toSkip > 0) {
           toSkip -= currentIS.skip(toSkip);
@@ -569,12 +535,13 @@ public class TempBucket extends AbstractStorage implements TempStorage, RandomAc
     private long index = 0;
   }
 
-  private final TempStorageRamTracker ramTracker;
+  /** A timestamp used to evaluate the age of the bucket and maybe consider it for a migration */
+  private final long creationTime;
+
+  private final TempStorageTracker ramTracker;
 
   /** All the open-streams to reset or close on migration or free() */
   private final ArrayList<TempBucketInputStream> tbis;
-
-  private final WeakReference<TempStorage> weakRef = new WeakReference<>(this);
 
   /**
    * The maximum RAM size allowed for this bucket. If over this size, the bucket will be migrated to
@@ -588,10 +555,10 @@ public class TempBucket extends AbstractStorage implements TempStorage, RandomAc
 
   private final BucketFactory fileBucketFactory;
   private final RabFactory rabMigrateToFactory;
-  private final Cleaner.Cleanable cleanable;
+  private Cleaner.Cleanable cleanable;
 
   /** The underlying bucket itself */
-  private RandomAccessBucket currentBucket;
+  private RandomAccessBucket underlyingBucket;
 
   /**
    * We have to account the size of the underlying bucket ourselves in order to be able to access it

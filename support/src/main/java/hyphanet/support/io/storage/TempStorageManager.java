@@ -10,11 +10,9 @@ import hyphanet.support.io.storage.bucket.TempBucket;
 import hyphanet.support.io.storage.bucket.TempBucketFactory;
 import hyphanet.support.io.storage.rab.Rab;
 import hyphanet.support.io.storage.rab.RabFactory;
-import hyphanet.support.io.storage.rab.TempRab;
 import hyphanet.support.io.storage.rab.TempRabFactory;
 import hyphanet.support.io.stream.InsufficientDiskSpaceException;
 import java.io.IOException;
-import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -72,11 +70,7 @@ public class TempStorageManager implements RabFactory, BucketFactory {
   public synchronized TempBucket makeBucket(long size) throws IOException {
     setCreateRamStorage(size, bucketFactory);
     runRamReleaser();
-    var bucket = bucketFactory.makeBucket(size);
-    if (bucketFactory.isCreateRam()) {
-      ramTracker.addToRamStorageQueue(bucket);
-    }
-    return bucket;
+    return bucketFactory.makeBucket(size);
   }
 
   @Override
@@ -91,11 +85,7 @@ public class TempStorageManager implements RabFactory, BucketFactory {
       throws IOException {
     setCreateRamStorage(size, rabFactory);
     runRamReleaser();
-    var rab = rabFactory.makeRab(initialContents, offset, size, readOnly);
-    if (rabFactory.isCreateRam()) {
-      ramTracker.addToRamStorageQueue((TempRab) rab);
-    }
-    return rab;
+    return rabFactory.makeRab(initialContents, offset, size, readOnly);
   }
 
   public TempRabFactory getRabFactory() {
@@ -111,7 +101,7 @@ public class TempStorageManager implements RabFactory, BucketFactory {
     rabFactory.setEncrypt(encrypt);
   }
 
-  public TempStorageRamTracker getRamTracker() {
+  public TempStorageTracker getRamTracker() {
     return ramTracker;
   }
 
@@ -147,7 +137,7 @@ public class TempStorageManager implements RabFactory, BucketFactory {
   /** How much memory do we dedicate to the RAM storage pool? (in bytes) */
   private final long ramStoragePoolSize;
 
-  private final TempStorageRamTracker ramTracker = new TempStorageRamTracker();
+  private final TempStorageTracker ramTracker = new TempStorageTracker();
 
   private final ExecutorService executor;
   private boolean runningRamReleaser = false;
@@ -226,32 +216,30 @@ public class TempStorageManager implements RabFactory, BucketFactory {
           logger.info("Starting cleanBucketQueue");
           do {
             synchronized (ramTracker) {
-              final WeakReference<TempStorage> tmpBucketRef =
-                  ramTracker.getRamStorageQueue().peek();
-              if (tmpBucketRef == null) {
+              final var tempStorage = ramTracker.peakQueue();
+              if (tempStorage == null) {
                 shouldContinue = false;
               } else {
-                TempStorage tmpBucket = tmpBucketRef.get();
-                if (tmpBucket == null) {
-                  ramTracker.removeFromRamStorageQueue(tmpBucketRef);
-                  continue; // ugh. this is freed
+                if (!tempStorage.isRamStorage()) {
+                  ramTracker.removeFromQueue(tempStorage);
+                  continue;
                 }
 
                 // Don't access the buckets inside the lock, will deadlock.
-                if (tmpBucket.creationTime() + RAM_STORAGE_MAX_AGE > now && !force) {
+                if (tempStorage.creationTime() + RAM_STORAGE_MAX_AGE > now && !force) {
                   shouldContinue = false;
                 } else {
                   logger
                       .atInfo()
-                      .setMessage("The bucket {} is {} old: we will force-migrate it to disk.")
-                      .addArgument(tmpBucket)
-                      .addArgument(() -> TimeUtil.formatTime(now - tmpBucket.creationTime()))
+                      .setMessage("The storage {} is {} old: we will force-migrate it to disk.")
+                      .addArgument(tempStorage)
+                      .addArgument(() -> TimeUtil.formatTime(now - tempStorage.creationTime()))
                       .log();
-                  ramTracker.removeFromRamStorageQueue(tmpBucketRef);
+                  ramTracker.removeFromQueue(tempStorage);
                   if (toMigrate == null) {
                     toMigrate = new ArrayList<>();
                   }
-                  toMigrate.add(tmpBucket);
+                  toMigrate.add(tempStorage);
                   force = false;
                 }
               }

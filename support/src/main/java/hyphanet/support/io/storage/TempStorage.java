@@ -1,7 +1,6 @@
 package hyphanet.support.io.storage;
 
 import java.io.IOException;
-import java.lang.ref.WeakReference;
 
 public interface TempStorage extends Storage {
 
@@ -9,5 +8,9 @@ public interface TempStorage extends Storage {
 
   boolean migrateToDisk() throws IOException;
 
-  WeakReference<TempStorage> getReference();
+  Storage getUnderlying();
+
+  default boolean isRamStorage() {
+    return getUnderlying() instanceof RamStorage;
+  }
 }

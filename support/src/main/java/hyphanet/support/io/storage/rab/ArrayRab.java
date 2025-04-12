@@ -2,6 +2,7 @@ package hyphanet.support.io.storage.rab;
 
 import hyphanet.support.io.ResumeContext;
 import hyphanet.support.io.storage.AbstractStorage;
+import hyphanet.support.io.storage.RamStorage;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.Serial;
@@ -17,7 +18,7 @@ import java.util.Arrays;
  *
  * @see Rab
  */
-public class ByteArrayRab extends AbstractStorage implements Rab, Serializable {
+public class ArrayRab extends AbstractStorage implements Rab, RamStorage, Serializable {
 
   @Serial private static final long serialVersionUID = 1L;
 
@@ -26,7 +27,7 @@ public class ByteArrayRab extends AbstractStorage implements Rab, Serializable {
    *
    * @param padded the byte array to copy data from
    */
-  public ByteArrayRab(byte[] padded) {
+  public ArrayRab(byte[] padded) {
     this.data = Arrays.copyOf(padded, padded.length);
   }
 
@@ -36,7 +37,7 @@ public class ByteArrayRab extends AbstractStorage implements Rab, Serializable {
    * @param size the size of the buffer in bytes
    * @throws IllegalArgumentException if size is negative
    */
-  public ByteArrayRab(int size) {
+  public ArrayRab(int size) {
     if (size < 0) {
       throw new IllegalArgumentException("Size cannot be negative: " + size);
     }
@@ -52,7 +53,7 @@ public class ByteArrayRab extends AbstractStorage implements Rab, Serializable {
    * @param readOnly if true, the buffer will be read-only
    * @throws IllegalArgumentException if offset or size are invalid
    */
-  public ByteArrayRab(byte[] initialContents, int offset, int size, boolean readOnly) {
+  public ArrayRab(byte[] initialContents, int offset, int size, boolean readOnly) {
     if (offset < 0 || size < 0 || offset + size > initialContents.length) {
       throw new IllegalArgumentException(
           "Invalid parameters: offset=%d, size=%d, array length=%d"
@@ -63,7 +64,7 @@ public class ByteArrayRab extends AbstractStorage implements Rab, Serializable {
   }
 
   /** Protected constructor for serialization purposes. Creates an uninitialized buffer. */
-  protected ByteArrayRab() {
+  protected ArrayRab() {
     // For serialization.
     data = new byte[0];
   }
@@ -155,13 +156,14 @@ public class ByteArrayRab extends AbstractStorage implements Rab, Serializable {
     throw new UnsupportedOperationException("Serialization not supported");
   }
 
-  /**
-   * Returns the internal buffer array. Package-private method for internal use.
-   *
-   * @return the internal byte array
-   */
-  public byte[] getBuffer() {
-    return data;
+  @Override
+  public byte[] toByteArray() throws IOException {
+    if (closed()) {
+      throw new IOException("Already closed");
+    }
+    long sz = size();
+    int size = (int) sz;
+    return Arrays.copyOf(data, size);
   }
 
   /**

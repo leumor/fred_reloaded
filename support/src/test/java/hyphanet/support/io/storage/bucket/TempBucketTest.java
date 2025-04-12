@@ -3,11 +3,13 @@
  * http://www.gnu.org/ for further details of the GPL. */
 package hyphanet.support.io.storage.bucket;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import hyphanet.crypt.key.MasterSecret;
 import hyphanet.support.io.FilenameGenerator;
 import hyphanet.support.io.storage.TempStorageManager;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -15,9 +17,8 @@ import java.security.Security;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TempBucketTest {
 
@@ -117,8 +118,8 @@ public class TempBucketTest {
       }
 
       try {
-        assertTrue(b[0].isRamBucket());
-        assertFalse(b[maxRamBucket].isRamBucket());
+        assertTrue(b[0].isRamStorage());
+        assertFalse(b[maxRamBucket].isRamStorage());
 
         // Free some, reused the space
         b[0].dispose();
@@ -128,8 +129,8 @@ public class TempBucketTest {
             var bucket2 = tsm.makeBucket(8)) {
           b[0] = bucket1;
           b[maxRamBucket] = bucket2;
-          assertTrue(b[0].isRamBucket());
-          assertTrue(b[maxRamBucket].isRamBucket());
+          assertTrue(b[0].isRamStorage());
+          assertTrue(b[maxRamBucket].isRamStorage());
         }
       } finally {
         for (Bucket bb : b) bb.dispose();
@@ -143,17 +144,17 @@ public class TempBucketTest {
 
       var b = tsm.makeBucket(16);
       try {
-        assertTrue(b.isRamBucket());
+        assertTrue(b.isRamStorage());
 
         OutputStream os = b.getOutputStreamUnbuffered();
 
         os.write(new byte[16]);
-        assertTrue(b.isRamBucket());
+        assertTrue(b.isRamStorage());
 
         for (int i = 0; i < TempStorageManager.RAMSTORAGE_CONVERSION_FACTOR - 1; i++) {
           os.write(new byte[16]);
         }
-        assertFalse(b.isRamBucket());
+        assertFalse(b.isRamStorage());
       } finally {
         b.close();
         b.dispose();
@@ -167,15 +168,15 @@ public class TempBucketTest {
 
       TempBucket b = tsm.makeBucket(16);
       try {
-        assertTrue(b.isRamBucket());
+        assertTrue(b.isRamStorage());
 
         OutputStream os = b.getOutputStreamUnbuffered();
 
         os.write(new byte[16]);
-        assertTrue(b.isRamBucket());
+        assertTrue(b.isRamStorage());
 
         os.write(new byte[2]);
-        assertFalse(b.isRamBucket());
+        assertFalse(b.isRamStorage());
       } finally {
         b.close();
         b.dispose();

@@ -7,13 +7,11 @@ import hyphanet.support.GlobalCleaner;
 import hyphanet.support.io.ResumeContext;
 import hyphanet.support.io.storage.AbstractStorage;
 import hyphanet.support.io.storage.TempStorage;
-import hyphanet.support.io.storage.TempStorageRamTracker;
+import hyphanet.support.io.storage.TempStorageTracker;
 import hyphanet.support.io.storage.bucket.TempBucket;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.lang.ref.Cleaner;
-import java.lang.ref.WeakReference;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.jspecify.annotations.Nullable;
@@ -39,7 +37,7 @@ public class TempRab extends AbstractStorage implements Rab, TempStorage {
   private static final Logger logger = LoggerFactory.getLogger(TempRab.class);
 
   public TempRab(
-      TempStorageRamTracker ramTracker,
+      TempStorageTracker ramTracker,
       byte[] initialContents,
       int offset,
       int size,
@@ -49,37 +47,27 @@ public class TempRab extends AbstractStorage implements Rab, TempStorage {
       throws IOException {
     this(
         ramTracker,
-        new ByteArrayRab(initialContents, offset, size, readOnly),
+        new ArrayRab(initialContents, offset, size, readOnly),
         size,
         creationTime,
         migrateToFactory,
-        null,
-        false);
+        null);
   }
 
   public TempRab(
-      TempStorageRamTracker ramTracker,
+      TempStorageTracker ramTracker,
       Rab underlying,
       long creationTime,
       RabFactory migrateToFactory,
-      boolean migrated,
       @Nullable TempBucket tempBucket)
       throws IOException {
-    this(
-        ramTracker,
-        underlying,
-        underlying.size(),
-        creationTime,
-        migrateToFactory,
-        tempBucket,
-        migrated);
-    hasMigrated = new AtomicBoolean(migrated);
+    this(ramTracker, underlying, underlying.size(), creationTime, migrateToFactory, tempBucket);
   }
 
   public TempRab(
-      TempStorageRamTracker ramTracker, int size, long creationTime, RabFactory migrateToFactory)
+      TempStorageTracker ramTracker, int size, long creationTime, RabFactory migrateToFactory)
       throws IOException {
-    this(ramTracker, new ByteArrayRab(size), size, creationTime, migrateToFactory, null, false);
+    this(ramTracker, new ArrayRab(size), size, creationTime, migrateToFactory, null);
   }
 
   /**
@@ -93,13 +81,12 @@ public class TempRab extends AbstractStorage implements Rab, TempStorage {
    *     size}, indicating an invalid initial configuration.
    */
   private TempRab(
-      TempStorageRamTracker ramTracker,
+      TempStorageTracker ramTracker,
       Rab initialWrap,
       long size,
       long creationTime,
       RabFactory migrateToFactory,
-      @Nullable TempBucket tempBucket,
-      boolean isRamFreed)
+      @Nullable TempBucket tempBucket)
       throws IOException {
     this.ramTracker = ramTracker;
     this.underlying = initialWrap;
@@ -109,7 +96,6 @@ public class TempRab extends AbstractStorage implements Rab, TempStorage {
     this.creationTime = creationTime;
     this.migrateToFactory = migrateToFactory;
     this.tempBucket = tempBucket;
-    this.isRamFreed = new AtomicBoolean(isRamFreed);
 
     if (underlying.size() < size) {
       throw new IOException("Underlying must be >= size given");
@@ -117,13 +103,7 @@ public class TempRab extends AbstractStorage implements Rab, TempStorage {
 
     registerCleaner();
 
-    if (!isRamFreed) {
-      synchronized (this.ramTracker) {
-        this.ramTracker.addToRamStorageQueue(getReference());
-        // TempRab takes memory immediately after creation.
-        this.ramTracker.takeRam(size);
-      }
-    }
+    this.ramTracker.addToQueue(this);
   }
 
   /**
@@ -223,7 +203,6 @@ public class TempRab extends AbstractStorage implements Rab, TempStorage {
 
     lock.writeLock().lock();
 
-    setRamFreed();
     if (underlying == null) {
       return;
     }
@@ -233,6 +212,8 @@ public class TempRab extends AbstractStorage implements Rab, TempStorage {
     } finally {
       lock.writeLock().unlock();
     }
+
+    ramTracker.removeFromQueue(this);
   }
 
   /**
@@ -293,18 +274,14 @@ public class TempRab extends AbstractStorage implements Rab, TempStorage {
   }
 
   @Override
-  public WeakReference<TempStorage> getReference() {
-    return weakRef;
-  }
-
-  @Override
   public long creationTime() {
     return creationTime;
   }
 
   @Override
   public boolean migrateToDisk() throws IOException {
-    if (!setMigrated()) {
+    if (hasMigrated()) {
+      // Already migrated.
       return false;
     }
 
@@ -313,7 +290,7 @@ public class TempRab extends AbstractStorage implements Rab, TempStorage {
   }
 
   public boolean hasMigrated() {
-    return hasMigrated.get();
+    return !isRamStorage();
   }
 
   @Override
@@ -334,7 +311,8 @@ public class TempRab extends AbstractStorage implements Rab, TempStorage {
    *
    * @return The current underlying {@link Rab} instance.
    */
-  Rab getUnderlying() {
+  @Override
+  public Rab getUnderlying() {
     lock.readLock().lock();
     try {
       return underlying;
@@ -404,6 +382,7 @@ public class TempRab extends AbstractStorage implements Rab, TempStorage {
       if (underlying == null) {
         throw new IOException("Already freed");
       }
+
       Rab successor = innerMigrate(underlying);
       if (successor == null) {
         throw new NullPointerException();
@@ -422,6 +401,8 @@ public class TempRab extends AbstractStorage implements Rab, TempStorage {
         underlyingLock.unlock();
       }
 
+      ramTracker.removeFromQueue(this);
+
       underlying.close();
       underlying.dispose();
       underlying = successor;
@@ -433,20 +414,11 @@ public class TempRab extends AbstractStorage implements Rab, TempStorage {
     } finally {
       lock.writeLock().unlock();
     }
-
-    if (!setRamFreed()) {
-      return;
-    }
-
-    synchronized (ramTracker) {
-      ramTracker.removeFromRamStorageQueue(getReference());
-      ramTracker.freeRam(size);
-    }
   }
 
   protected Rab innerMigrate(Rab underlying) throws IOException {
-    ByteArrayRab b = (ByteArrayRab) underlying;
-    byte[] buf = b.getBuffer();
+    ArrayRab b = (ArrayRab) underlying;
+    byte[] buf = b.toByteArray();
     return migrateToFactory.makeRab(buf, 0, (int) size(), b.isReadOnly());
   }
 
@@ -454,30 +426,13 @@ public class TempRab extends AbstractStorage implements Rab, TempStorage {
   protected void registerCleaner() {
     cleanable =
         GlobalCleaner.getInstance()
-            .register(
-                this,
-                new CleaningAction(getReference(), getUnderlying(), tempBucket, ramTracker, size));
-  }
-
-  private boolean setMigrated() {
-    return hasMigrated.compareAndSet(false, true);
-  }
-
-  private boolean setRamFreed() {
-    return isRamFreed.compareAndSet(false, true);
+            .register(this, new CleaningAction(underlying, tempBucket, size));
   }
 
   static class CleaningAction implements Runnable {
-    CleaningAction(
-        WeakReference<TempStorage> thisRef,
-        Rab underlyingRab,
-        TempBucket tempBucket,
-        TempStorageRamTracker ramTracker,
-        long size) {
-      this.thisRef = thisRef;
+    CleaningAction(Rab underlyingRab, TempBucket tempBucket, long size) {
       this.underlyingRab = underlyingRab;
       this.tempBucket = tempBucket;
-      this.ramTracker = ramTracker;
       this.size = size;
     }
 
@@ -496,13 +451,6 @@ public class TempRab extends AbstractStorage implements Rab, TempStorage {
           logger.error(msg, size, this);
         }
         underlyingRab.dispose();
-
-        synchronized (ramTracker) {
-          if (ramTracker.ramStorageRefInQueue(thisRef)) {
-            ramTracker.freeRam(size);
-            ramTracker.removeFromRamStorageQueue(thisRef);
-          }
-        }
       }
 
       if (tempBucket != null) {
@@ -511,10 +459,8 @@ public class TempRab extends AbstractStorage implements Rab, TempStorage {
       logger.info("Cleaner run.");
     }
 
-    private final WeakReference<TempStorage> thisRef;
     private final Rab underlyingRab;
     private final TempBucket tempBucket;
-    private final TempStorageRamTracker ramTracker;
     private final long size;
   }
 
@@ -528,7 +474,7 @@ public class TempRab extends AbstractStorage implements Rab, TempStorage {
    */
   protected final @Nullable TempBucket tempBucket;
 
-  private final transient TempStorageRamTracker ramTracker;
+  private final transient TempStorageTracker ramTracker;
 
   /**
    * The logical size of this proxy buffer.
@@ -543,12 +489,6 @@ public class TempRab extends AbstractStorage implements Rab, TempStorage {
    * lockOpenCount}, and {@code closed} flag.
    */
   private final ReadWriteLock lock = new ReentrantReadWriteLock();
-
-  private final transient WeakReference<TempStorage> weakRef = new WeakReference<>(this);
-  protected AtomicBoolean hasMigrated = new AtomicBoolean();
-
-  /** If false, there is in-memory storage that needs to be freed. */
-  protected AtomicBoolean isRamFreed;
 
   /**
    * The underlying {@link Rab} instance to which operations are delegated.

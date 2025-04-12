@@ -2,8 +2,10 @@ package hyphanet.support.io.storage.bucket;
 
 import hyphanet.support.io.ResumeContext;
 import hyphanet.support.io.storage.AbstractStorage;
-import hyphanet.support.io.storage.rab.ByteArrayRab;
+import hyphanet.support.io.storage.RamStorage;
+import hyphanet.support.io.storage.rab.ArrayRab;
 import hyphanet.support.io.storage.rab.Rab;
+
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -19,7 +21,8 @@ import java.util.Arrays;
  *
  * @author oskar
  */
-public class ArrayBucket extends AbstractStorage implements RandomAccessBucket, Serializable {
+public class ArrayBucket extends AbstractStorage
+    implements RandomAccessBucket, RamStorage, Serializable {
   @Serial private static final long serialVersionUID = 1L;
 
   /** Constructs a new Array bucket with default name "ArrayBucket". */
@@ -106,12 +109,7 @@ public class ArrayBucket extends AbstractStorage implements RandomAccessBucket, 
     readOnly = true;
   }
 
-  /**
-   * Creates a copy of the internal byte array.
-   *
-   * @return A new byte array containing a copy of the bucket's data
-   * @throws IOException if the bucket has been closed
-   */
+  @Override
   public byte[] toByteArray() throws IOException {
     if (closed()) {
       throw new IOException("Already closed");
@@ -145,7 +143,7 @@ public class ArrayBucket extends AbstractStorage implements RandomAccessBucket, 
   @Override
   public Rab toRandomAccessBuffer() {
     readOnly = true;
-    return new ByteArrayRab(data, 0, data.length, true);
+    return new ArrayRab(data, 0, data.length, true);
   }
 
   @Override

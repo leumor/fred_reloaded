@@ -15,7 +15,7 @@ import java.util.Arrays;
  * @see Rab
  * @see RabFactory
  */
-public class ByteArrayRabFactory implements RabFactory {
+public class ArrayRabFactory implements RabFactory {
 
   /**
    * Creates a new {@link Rab} with the specified size. The buffer is backed by a newly allocated
@@ -37,7 +37,7 @@ public class ByteArrayRabFactory implements RabFactory {
       throw new IOException("Requested size exceeds maximum allowed size: " + size);
     }
 
-    return new ByteArrayRab(new byte[(int) size]);
+    return new ArrayRab(new byte[(int) size]);
   }
 
   /**
@@ -77,7 +77,7 @@ public class ByteArrayRabFactory implements RabFactory {
               + "]");
     }
 
-    return new ByteArrayRab(
+    return new ArrayRab(
         Arrays.copyOfRange(initialContents, offset, offset + size), 0, size, readOnly);
   }
 }

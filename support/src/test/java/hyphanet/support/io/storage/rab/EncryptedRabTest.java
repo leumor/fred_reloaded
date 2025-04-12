@@ -37,7 +37,7 @@ class EncryptedRabTest {
   @Test
   void testPreadFileOffsetTooBig() throws IOException, GeneralSecurityException {
     byte[] bytes = new byte[100];
-    ByteArrayRab barat = new ByteArrayRab(bytes);
+    ArrayRab barat = new ArrayRab(bytes);
     EncryptedRab erat = new EncryptedRab(types[0], barat, secret, true);
     int len = 20;
     byte[] result = new byte[len];
@@ -56,7 +56,7 @@ class EncryptedRabTest {
   @Test
   void testPwriteFileOffsetTooSmall() throws IOException, GeneralSecurityException {
     byte[] bytes = new byte[100];
-    ByteArrayRab barat = new ByteArrayRab(bytes);
+    ArrayRab barat = new ArrayRab(bytes);
     EncryptedRab erat = new EncryptedRab(types[0], barat, secret, true);
     byte[] result = new byte[20];
     var thrown = assertThrows(IllegalArgumentException.class, () -> erat.pwrite(-1, result, 0, 20));
@@ -66,7 +66,7 @@ class EncryptedRabTest {
   @Test
   void testPwriteFileOffsetTooBig() throws IOException, GeneralSecurityException {
     byte[] bytes = new byte[100];
-    ByteArrayRab barat = new ByteArrayRab(bytes);
+    ArrayRab barat = new ArrayRab(bytes);
     EncryptedRab erat = new EncryptedRab(types[0], barat, secret, true);
     int len = 20;
     byte[] result = new byte[len];
@@ -85,7 +85,7 @@ class EncryptedRabTest {
   @Test
   void testClose() throws IOException, GeneralSecurityException {
     byte[] bytes = new byte[100];
-    ByteArrayRab barat = new ByteArrayRab(bytes);
+    ArrayRab barat = new ArrayRab(bytes);
     EncryptedRab erat = new EncryptedRab(types[0], barat, secret, true);
     assertDoesNotThrow(
         () -> {
@@ -97,7 +97,7 @@ class EncryptedRabTest {
   @Test
   void testClosePread() throws IOException, GeneralSecurityException {
     byte[] bytes = new byte[100];
-    ByteArrayRab barat = new ByteArrayRab(bytes);
+    ArrayRab barat = new ArrayRab(bytes);
     EncryptedRab erat = new EncryptedRab(types[0], barat, secret, true);
     erat.close();
     byte[] result = new byte[20];
@@ -110,7 +110,7 @@ class EncryptedRabTest {
   @Test
   void testClosePwrite() throws IOException, GeneralSecurityException {
     byte[] bytes = new byte[100];
-    ByteArrayRab barat = new ByteArrayRab(bytes);
+    ArrayRab barat = new ArrayRab(bytes);
     EncryptedRab erat = new EncryptedRab(types[0], barat, secret, true);
     erat.close();
     byte[] result = new byte[20];
@@ -199,7 +199,7 @@ class EncryptedRabTest {
   @Test
   void testSize() throws IOException, GeneralSecurityException {
     byte[] bytes = new byte[100];
-    ByteArrayRab barat = new ByteArrayRab(bytes);
+    ArrayRab barat = new ArrayRab(bytes);
     EncryptedRab erat = new EncryptedRab(types[0], barat, secret, true);
     assertEquals(erat.size(), barat.size() - types[0].headerLen);
   }
@@ -207,7 +207,7 @@ class EncryptedRabTest {
   @Test
   void testPreadFileOffsetTooSmall() throws IOException, GeneralSecurityException {
     byte[] bytes = new byte[100];
-    ByteArrayRab barat = new ByteArrayRab(bytes);
+    ArrayRab barat = new ArrayRab(bytes);
     EncryptedRab erat = new EncryptedRab(types[0], barat, secret, true);
     byte[] result = new byte[20];
     var thrown = assertThrows(IllegalArgumentException.class, () -> erat.pread(-1, result, 0, 20));
@@ -218,11 +218,11 @@ class EncryptedRabTest {
   void testSuccessfulRoundTripReadHeader() throws IOException, GeneralSecurityException {
     for (EncryptType type : types) {
       byte[] bytes = new byte[100];
-      ByteArrayRab barat = new ByteArrayRab(bytes);
+      ArrayRab barat = new ArrayRab(bytes);
       EncryptedRab erat = new EncryptedRab(type, barat, secret, true);
       erat.pwrite(0, message, 0, message.length);
       erat.close();
-      ByteArrayRab barat2 = new ByteArrayRab(barat.getBuffer());
+      ArrayRab barat2 = new ArrayRab(barat.toByteArray());
       EncryptedRab erat2 = new EncryptedRab(type, barat2, secret, false);
       byte[] result = new byte[message.length];
       erat2.pread(0, result, 0, result.length);
@@ -234,10 +234,10 @@ class EncryptedRabTest {
   @Test
   void testWrongERATType() throws IOException, GeneralSecurityException {
     byte[] bytes = new byte[100];
-    ByteArrayRab barat = new ByteArrayRab(bytes);
+    ArrayRab barat = new ArrayRab(bytes);
     EncryptedRab erat = new EncryptedRab(types[0], barat, secret, true);
     erat.close();
-    ByteArrayRab barat2 = new ByteArrayRab(bytes);
+    ArrayRab barat2 = new ArrayRab(bytes);
     var thrown =
         assertThrows(IOException.class, () -> new EncryptedRab(types[1], barat2, secret, false));
     assertEquals("This is not an EncryptedRab", thrown.getMessage()); // Different header lengths.
@@ -246,7 +246,7 @@ class EncryptedRabTest {
   @Test
   void testUnderlyingRandomAccessThingTooSmall() {
     byte[] bytes = new byte[10];
-    ByteArrayRab barat = new ByteArrayRab(bytes);
+    ArrayRab barat = new ArrayRab(bytes);
     var thrown =
         assertThrows(IOException.class, () -> new EncryptedRab(types[0], barat, secret, true));
     assertEquals(
@@ -258,10 +258,10 @@ class EncryptedRabTest {
   @Test
   void testWrongMagic() throws IOException, GeneralSecurityException {
     byte[] bytes = new byte[100];
-    ByteArrayRab barat = new ByteArrayRab(bytes);
+    ArrayRab barat = new ArrayRab(bytes);
     EncryptedRab erat = new EncryptedRab(types[0], barat, secret, true);
     erat.close();
-    ByteArrayRab barat2 = new ByteArrayRab(bytes);
+    ArrayRab barat2 = new ArrayRab(bytes);
     byte[] magic = ByteBuffer.allocate(8).putLong(FALSE_MAGIC).array();
     barat2.pwrite(types[0].headerLen - 8, magic, 0, 8);
     var thrown =
@@ -272,10 +272,10 @@ class EncryptedRabTest {
   @Test
   void testWrongMasterSecret() throws IOException, GeneralSecurityException {
     byte[] bytes = new byte[100];
-    ByteArrayRab barat = new ByteArrayRab(bytes);
+    ArrayRab barat = new ArrayRab(bytes);
     EncryptedRab erat = new EncryptedRab(types[0], barat, secret, true);
     erat.close();
-    ByteArrayRab barat2 = new ByteArrayRab(barat.getBuffer());
+    ArrayRab barat2 = new ArrayRab(barat.toByteArray());
     var thrown =
         assertThrows(
             GeneralSecurityException.class,
@@ -287,7 +287,7 @@ class EncryptedRabTest {
   void testSuccesfulRoundTrip() throws IOException, GeneralSecurityException {
     for (var type : types) {
       byte[] bytes = new byte[100];
-      ByteArrayRab barat = new ByteArrayRab(bytes);
+      ArrayRab barat = new ArrayRab(bytes);
       EncryptedRab erat = new EncryptedRab(type, barat, secret, true);
       erat.pwrite(0, message, 0, message.length);
       byte[] result = new byte[message.length];
