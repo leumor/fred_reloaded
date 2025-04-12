@@ -771,11 +771,11 @@ class SimpleFieldSetTest {
   private void checkBase64(String key, String value, String base64Value) throws IOException {
     SimpleFieldSet sfs = new SimpleFieldSet();
     sfs.putSingle(key, value);
-    assertEquals(sfs.toOrderedString(), key + "=" + value + "\nEnd\n");
+    assertEquals(key + "=" + value + "\nEnd\n", sfs.toOrderedString());
     StringWriter sw = new StringWriter();
     sfs.writeTo(sw, "", false, true);
     String written = sw.toString();
-    assertEquals(written, key + "==" + base64Value + "\nEnd\n");
+    assertEquals(key + "==" + base64Value + "\nEnd\n", written);
     LineReader r = ReaderUtil.fromBufferedReader(new BufferedReader(new StringReader(written)));
     SimpleFieldSet sfsCheck = new SimpleFieldSet(r, 1024, 1024, true, false, true);
     assertEquals(sfsCheck.get(key), value);

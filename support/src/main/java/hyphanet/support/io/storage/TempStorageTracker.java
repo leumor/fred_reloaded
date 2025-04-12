@@ -17,7 +17,7 @@ public class TempStorageTracker {
   public long getRamBytesInUse() {
     return storageQueue.stream()
         .filter(e -> !e.closed() && e.isRamStorage())
-        .mapToLong(e -> e.getUnderlying().size())
+        .mapToLong(e -> e.size())
         .reduce(0L, Long::sum);
   }
 

@@ -299,7 +299,7 @@ public abstract class BaseFileBucket extends AbstractStorage implements RandomAc
 
   @Override
   public void dispose() {
-    if (setDisposed()) {
+    if (!setDisposed()) {
       return;
     }
 

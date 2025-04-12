@@ -3,13 +3,11 @@
  * http://www.gnu.org/ for further details of the GPL. */
 package hyphanet.support.io.storage.bucket;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import hyphanet.crypt.key.MasterSecret;
 import hyphanet.support.io.FilenameGenerator;
 import hyphanet.support.io.storage.TempStorageManager;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
-
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -17,8 +15,9 @@ import java.security.Security;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 
 public class TempBucketTest {
 
@@ -108,13 +107,12 @@ public class TempBucketTest {
       // create excess maxTotalRamSize, last one should be on disk
       TempBucket[] b = new TempBucket[maxRamBucket + 1];
       for (int i = 0; i < maxRamBucket + 1; i++) {
-        try (var bucket = tsm.makeBucket(16)) {
-          b[i] = bucket;
+        var bucket = tsm.makeBucket(16);
+        b[i] = bucket;
 
-          OutputStream os = b[i].getOutputStream();
-          os.write(new byte[16]);
-          os.close();
-        }
+        OutputStream os = b[i].getOutputStream();
+        os.write(new byte[16]);
+        os.close();
       }
 
       try {

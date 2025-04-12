@@ -170,7 +170,6 @@ public class SimpleFieldSet {
     subsets = new HashMap<>();
     this.alwaysUseBase64 = alwaysUseBase64;
     header = new String[0];
-    endMarker = "";
   }
 
   /**
@@ -3557,5 +3556,5 @@ public class SimpleFieldSet {
    * Custom end marker for serialization. If null, the default "End" marker will be used when
    * writing the field set.
    */
-  private String endMarker;
+  private @Nullable String endMarker = null;
 }

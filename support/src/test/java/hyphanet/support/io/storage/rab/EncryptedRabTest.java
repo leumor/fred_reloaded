@@ -221,8 +221,8 @@ class EncryptedRabTest {
       ArrayRab barat = new ArrayRab(bytes);
       EncryptedRab erat = new EncryptedRab(type, barat, secret, true);
       erat.pwrite(0, message, 0, message.length);
-      erat.close();
       ArrayRab barat2 = new ArrayRab(barat.toByteArray());
+      erat.close();
       EncryptedRab erat2 = new EncryptedRab(type, barat2, secret, false);
       byte[] result = new byte[message.length];
       erat2.pread(0, result, 0, result.length);
@@ -260,8 +260,8 @@ class EncryptedRabTest {
     byte[] bytes = new byte[100];
     ArrayRab barat = new ArrayRab(bytes);
     EncryptedRab erat = new EncryptedRab(types[0], barat, secret, true);
+    ArrayRab barat2 = new ArrayRab(barat.toByteArray());
     erat.close();
-    ArrayRab barat2 = new ArrayRab(bytes);
     byte[] magic = ByteBuffer.allocate(8).putLong(FALSE_MAGIC).array();
     barat2.pwrite(types[0].headerLen - 8, magic, 0, 8);
     var thrown =
@@ -274,8 +274,8 @@ class EncryptedRabTest {
     byte[] bytes = new byte[100];
     ArrayRab barat = new ArrayRab(bytes);
     EncryptedRab erat = new EncryptedRab(types[0], barat, secret, true);
-    erat.close();
     ArrayRab barat2 = new ArrayRab(barat.toByteArray());
+    erat.close();
     var thrown =
         assertThrows(
             GeneralSecurityException.class,
