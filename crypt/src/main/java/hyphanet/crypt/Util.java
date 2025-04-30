@@ -10,10 +10,15 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
+import java.security.*;
 import java.util.Arrays;
 import java.util.random.RandomGenerator;
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 
 /**
  * Cryptographic utility class providing various methods for hash calculations, byte array
@@ -364,5 +369,28 @@ public class Util {
     }
 
     return new BigInteger(1, bytes);
+  }
+
+  public static byte[] encryptWithRijndael(byte[] data, byte[] key) throws InvalidKeyException {
+    Security.addProvider(new JcaProvider());
+
+    SecureRandom rng = new SecureRandom();
+    byte[] iv = new byte[32];
+    rng.nextBytes(iv);
+
+    var k = new SecretKeySpec(key, "Rijndael");
+    var params = new IvParameterSpec(iv);
+    try {
+      var c = Cipher.getInstance("RIJNDAEL256/CFB/NoPadding");
+      c.init(Cipher.ENCRYPT_MODE, k, params);
+      return c.doFinal(data);
+
+    } catch (NoSuchAlgorithmException
+        | NoSuchPaddingException
+        | InvalidAlgorithmParameterException
+        | IllegalBlockSizeException
+        | BadPaddingException _) {
+      throw new IllegalStateException("This should never happen");
+    }
   }
 }
