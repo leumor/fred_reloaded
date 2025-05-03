@@ -23,6 +23,20 @@ public class ClientSsk extends ClientKey implements SubspaceKey {
   public static final int SSK_VERSION = 1;
   public static char separator = '-';
 
+  public record ExtraData(CryptoAlgorithm cryptoAlgorithm) {
+    public byte[] getExtraBytes() {
+      // 5 bytes.
+      byte[] extra = new byte[5];
+
+      extra[0] = SSK_VERSION;
+      extra[1] = 0; // 0 = fetch (public) URI; 1 = insert (private) URI
+      extra[2] = (byte) cryptoAlgorithm.getValue();
+      extra[3] = (byte) (1 >> 8); // was KeyBlock.HASH_SHA256 >> 8, but not used
+      extra[4] = (byte) 1; // was KeyBlock.HASH_SHA256, but not used
+      return extra;
+    }
+  }
+
   public ClientSsk(
       RoutingKey routingKey,
       DecryptionKey cryptoKey,
@@ -122,20 +136,6 @@ public class ClientSsk extends ClientKey implements SubspaceKey {
       throw new MalformedURLException("Extra bytes too short: " + extra.length + " bytes");
     }
     return new ExtraData(CryptoAlgorithm.fromValue(extra[2]));
-  }
-
-  private record ExtraData(CryptoAlgorithm cryptoAlgorithm) {
-    byte[] getExtraBytes() {
-      // 5 bytes.
-      byte[] extra = new byte[5];
-
-      extra[0] = SSK_VERSION;
-      extra[1] = 0; // 0 = fetch (public) URI; 1 = insert (private) URI
-      extra[2] = (byte) cryptoAlgorithm.getValue();
-      extra[3] = (byte) (1 >> 8); // was KeyBlock.HASH_SHA256 >> 8, but not used
-      extra[4] = (byte) 1; // was KeyBlock.HASH_SHA256, but not used
-      return extra;
-    }
   }
 
   private final String docName;

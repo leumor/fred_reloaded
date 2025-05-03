@@ -45,6 +45,23 @@ public class NodeSsk extends NodeKey {
     this(other.clientRoutingKey, other.getCryptoAlgorithm(), other.ehDocname, other.publicKey);
   }
 
+  @Override
+  public short getType() {
+    return (short) ((BASE_TYPE << 8) + (getCryptoAlgorithm().getValue() & 0xff));
+  }
+
+  @Override
+  public byte[] getFullKeyBytes() {
+    byte[] buf = new byte[FULL_KEY_LENGTH];
+    short type = getType();
+    buf[0] = (byte) (type >> 8);
+    buf[1] = (byte) (type & 0xFF);
+    System.arraycopy(ehDocname, 0, buf, 2, E_H_DOCNAME_SIZE);
+    System.arraycopy(
+        getRoutingKeyBytes(), 0, buf, 2 + E_H_DOCNAME_SIZE, RoutingKey.ROUTING_KEY_LENGTH);
+    return buf;
+  }
+
   // routingKey = H( E(H(docname)) + H(pubkey) )
   private static RoutingKey makeRoutingKey(RoutingKey clientRoutingKey, byte[] ehDocname) {
     MessageDigest md256 = Sha256.getMessageDigest();
