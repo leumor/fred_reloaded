@@ -1,7 +1,9 @@
 package hyphanet.access.key;
 
+import hyphanet.access.KeyType;
 import hyphanet.access.Uri;
 import hyphanet.access.key.client.ClientSsk;
+
 import java.net.MalformedURLException;
 import java.util.List;
 import java.util.Objects;
@@ -46,7 +48,7 @@ public class Usk extends AccessKey implements SubspaceKey {
   }
 
   public Usk(Uri uri) throws MalformedURLException {
-    if (uri.getUriType() != Uri.UriType.USK || uri.getKeys() == null) {
+    if (uri.getUriType() != KeyType.USK || uri.getKeys() == null) {
       throw new MalformedURLException("Invalid URI type: " + uri.getUriType());
     }
     this(
@@ -76,11 +78,11 @@ public class Usk extends AccessKey implements SubspaceKey {
         Stream.concat(uskMetaStrings.stream(), getMetaStrings().stream()).toList();
 
     return new Uri(
-        Uri.UriType.USK,
-        getRoutingKey(),
-        getCryptoKey(),
-        new ClientSsk.ExtraData(getCryptoAlgorithm()).getExtraBytes(),
-        fullMetaStrings);
+      KeyType.USK,
+      getRoutingKey(),
+      getCryptoKey(),
+      new ClientSsk.ExtraData(getCryptoAlgorithm()).getExtraBytes(),
+      fullMetaStrings);
   }
 
   @Override

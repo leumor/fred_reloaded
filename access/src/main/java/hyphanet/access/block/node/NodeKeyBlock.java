@@ -7,7 +7,6 @@ import hyphanet.access.key.RoutingKey;
 import hyphanet.access.key.node.NodeKey;
 import java.util.Arrays;
 import java.util.Objects;
-import org.jspecify.annotations.Nullable;
 
 /**
  * Interface for fetched blocks. Can be decoded by using a ClientKey to construct a ClientKeyBlock,
@@ -17,10 +16,11 @@ public abstract class NodeKeyBlock<T extends NodeKey> {
 
   static final int HASH_SHA256 = 1;
 
-  protected NodeKeyBlock(byte[] data, byte[] headers, T nodeKey) {
+  protected NodeKeyBlock(byte[] data, byte[] headers, T nodeKey, short hashIdentifier) {
     this.data = data;
     this.headers = headers;
     this.nodeKey = nodeKey;
+    this.hashIdentifier = hashIdentifier;
   }
 
   public T getKey() {
@@ -43,23 +43,30 @@ public abstract class NodeKeyBlock<T extends NodeKey> {
     return nodeKey.getFullKeyBytes();
   }
 
-  public abstract @Nullable byte[] getPubkeyBytes();
+  public abstract byte[] getPubkeyBytes();
 
   @Override
   public boolean equals(Object o) {
     if (!(o instanceof NodeKeyBlock<?> that)) {
       return false;
     }
-    return Objects.deepEquals(data, that.data) && Objects.equals(nodeKey, that.nodeKey);
+    return Objects.deepEquals(data, that.data)
+        && Objects.equals(nodeKey, that.nodeKey)
+        && hashIdentifier == that.hashIdentifier;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(Arrays.hashCode(data), Arrays.hashCode(headers), nodeKey);
+    return Objects.hash(Arrays.hashCode(data), Arrays.hashCode(headers), nodeKey, hashIdentifier);
+  }
+
+  protected short getHashIdentifier() {
+    return hashIdentifier;
   }
 
   private final byte[] data;
   private final byte[] headers;
-
   private final T nodeKey;
+
+  private final short hashIdentifier;
 }

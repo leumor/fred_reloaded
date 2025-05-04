@@ -1,5 +1,6 @@
 package hyphanet.access.key.client;
 
+import hyphanet.access.KeyType;
 import hyphanet.access.Uri;
 import hyphanet.access.key.CompressionAlgorithm;
 import hyphanet.access.key.CryptoAlgorithm;
@@ -7,10 +8,11 @@ import hyphanet.access.key.DecryptionKey;
 import hyphanet.access.key.RoutingKey;
 import hyphanet.access.key.node.NodeChk;
 import hyphanet.access.key.node.NodeKey;
+import org.jspecify.annotations.Nullable;
+
 import java.net.MalformedURLException;
 import java.util.NoSuchElementException;
 import java.util.Objects;
-import org.jspecify.annotations.Nullable;
 
 public class ClientChk extends ClientKey {
 
@@ -62,7 +64,7 @@ public class ClientChk extends ClientKey {
   }
 
   public ClientChk(Uri uri) throws MalformedURLException {
-    if (uri.getUriType() != Uri.UriType.CHK || uri.getKeys() == null) {
+    if (uri.getUriType() != KeyType.CHK || uri.getKeys() == null) {
       throw new MalformedURLException("Invalid URI type: " + uri.getUriType());
     }
 
@@ -84,7 +86,7 @@ public class ClientChk extends ClientKey {
   @Override
   public Uri toUri() {
     return new Uri(
-        Uri.UriType.CHK, getRoutingKey(), getCryptoKey(), getExtraBytes(), getMetaStrings());
+      KeyType.CHK, getRoutingKey(), getCryptoKey(), getExtraBytes(), getMetaStrings());
   }
 
   @Override

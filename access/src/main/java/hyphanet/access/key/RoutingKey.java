@@ -25,4 +25,17 @@ public record RoutingKey(byte[] bytes) {
   public String toString() {
     return Base64.encode(bytes);
   }
+
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof RoutingKey(byte[] otherBytes))) {
+      return false;
+    }
+    return java.util.Arrays.equals(bytes, otherBytes);
+  }
+
+  @Override
+  public int hashCode() {
+    return java.util.Arrays.hashCode(bytes);
+  }
 }

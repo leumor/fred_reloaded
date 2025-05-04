@@ -62,6 +62,14 @@ public class NodeSsk extends NodeKey {
     return buf;
   }
 
+  public @Nullable PublicKey getPublicKey() {
+    return publicKey;
+  }
+
+  public byte[] getEhDocname() {
+    return ehDocname;
+  }
+
   // routingKey = H( E(H(docname)) + H(pubkey) )
   private static RoutingKey makeRoutingKey(RoutingKey clientRoutingKey, byte[] ehDocname) {
     MessageDigest md256 = Sha256.getMessageDigest();
@@ -73,6 +81,6 @@ public class NodeSsk extends NodeKey {
   /** E(H(docname)) (E = encrypt using decrypt key, which only clients know) */
   private final byte[] ehDocname;
 
-  private @Nullable PublicKey publicKey;
-  private RoutingKey clientRoutingKey; // Was pubKeyHash
+  private final @Nullable PublicKey publicKey;
+  private final RoutingKey clientRoutingKey; // Was pubKeyHash
 }

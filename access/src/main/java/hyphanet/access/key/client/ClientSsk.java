@@ -1,5 +1,6 @@
 package hyphanet.access.key.client;
 
+import hyphanet.access.KeyType;
 import hyphanet.access.Uri;
 import hyphanet.access.key.CryptoAlgorithm;
 import hyphanet.access.key.DecryptionKey;
@@ -21,7 +22,7 @@ import org.jspecify.annotations.Nullable;
 public class ClientSsk extends ClientKey implements SubspaceKey {
   public static final short EXTRA_LENGTH = 5;
   public static final int SSK_VERSION = 1;
-  public static char separator = '-';
+  public static final char SEPARATOR = '-';
 
   public record ExtraData(CryptoAlgorithm cryptoAlgorithm) {
     public byte[] getExtraBytes() {
@@ -69,7 +70,7 @@ public class ClientSsk extends ClientKey implements SubspaceKey {
       ehDocname =
           Util.encryptWithRijndael(
               md.digest(docName.getBytes(StandardCharsets.UTF_8)), cryptoKey.bytes());
-    } catch (InvalidKeyException e) {
+    } catch (InvalidKeyException _) {
       throw new IllegalArgumentException("CryptoKey is invalid");
     }
   }
@@ -97,7 +98,7 @@ public class ClientSsk extends ClientKey implements SubspaceKey {
 
   public Uri toUri() {
     return new Uri(
-        Uri.UriType.SSK,
+        KeyType.SSK,
         getRoutingKey(),
         getCryptoKey(),
         new ExtraData(getCryptoAlgorithm()).getExtraBytes(),

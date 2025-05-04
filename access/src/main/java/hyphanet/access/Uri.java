@@ -6,21 +6,15 @@ import hyphanet.base.Base64;
 import hyphanet.base.IllegalBase64Exception;
 import hyphanet.support.URLDecoder;
 import hyphanet.support.URLEncodedFormatException;
+import org.jspecify.annotations.Nullable;
+
 import java.io.Serializable;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
-import org.jspecify.annotations.Nullable;
 
 public class Uri implements Serializable {
-
-  public enum UriType {
-    USK,
-    SSK,
-    KSK,
-    CHK
-  }
 
   public record Keys(RoutingKey routingKey, DecryptionKey decryptionKey, byte[] extra) {
     public Keys {
@@ -71,7 +65,7 @@ public class Uri implements Serializable {
     uri = uri.substring(atChar + 1);
 
     try {
-      uriType = UriType.valueOf(urlTypeStr);
+      uriType = KeyType.valueOf(urlTypeStr);
     } catch (IllegalArgumentException e) {
       throw new MalformedURLException("Invalid key type: " + urlTypeStr);
     }
@@ -94,7 +88,7 @@ public class Uri implements Serializable {
   }
 
   public Uri(
-      UriType uriType,
+      KeyType uriType,
       RoutingKey routingKey,
       DecryptionKey decryptionKey,
       byte[] extra,
@@ -103,13 +97,13 @@ public class Uri implements Serializable {
     this(uriType, new Keys(routingKey, decryptionKey, extra), metaStrings);
   }
 
-  public Uri(UriType uriType, Keys keys, List<String> metaStrings) {
+  public Uri(KeyType uriType, Keys keys, List<String> metaStrings) {
     this.uriType = uriType;
     this.keys = keys;
     this.metaStrings = metaStrings;
   }
 
-  public UriType getUriType() {
+  public KeyType getUriType() {
     return uriType;
   }
 
@@ -203,7 +197,7 @@ public class Uri implements Serializable {
     return metaStrings;
   }
 
-  private final UriType uriType;
+  private final KeyType uriType;
   private final List<String> metaStrings;
   private final @Nullable Keys keys;
 }
