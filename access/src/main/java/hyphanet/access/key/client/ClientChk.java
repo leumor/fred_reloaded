@@ -8,11 +8,10 @@ import hyphanet.access.key.DecryptionKey;
 import hyphanet.access.key.RoutingKey;
 import hyphanet.access.key.node.NodeChk;
 import hyphanet.access.key.node.NodeKey;
-import org.jspecify.annotations.Nullable;
-
 import java.net.MalformedURLException;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 public class ClientChk extends ClientKey {
 
@@ -85,8 +84,7 @@ public class ClientChk extends ClientKey {
 
   @Override
   public Uri toUri() {
-    return new Uri(
-      KeyType.CHK, getRoutingKey(), getCryptoKey(), getExtraBytes(), getMetaStrings());
+    return new Uri(KeyType.CHK, getRoutingKey(), getCryptoKey(), getExtraBytes(), getMetaStrings());
   }
 
   @Override
@@ -137,6 +135,14 @@ public class ClientChk extends ClientKey {
   @Override
   public NodeChk getNodeKey(boolean cloneKey) {
     return (NodeChk) super.getNodeKey(cloneKey);
+  }
+
+  public boolean isCompressed() {
+    return compressionAlgorithm != CompressionAlgorithm.NO_COMP;
+  }
+
+  public CompressionAlgorithm getCompressionAlgorithm() {
+    return compressionAlgorithm;
   }
 
   @Override

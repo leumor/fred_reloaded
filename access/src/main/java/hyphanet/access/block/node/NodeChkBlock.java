@@ -13,7 +13,7 @@ import org.jspecify.annotations.Nullable;
 public class NodeChkBlock extends NodeKeyBlock<NodeChk> {
   public static final int TOTAL_HEADERS_LENGTH = 36;
 
-  protected NodeChkBlock(
+  public NodeChkBlock(
       byte[] data,
       byte[] headers,
       @Nullable NodeChk nodeKey,

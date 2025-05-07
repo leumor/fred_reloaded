@@ -143,7 +143,8 @@ public class NodeSskBlock extends NodeKeyBlock<NodeSsk> {
     }
 
     if (symCipherIdentifier != that.symCipherIdentifier
-        || !Objects.equals(publicKey, that.publicKey)) {
+        || !Objects.equals(publicKey, that.publicKey)
+        || headersOffset != that.headersOffset) {
       return false;
     }
 

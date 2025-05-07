@@ -5,6 +5,7 @@ package hyphanet.access.block.node;
 
 import hyphanet.access.key.RoutingKey;
 import hyphanet.access.key.node.NodeKey;
+
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -12,18 +13,18 @@ import java.util.Objects;
  * Interface for fetched blocks. Can be decoded by using a ClientKey to construct a ClientKeyBlock,
  * which can then be decoded to a Bucket.
  */
-public abstract class NodeKeyBlock<T extends NodeKey> {
+public abstract class NodeKeyBlock<K extends NodeKey> {
 
   static final int HASH_SHA256 = 1;
 
-  protected NodeKeyBlock(byte[] data, byte[] headers, T nodeKey, short hashIdentifier) {
+  protected NodeKeyBlock(byte[] data, byte[] headers, K nodeKey, short hashIdentifier) {
     this.data = data;
     this.headers = headers;
     this.nodeKey = nodeKey;
     this.hashIdentifier = hashIdentifier;
   }
 
-  public T getKey() {
+  public K getKey() {
     return nodeKey;
   }
 
@@ -66,7 +67,7 @@ public abstract class NodeKeyBlock<T extends NodeKey> {
 
   private final byte[] data;
   private final byte[] headers;
-  private final T nodeKey;
+  private final K nodeKey;
 
   private final short hashIdentifier;
 }

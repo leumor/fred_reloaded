@@ -1,17 +1,16 @@
 package hyphanet.access.key;
 
 public enum CompressionAlgorithm {
-  NO_COMP(-1),
-  GZIP(0),
-  BZIP2(1),
-  LZMA(2),
-  LZMA_NEW(3);
+  NO_COMP((short) -1),
+  GZIP((short) 0),
+  BZIP2((short) 1),
+  LZMA_NEW((short) 3);
 
-  CompressionAlgorithm(int value) {
+  CompressionAlgorithm(short value) {
     this.value = value;
   }
 
-  public static CompressionAlgorithm fromValue(int value) {
+  public static CompressionAlgorithm fromValue(short value) {
     for (CompressionAlgorithm algo : CompressionAlgorithm.values()) {
       if (algo.value == value) {
         return algo;
@@ -20,9 +19,9 @@ public enum CompressionAlgorithm {
     throw new IllegalArgumentException("Unknown value: " + value);
   }
 
-  public int getValue() {
+  public short getValue() {
     return value;
   }
 
-  private final int value;
+  private final short value;
 }
