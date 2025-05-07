@@ -9,8 +9,10 @@ module hyphanet.support {
   requires com.sun.jna;
   requires com.sun.jna.platform;
   requires nullaway.annotations;
+  requires org.apache.commons.compress;
 
   exports hyphanet.support;
+  exports hyphanet.support.compress;
   exports hyphanet.support.io;
   exports hyphanet.support.io.storage.bucket;
   exports hyphanet.support.io.storage.rab;
