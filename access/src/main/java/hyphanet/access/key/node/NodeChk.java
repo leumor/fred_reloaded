@@ -3,7 +3,7 @@ package hyphanet.access.key.node;
 import hyphanet.access.key.CryptoAlgorithm;
 import hyphanet.access.key.RoutingKey;
 
-public class NodeChk extends NodeKey {
+public class NodeChk extends NodeKey<NodeChk> {
   public static final byte BASE_TYPE = 1;
 
   /** 32 bytes for hash, 2 bytes for type */
@@ -36,5 +36,10 @@ public class NodeChk extends NodeKey {
     var routingKeyBytes = getRoutingKey().bytes();
     System.arraycopy(routingKeyBytes, 0, buf, 2, routingKeyBytes.length);
     return buf;
+  }
+
+  @Override
+  public NodeChk copy() {
+    return new NodeChk(this);
   }
 }

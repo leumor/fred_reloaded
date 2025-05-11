@@ -18,16 +18,13 @@ public class NodeSskBlock extends NodeKeyBlock<NodeSsk> {
   public static final short DATA_LENGTH = 1024;
   /* Maximum length of compressed payload */
   public static final int MAX_COMPRESSED_DATA_LENGTH = DATA_LENGTH - 2;
-
+  public static final short ENCRYPTED_HEADERS_LENGTH = 36;
+  public static final int DATA_DECRYPT_KEY_LENGTH = 32;
   private static final short SIG_R_LENGTH = 32;
   private static final short SIG_S_LENGTH = 32;
   private static final short E_H_DOCNAME_LENGTH = 32;
-  private static final int DATA_DECRYPT_KEY_LENGTH = 32;
-
   public static final short TOTAL_HEADERS_LENGTH =
       2 + SIG_R_LENGTH + SIG_S_LENGTH + 2 + E_H_DOCNAME_LENGTH + DATA_DECRYPT_KEY_LENGTH + 2 + 2;
-
-  private static final short ENCRYPTED_HEADERS_LENGTH = 36;
   // how much of the headers we compare in order to consider two
   // SSKBlocks equal - necessary because the last 64 bytes need not
   // be the same for the same data and the same key (see comments below)
@@ -159,6 +156,10 @@ public class NodeSskBlock extends NodeKeyBlock<NodeSsk> {
   @Override
   public int hashCode() {
     return Objects.hash(super.hashCode(), publicKey);
+  }
+
+  public int getHeadersOffset() {
+    return headersOffset;
   }
 
   private final DSAPublicKey publicKey;

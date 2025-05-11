@@ -10,21 +10,9 @@ import hyphanet.support.compress.InvalidCompressionCodecException;
 import hyphanet.support.io.storage.bucket.*;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-public abstract class NodeKey extends Key {
-  public static class Compressed {
-    public Compressed(byte[] finalData, CompressionAlgorithm compressionAlgorithm) {
-      this.compressedData = finalData;
-      this.compressionAlgorithm = compressionAlgorithm;
-    }
-
-    byte[] compressedData;
-    CompressionAlgorithm compressionAlgorithm;
-  }
-
-  private static final Logger logger = LoggerFactory.getLogger(NodeKey.class);
+public abstract class NodeKey<N extends NodeKey<N>> extends Key {
+  public record Compressed(byte[] compressedData, CompressionAlgorithm compressionAlgorithm) {}
 
   protected NodeKey(RoutingKey routingKey, CryptoAlgorithm cryptoAlgorithm) {
     super(routingKey, cryptoAlgorithm);
@@ -134,6 +122,8 @@ public abstract class NodeKey extends Key {
 
   public abstract byte[] getFullKeyBytes();
 
+  public abstract N copy();
+
   private static Compressed compressPrecompressed(
       Bucket src,
       CompressionAlgorithm algo,
@@ -141,7 +131,7 @@ public abstract class NodeKey extends Key {
       int maxSize,
       int prefixSize,
       boolean shortPrefix)
-      throws IOException, TooBigException {
+      throws IOException {
     if (src.size() > maxSize) {
       throw new TooBigException("Precompressed data too big");
     }

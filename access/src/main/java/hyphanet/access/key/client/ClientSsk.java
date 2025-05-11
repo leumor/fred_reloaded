@@ -6,7 +6,6 @@ import hyphanet.access.key.CryptoAlgorithm;
 import hyphanet.access.key.DecryptionKey;
 import hyphanet.access.key.RoutingKey;
 import hyphanet.access.key.SubspaceKey;
-import hyphanet.access.key.node.NodeKey;
 import hyphanet.access.key.node.NodeSsk;
 import hyphanet.crypt.Util;
 import hyphanet.crypt.hash.Sha256;
@@ -19,7 +18,7 @@ import java.util.List;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 
-public class ClientSsk extends ClientKey implements SubspaceKey {
+public class ClientSsk extends ClientKey<NodeSsk> implements SubspaceKey {
   public static final short EXTRA_LENGTH = 5;
   public static final int SSK_VERSION = 1;
   public static final char SEPARATOR = '-';
@@ -111,6 +110,11 @@ public class ClientSsk extends ClientKey implements SubspaceKey {
   }
 
   @Override
+  public NodeSsk getNodeKey() {
+    return (NodeSsk) super.getNodeKey();
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (!(o instanceof ClientSsk clientSsk)) {
       return false;
@@ -127,8 +131,12 @@ public class ClientSsk extends ClientKey implements SubspaceKey {
     return Objects.hash(super.hashCode(), docName, Arrays.hashCode(ehDocname));
   }
 
+  public byte[] getEhDocname() {
+    return ehDocname;
+  }
+
   @Override
-  protected NodeKey createNodeKey() {
+  protected NodeSsk createNodeKey() {
     return new NodeSsk(getRoutingKey(), getCryptoAlgorithm(), ehDocname, publicKey);
   }
 

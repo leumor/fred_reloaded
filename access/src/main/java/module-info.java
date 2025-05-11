@@ -6,4 +6,5 @@ module hyphanet.access {
   requires ch.qos.logback.core;
   requires org.bouncycastle.provider;
   requires org.slf4j;
+  requires java.logging;
 }

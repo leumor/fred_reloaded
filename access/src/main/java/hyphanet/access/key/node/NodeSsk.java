@@ -8,7 +8,7 @@ import java.security.PublicKey;
 import java.util.Arrays;
 import org.jspecify.annotations.Nullable;
 
-public class NodeSsk extends NodeKey {
+public class NodeSsk extends NodeKey<NodeSsk> {
   public static final int E_H_DOCNAME_SIZE = 32;
   public static final byte BASE_TYPE = 2;
   public static final int FULL_KEY_LENGTH = 66;
@@ -60,6 +60,11 @@ public class NodeSsk extends NodeKey {
     System.arraycopy(
         getRoutingKeyBytes(), 0, buf, 2 + E_H_DOCNAME_SIZE, RoutingKey.ROUTING_KEY_LENGTH);
     return buf;
+  }
+
+  @Override
+  public NodeSsk copy() {
+    return new NodeSsk(this);
   }
 
   public @Nullable PublicKey getPublicKey() {

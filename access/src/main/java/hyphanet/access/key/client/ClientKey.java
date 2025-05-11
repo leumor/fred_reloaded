@@ -5,11 +5,10 @@ import hyphanet.access.key.CryptoAlgorithm;
 import hyphanet.access.key.DecryptionKey;
 import hyphanet.access.key.RoutingKey;
 import hyphanet.access.key.node.NodeKey;
-import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 
-public abstract class ClientKey extends AccessKey {
+public abstract class ClientKey<N extends NodeKey<N>> extends AccessKey {
 
   protected ClientKey(
       RoutingKey routingKey,
@@ -27,8 +26,8 @@ public abstract class ClientKey extends AccessKey {
     super(routingKey, cryptoKey, cryptoAlgorithm, metaStrings);
   }
 
-  public synchronized NodeKey getNodeKey(boolean cloneKey) {
-    NodeKey nodeKey;
+  public synchronized N getNodeKey(boolean cloneKey) {
+    N nodeKey;
     if (cachedNodeKey != null) {
       nodeKey = cachedNodeKey;
     } else {
@@ -36,27 +35,14 @@ public abstract class ClientKey extends AccessKey {
       cachedNodeKey = nodeKey;
     }
 
-    if (cloneKey) {
-      var clazz = nodeKey.getClass();
-      try {
-        var ctor = clazz.getConstructor(clazz);
-        nodeKey = ctor.newInstance(nodeKey);
-      } catch (NoSuchMethodException
-          | InstantiationException
-          | IllegalAccessException
-          | InvocationTargetException e) {
-        throw new IllegalStateException(
-            "Unable to call copy constructor of " + clazz + " - " + e.getMessage());
-      }
-    }
-    return nodeKey;
+    return cloneKey ? nodeKey.copy() : nodeKey;
   }
 
-  public NodeKey getNodeKey() {
+  public N getNodeKey() {
     return getNodeKey(true);
   }
 
-  protected abstract NodeKey createNodeKey();
+  protected abstract N createNodeKey();
 
-  private transient @Nullable NodeKey cachedNodeKey;
+  private transient @Nullable N cachedNodeKey;
 }

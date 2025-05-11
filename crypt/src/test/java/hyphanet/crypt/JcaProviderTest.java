@@ -110,7 +110,7 @@ class JcaProviderTest {
       var params = new IvParameterSpec(iv);
       Cipher c = Cipher.getInstance("RIJNDAEL256/CFB/NoPadding");
 
-      // First encrypt as a block.
+      // First, encrypt as a block.
       c.init(Cipher.ENCRYPT_MODE, k, params);
       byte[] ciphertext = c.doFinal(plaintext);
 

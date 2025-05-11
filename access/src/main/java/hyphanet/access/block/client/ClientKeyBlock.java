@@ -6,9 +6,10 @@ import hyphanet.access.key.client.ClientKey;
 import hyphanet.access.key.node.NodeKey;
 import hyphanet.support.io.storage.bucket.*;
 import java.io.IOException;
+import java.util.Objects;
 
 public abstract class ClientKeyBlock<
-    C extends ClientKey, B extends NodeKeyBlock<? extends NodeKey>> {
+    N extends NodeKey<N>, C extends ClientKey<N>, B extends NodeKeyBlock<? extends NodeKey<N>>> {
 
   protected ClientKeyBlock(C clientKey, B block) {
     this.clientKey = clientKey;
@@ -32,7 +33,7 @@ public abstract class ClientKeyBlock<
   /**
    * @return The low-level Key for the block.
    */
-  public NodeKey getKey() {
+  public NodeKey<N> getKey() {
     return block.getKey();
   }
 
@@ -43,6 +44,19 @@ public abstract class ClientKeyBlock<
   public byte[] memoryDecode(boolean dontDecompress) throws KeyDecodeException, IOException {
     ArrayBucket a = (ArrayBucket) decode(new ArrayBucketFactory(), 32 * 1024, dontDecompress);
     return BucketTools.toByteArray(a); // FIXME
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof ClientKeyBlock<?, ?, ?> that)) {
+      return false;
+    }
+    return Objects.equals(clientKey, that.clientKey) && Objects.equals(block, that.block);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(clientKey, block);
   }
 
   /**

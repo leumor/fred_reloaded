@@ -7,15 +7,34 @@ import hyphanet.access.key.CryptoAlgorithm;
 import hyphanet.access.key.DecryptionKey;
 import hyphanet.access.key.RoutingKey;
 import hyphanet.access.key.node.NodeChk;
-import hyphanet.access.key.node.NodeKey;
 import java.net.MalformedURLException;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 
-public class ClientChk extends ClientKey {
+public class ClientChk extends ClientKey<NodeChk> {
 
   private static final short EXTRA_LENGTH = 5;
+
+  /**
+   * @param routingKey The routing key. This is the overall hash of the header and content of the
+   *     key.
+   * @param encKey The decryption key. This is not passed to other nodes and is extracted from the
+   *     URI.
+   * @param isCompressed True if the data was gzipped before encoding.
+   * @param isControlDocument True if the document is a Control Document. These carry metadata,
+   *     whereas ordinary keys carry data, and have no type.
+   * @param algo The encryption algorithm's identifier. See ALGO_* for values.
+   */
+  public ClientChk(
+      RoutingKey routingKey,
+      @Nullable DecryptionKey cryptoKey,
+      CryptoAlgorithm cryptoAlgorithm,
+      boolean isControlDocument,
+      CompressionAlgorithm compressionAlgorithm) {
+
+    this(routingKey, cryptoKey, cryptoAlgorithm, null, isControlDocument, compressionAlgorithm);
+  }
 
   public ClientChk(
       RoutingKey routingKey,
@@ -146,7 +165,7 @@ public class ClientChk extends ClientKey {
   }
 
   @Override
-  protected NodeKey createNodeKey() {
+  protected NodeChk createNodeKey() {
     return new NodeChk(getRoutingKey(), getCryptoAlgorithm());
   }
 
@@ -159,7 +178,7 @@ public class ClientChk extends ClientKey {
     var cryptoAlgo = CryptoAlgorithm.fromValue(extra[1]);
     var controlDocument = (extra[2] & 0x02) != 0;
     var compressionAlgo =
-        CompressionAlgorithm.fromValue((((extra[3] & 0xff) << 8) + (extra[4] & 0xff)));
+        CompressionAlgorithm.fromValue((short) (((extra[3] & 0xff) << 8) + (extra[4] & 0xff)));
 
     return new ExtraData(cryptoAlgo, controlDocument, compressionAlgo);
   }
