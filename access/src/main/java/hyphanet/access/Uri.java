@@ -3,25 +3,33 @@ package hyphanet.access;
 import hyphanet.access.key.DecryptionKey;
 import hyphanet.access.key.RoutingKey;
 import hyphanet.base.Base64;
+import hyphanet.base.CommonUtil;
 import hyphanet.base.IllegalBase64Exception;
 import hyphanet.support.URLDecoder;
 import hyphanet.support.URLEncodedFormatException;
-import org.jspecify.annotations.Nullable;
-
 import java.io.Serializable;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
+import org.jspecify.annotations.Nullable;
 
 public class Uri implements Serializable {
 
-  public record Keys(RoutingKey routingKey, DecryptionKey decryptionKey, byte[] extra) {
+  public record Keys(RoutingKey routingKey, DecryptionKey decryptionKey, List<Byte> extra) {
     public Keys {
       if (routingKey == null || decryptionKey == null || extra == null) {
         throw new IllegalArgumentException(
             "Routing key, crypto key and extra data must not be null");
       }
+    }
+
+    public Keys(RoutingKey routingKey, DecryptionKey decryptionKey, byte[] extra) {
+      this(routingKey, decryptionKey, CommonUtil.toByteList(extra));
+    }
+
+    public byte[] getExtraBytes() {
+      return CommonUtil.toByteArray(extra);
     }
   }
 
@@ -85,6 +93,10 @@ public class Uri implements Serializable {
     }
 
     metaStrings = parseMetaStrings(uriPath);
+  }
+
+  public Uri(String uri) throws MalformedURLException {
+    this(uri, false);
   }
 
   public Uri(

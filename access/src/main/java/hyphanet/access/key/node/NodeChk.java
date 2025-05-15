@@ -33,7 +33,7 @@ public class NodeChk extends NodeKey<NodeChk> {
     short type = getType();
     buf[0] = (byte) (type >> 8);
     buf[1] = (byte) (type & 0xFF);
-    var routingKeyBytes = getRoutingKey().bytes();
+    var routingKeyBytes = getRoutingKey().getBytes();
     System.arraycopy(routingKeyBytes, 0, buf, 2, routingKeyBytes.length);
     return buf;
   }

@@ -3,10 +3,11 @@ package hyphanet.access.key.node;
 import hyphanet.access.key.CryptoAlgorithm;
 import hyphanet.access.key.RoutingKey;
 import hyphanet.crypt.hash.Sha256;
+import org.jspecify.annotations.Nullable;
+
 import java.security.MessageDigest;
 import java.security.PublicKey;
 import java.util.Arrays;
-import org.jspecify.annotations.Nullable;
 
 public class NodeSsk extends NodeKey<NodeSsk> {
   public static final int E_H_DOCNAME_SIZE = 32;
@@ -27,7 +28,7 @@ public class NodeSsk extends NodeKey<NodeSsk> {
     if (publicKey != null) {
       var publicKeyBytes = publicKey.getEncoded();
       var publicKeyHash = Sha256.digest(publicKeyBytes);
-      if (!Arrays.equals(clientRoutingKey.bytes(), publicKeyHash)) {
+      if (!Arrays.equals(clientRoutingKey.getBytes(), publicKeyHash)) {
         throw new IllegalArgumentException("Public key does not match client routing key");
       }
     }
@@ -79,7 +80,7 @@ public class NodeSsk extends NodeKey<NodeSsk> {
   private static RoutingKey makeRoutingKey(RoutingKey clientRoutingKey, byte[] ehDocname) {
     MessageDigest md256 = Sha256.getMessageDigest();
     md256.update(ehDocname);
-    md256.update(clientRoutingKey.bytes());
+    md256.update(clientRoutingKey.getBytes());
     return new RoutingKey(md256.digest());
   }
 

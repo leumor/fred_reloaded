@@ -201,12 +201,11 @@ public class TempRab extends AbstractStorage implements Rab, TempStorage {
       return;
     }
 
-    lock.writeLock().lock();
-
     if (underlying == null) {
       return;
     }
 
+    lock.writeLock().lock();
     try {
       underlying.close();
     } finally {

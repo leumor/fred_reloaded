@@ -1,9 +1,9 @@
 package hyphanet.support.compress;
 
+import java.util.*;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.*;
 
 @SuppressWarnings("java:S6548")
 public final class CompressorRegistry {
@@ -42,7 +42,7 @@ public final class CompressorRegistry {
    * @param type The algorithm type.
    * @return The Compressor instance, or null if the type is not registered.
    */
-  public Compressor getCompressor(CompressorType type) {
+  public @Nullable Compressor getCompressor(CompressorType type) {
     return compressorMap.get(type);
   }
 
@@ -52,9 +52,9 @@ public final class CompressorRegistry {
    * @param name The name (e.g., "GZIP", "bzip2").
    * @return The CompressorType enum, or null if not found.
    */
-  public CompressorType getTypeByName(String name) {
+  public @Nullable CompressorType getTypeByName(String name) {
     if (name == null) return null;
-    return nameMap.get(name.toUpperCase());
+    return nameMap.get(name.toUpperCase(Locale.ROOT));
   }
 
   /**
@@ -63,7 +63,7 @@ public final class CompressorRegistry {
    * @param id The short metadata ID.
    * @return The CompressorType enum, or null if not found.
    */
-  public CompressorType getTypeByMetadataId(short id) {
+  public @Nullable CompressorType getTypeByMetadataId(short id) {
     return idMap.get(id);
   }
 
@@ -73,7 +73,7 @@ public final class CompressorRegistry {
    * @param name The name (e.g., "GZIP", "bzip2").
    * @return The Compressor instance, or null if not found.
    */
-  public Compressor getCompressorByName(String name) {
+  public @Nullable Compressor getCompressorByName(String name) {
     CompressorType type = getTypeByName(name);
     return (type != null) ? getCompressor(type) : null;
   }
@@ -84,7 +84,7 @@ public final class CompressorRegistry {
    * @param id The short metadata ID.
    * @return The Compressor instance, or null if not found.
    */
-  public Compressor getCompressorByMetadataId(short id) {
+  public @Nullable Compressor getCompressorByMetadataId(short id) {
     CompressorType type = getTypeByMetadataId(id);
     return (type != null) ? getCompressor(type) : null;
   }
@@ -105,7 +105,7 @@ public final class CompressorRegistry {
       return List.of();
     }
 
-    String[] codecs = compressorDescriptor.split(",");
+    String[] codecs = compressorDescriptor.split(",", -1);
     List<CompressorType> result = new ArrayList<>(codecs.length);
 
     for (String codecStr : codecs) {
@@ -210,7 +210,7 @@ public final class CompressorRegistry {
       Map<Short, CompressorType> ids) {
     compressors.put(type, instance);
     // Store name lookup case-insensitively for robustness
-    names.put(type.getCompressorName().toUpperCase(), type);
+    names.put(type.getCompressorName().toUpperCase(Locale.ROOT), type);
     ids.put(type.getMetadataId(), type);
   }
 

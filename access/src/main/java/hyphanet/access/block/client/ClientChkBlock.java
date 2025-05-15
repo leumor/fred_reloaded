@@ -87,7 +87,7 @@ public class ClientChkBlock extends ClientKeyBlock<NodeChk, ClientChk, NodeChkBl
       // In fact that's the point; this is still a Content Hash Key.
       // FIXME And yes we should check on insert for multiple identical keys.
       Mac hmac = Mac.getInstance("HmacSHA256");
-      hmac.init(new SecretKeySpec(encKey.bytes(), "HmacSHA256"));
+      hmac.init(new SecretKeySpec(encKey.getBytes(), "HmacSHA256"));
       byte[] tmpLen = new byte[] {(byte) (dataLength >> 8), (byte) (dataLength & 0xff)};
       hmac.update(data);
       hmac.update(tmpLen);
@@ -99,7 +99,7 @@ public class ClientChkBlock extends ClientKeyBlock<NodeChk, ClientChk, NodeChkBl
       header[0] = (byte) 0;
       header[1] = (byte) (blockHashAlgorithm & 0xff);
       System.arraycopy(hash, 0, header, 2, hash.length);
-      SecretKey ckey = new SecretKeySpec(encKey.bytes(), keyAgo);
+      SecretKey ckey = new SecretKeySpec(encKey.getBytes(), keyAgo);
       // CTR mode IV is only 16 bytes.
       // That's still plenty though. It will still be unique.
       Cipher cipher = Cipher.getInstance(transformation);
@@ -242,7 +242,7 @@ public class ClientChkBlock extends ClientKeyBlock<NodeChk, ClientChk, NodeChkBl
       byte[] data, DecryptionKey cryptoKey, CryptoAlgorithm cryptoAlgorithm)
       throws KeyEncodeException {
     if (data.length != DATA_LENGTH) throw new IllegalArgumentException();
-    if (cryptoKey != null && cryptoKey.bytes().length != 32) throw new IllegalArgumentException();
+    if (cryptoKey != null && cryptoKey.getBytes().length != 32) throw new IllegalArgumentException();
     MessageDigest md256 = Sha256.getMessageDigest();
     // No need to pad
     if (cryptoKey == null) {
@@ -283,7 +283,7 @@ public class ClientChkBlock extends ClientKeyBlock<NodeChk, ClientChk, NodeChkBl
     var headers = getBlock().getRawHeaders();
     var data = getBlock().getRawData();
     var hash = Arrays.copyOfRange(headers, 2, 2 + 32);
-    var cryptoKeyBytes = cryptoKey.bytes();
+    var cryptoKeyBytes = cryptoKey.getBytes();
 
     try {
       Cipher cipher = Cipher.getInstance(transformation);

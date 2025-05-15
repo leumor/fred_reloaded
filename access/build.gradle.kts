@@ -8,5 +8,5 @@ dependencies {
     implementation(project(":support"))
 
     implementation("org.bouncycastle:bcprov-jdk18on:latest.release")
-    
+
 }

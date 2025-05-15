@@ -60,6 +60,7 @@ abstract class AbstractCompressor implements Compressor {
     }
   }
 
+  @Override
   public long compress(
       InputStream input, OutputStream output, long maxReadLength, long maxWriteLength)
       throws IOException {

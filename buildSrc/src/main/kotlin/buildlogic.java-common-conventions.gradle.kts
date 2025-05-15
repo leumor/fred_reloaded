@@ -33,6 +33,7 @@ dependencies {
     implementation("ch.qos.logback:logback-classic:latest.release")
     implementation("com.machinezoo.noexception:noexception:latest.release")
     implementation("org.jspecify:jspecify:latest.release")
+    implementation("org.apache.commons:commons-lang3:latest.release")
 }
 
 extraJavaModuleInfo {

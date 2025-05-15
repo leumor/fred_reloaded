@@ -8,11 +8,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class GzipCompressor extends AbstractCompressor {
-  private static final Logger logger = LoggerFactory.getLogger(GzipCompressor.class);
 
   @Override
   public Bucket compress(Bucket data, BucketFactory bf, long maxReadLength, long maxWriteLength)

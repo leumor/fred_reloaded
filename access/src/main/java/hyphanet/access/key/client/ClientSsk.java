@@ -9,6 +9,8 @@ import hyphanet.access.key.SubspaceKey;
 import hyphanet.access.key.node.NodeSsk;
 import hyphanet.crypt.Util;
 import hyphanet.crypt.hash.Sha256;
+import org.jspecify.annotations.Nullable;
+
 import java.net.MalformedURLException;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
@@ -16,7 +18,6 @@ import java.security.PublicKey;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import org.jspecify.annotations.Nullable;
 
 public class ClientSsk extends ClientKey<NodeSsk> implements SubspaceKey {
   public static final short EXTRA_LENGTH = 5;
@@ -41,6 +42,15 @@ public class ClientSsk extends ClientKey<NodeSsk> implements SubspaceKey {
       RoutingKey routingKey,
       DecryptionKey cryptoKey,
       CryptoAlgorithm cryptoAlgorithm,
+      String docName,
+      @Nullable PublicKey publicKey) {
+    this(routingKey, cryptoKey, cryptoAlgorithm, List.of(docName), publicKey);
+  }
+
+  public ClientSsk(
+      RoutingKey routingKey,
+      DecryptionKey cryptoKey,
+      CryptoAlgorithm cryptoAlgorithm,
       List<String> metaStrings,
       @Nullable PublicKey publicKey) {
 
@@ -58,7 +68,7 @@ public class ClientSsk extends ClientKey<NodeSsk> implements SubspaceKey {
     if (publicKey != null) {
       var publicKeyBytes = publicKey.getEncoded();
       var publicKeyHash = md.digest(publicKeyBytes);
-      if (!Arrays.equals(publicKeyHash, routingKey.bytes())) {
+      if (!Arrays.equals(publicKeyHash, routingKey.getBytes())) {
         throw new IllegalArgumentException("Public key does not match routing key");
       }
     }
@@ -68,7 +78,7 @@ public class ClientSsk extends ClientKey<NodeSsk> implements SubspaceKey {
     try {
       ehDocname =
           Util.encryptWithRijndael(
-              md.digest(docName.getBytes(StandardCharsets.UTF_8)), cryptoKey.bytes());
+              md.digest(docName.getBytes(StandardCharsets.UTF_8)), cryptoKey.getBytes());
     } catch (InvalidKeyException _) {
       throw new IllegalArgumentException("CryptoKey is invalid");
     }
@@ -111,7 +121,7 @@ public class ClientSsk extends ClientKey<NodeSsk> implements SubspaceKey {
 
   @Override
   public NodeSsk getNodeKey() {
-    return (NodeSsk) super.getNodeKey();
+    return super.getNodeKey();
   }
 
   @Override

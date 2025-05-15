@@ -12,8 +12,6 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * * {@link Compressor} for BZip2 streams. * * Due to historical reasons (we used to use the
@@ -23,7 +21,6 @@ import org.slf4j.LoggerFactory;
 public class Bzip2Compressor extends AbstractCompressor {
 
   private static final byte[] BZ_HEADER = "BZ".getBytes(StandardCharsets.ISO_8859_1);
-  private static final Logger logger = LoggerFactory.getLogger(Bzip2Compressor.class);
 
   @Override
   public Bucket compress(Bucket data, BucketFactory bf, long maxReadLength, long maxWriteLength)

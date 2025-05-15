@@ -1,5 +1,7 @@
 package hyphanet.support.compress;
 
+import org.jspecify.annotations.Nullable;
+
 public enum CompressorType {
   GZIP("GZIP", (short) 0),
   BZIP2("BZIP2", (short) 1),
@@ -19,7 +21,7 @@ public enum CompressorType {
     return VALUES.clone();
   }
 
-  public static CompressorType findByName(String name) {
+  public static @Nullable CompressorType findByName(String name) {
     if (name == null) return null;
     for (CompressorType alg : VALUES) {
       if (alg.compressorName.equalsIgnoreCase(name)) { // Often useful to be case-insensitive
@@ -29,7 +31,7 @@ public enum CompressorType {
     return null;
   }
 
-  public static CompressorType findByMetadataID(short id) {
+  public static @Nullable CompressorType findByMetadataID(short id) {
     for (CompressorType alg : VALUES) {
       if (alg.metadataId == id) {
         return alg;

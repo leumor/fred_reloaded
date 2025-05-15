@@ -551,13 +551,14 @@ public final class Stream {
    * @see FileChannel#transferTo(long, long, WritableByteChannel)
    */
   private static boolean tryNioCopy(InputStream source, OutputStream destination, long length) {
-    if (!(source instanceof FileInputStream && destination instanceof FileOutputStream)) {
+    if (!(source instanceof FileInputStream sourceIn
+        && destination instanceof FileOutputStream destOut)) {
       return false;
     }
 
     try {
-      FileChannel sourceChannel = ((FileInputStream) source).getChannel();
-      FileChannel destChannel = ((FileOutputStream) destination).getChannel();
+      FileChannel sourceChannel = sourceIn.getChannel();
+      FileChannel destChannel = destOut.getChannel();
 
       long bytesToTransfer = (length == -1) ? Long.MAX_VALUE : length;
       sourceChannel.transferTo(0, bytesToTransfer, destChannel);

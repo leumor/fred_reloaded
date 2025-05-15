@@ -8,6 +8,7 @@ import hyphanet.support.compress.CompressionOutputSizeException;
 import hyphanet.support.compress.CompressorRegistry;
 import hyphanet.support.compress.InvalidCompressionCodecException;
 import hyphanet.support.io.storage.bucket.*;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
@@ -105,7 +106,7 @@ public abstract class NodeKey<N extends NodeKey<N>> extends Key {
   }
 
   public byte[] getRoutingKeyBytes() {
-    return getRoutingKey().bytes();
+    return getRoutingKey().getBytes();
   }
 
   /**

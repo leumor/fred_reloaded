@@ -6,9 +6,10 @@ import hyphanet.access.key.CryptoAlgorithm;
 import hyphanet.access.key.RoutingKey;
 import hyphanet.access.key.node.NodeChk;
 import hyphanet.crypt.hash.Sha256;
+import org.jspecify.annotations.Nullable;
+
 import java.util.Arrays;
 import java.util.Objects;
-import org.jspecify.annotations.Nullable;
 
 public class NodeChkBlock extends NodeKeyBlock<NodeChk> {
   public static final int TOTAL_HEADERS_LENGTH = 36;
@@ -44,7 +45,7 @@ public class NodeChkBlock extends NodeKeyBlock<NodeChk> {
       }
 
       // Check the routing key
-      if (!Arrays.equals(hash, nodeKey.getRoutingKey().bytes())) {
+      if (!Arrays.equals(hash, nodeKey.getRoutingKey().getBytes())) {
         throw new KeyVerifyException(KeyType.CHK, "Routing key does not match hash");
       }
     }

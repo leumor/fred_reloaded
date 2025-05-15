@@ -10,13 +10,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import org.apache.commons.compress.compressors.lzma.LZMACompressorInputStream;
 import org.apache.commons.compress.compressors.lzma.LZMACompressorOutputStream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** * {@link Compressor} for BZip2 streams */
 public class NewLzmaCompressor extends AbstractCompressor {
-
-  private static final Logger logger = LoggerFactory.getLogger(NewLzmaCompressor.class);
 
   @Override
   public Bucket compress(Bucket data, BucketFactory bf, long maxReadLength, long maxWriteLength)
