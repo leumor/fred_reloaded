@@ -275,7 +275,7 @@ public class ClientChkBlock extends ClientKeyBlock<NodeChk, ClientChk, NodeChkBl
           case ALGO_AES_CTR_256_SHA256 -> "AES";
         };
 
-    var cryptoKey = getClientKey().getCryptoKey();
+    var cryptoKey = getClientKey().getDecryptionKey();
     if (cryptoKey == null) {
       throw new KeyDecodeException(KeyType.CHK, "CryptoKey is null");
     }

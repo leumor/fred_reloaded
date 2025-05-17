@@ -68,56 +68,56 @@ class UtilTest {
     }
 
     @Test
-    void calcMPIBytes() {
+    void calcMpiBytes() {
         BigInteger num1 = new BigInteger("9");
-        byte[] mpiBytes1 = Util.calcMPIBytes(num1);
+        byte[] mpiBytes1 = Util.calcMpiBytes(num1);
         byte[] expectedMpiBytes1 = {0, 4, 9};
         assertArrayEquals(expectedMpiBytes1, mpiBytes1);
 
 
         BigInteger num2 = new BigInteger("1234567890123456789");
-        byte[] mpiBytes2 = Util.calcMPIBytes(num2);
+        byte[] mpiBytes2 = Util.calcMpiBytes(num2);
         byte[] expectedMpiBytes2 = {0, 61, 17, 34, 16, -12, 125, -23, -127, 21};
 
         assertArrayEquals(expectedMpiBytes2, mpiBytes2);
 
         BigInteger num3 = new BigInteger("100200300400500600700800900");
-        byte[] mpiBytes3 = Util.calcMPIBytes(num3);
+        byte[] mpiBytes3 = Util.calcMpiBytes(num3);
         byte[] expectedMpiBytes3 = {0, 87, 82, -30, 61, 43, 60, -57, 29, -97, 74, 15, -124};
         assertArrayEquals(expectedMpiBytes3, mpiBytes3);
 
         BigInteger zero = BigInteger.ZERO;
-        byte[] mpiBytesZero = Util.calcMPIBytes(zero);
+        byte[] mpiBytesZero = Util.calcMpiBytes(zero);
         byte[] expectedZeroBytes = {0, 0};
         assertArrayEquals(expectedZeroBytes, mpiBytesZero);
     }
 
 
     @Test
-    void writeMPI() throws IOException {
+    void writeMpi() throws IOException {
         BigInteger num1 = new BigInteger("9");
         ByteArrayOutputStream out1 = new ByteArrayOutputStream();
-        Util.writeMPI(num1, out1);
+        Util.writeMpi(num1, out1);
         byte[] expectedBytes1 = {0, 4, 9};
         assertArrayEquals(expectedBytes1, out1.toByteArray());
 
         BigInteger num2 = new BigInteger("1234567890123456789");
         ByteArrayOutputStream out2 = new ByteArrayOutputStream();
-        Util.writeMPI(num2, out2);
+        Util.writeMpi(num2, out2);
         byte[] expectedBytes2 = {0, 61, 17, 34, 16, -12, 125, -23, -127, 21};
 
         assertArrayEquals(expectedBytes2, out2.toByteArray());
 
         BigInteger num3 = new BigInteger("100200300400500600700800900");
         ByteArrayOutputStream out3 = new ByteArrayOutputStream();
-        Util.writeMPI(num3, out3);
+        Util.writeMpi(num3, out3);
         byte[] expectedBytes3 = {0, 87, 82, -30, 61, 43, 60, -57, 29, -97, 74, 15, -124};
 
         assertArrayEquals(expectedBytes3, out3.toByteArray());
 
         BigInteger zero = BigInteger.ZERO;
         ByteArrayOutputStream out4 = new ByteArrayOutputStream();
-        Util.writeMPI(zero, out4);
+        Util.writeMpi(zero, out4);
         byte[] expectedBytes4 = {0, 0};
         assertArrayEquals(expectedBytes4, out4.toByteArray());
 
@@ -125,30 +125,30 @@ class UtilTest {
     }
 
     @Test
-    void readMPI() throws IOException {
+    void readMpi() throws IOException {
         byte[] mpiBytes1 = {0, 4, 9};
         ByteArrayInputStream in1 = new ByteArrayInputStream(mpiBytes1);
-        BigInteger result1 = Util.readMPI(in1);
+        BigInteger result1 = Util.readMpi(in1);
         assertEquals(new BigInteger("9"), result1);
 
         byte[] mpiBytes2 = {0, 61, 17, 34, 16, -12, 125, -23, -127, 21};
         ByteArrayInputStream in2 = new ByteArrayInputStream(mpiBytes2);
-        BigInteger result2 = Util.readMPI(in2);
+        BigInteger result2 = Util.readMpi(in2);
         assertEquals(new BigInteger("1234567890123456789"), result2);
 
         byte[] mpiBytes3 = {0, 87, 82, -30, 61, 43, 60, -57, 29, -97, 74, 15, -124};
         ByteArrayInputStream in3 = new ByteArrayInputStream(mpiBytes3);
-        BigInteger result3 = Util.readMPI(in3);
+        BigInteger result3 = Util.readMpi(in3);
         assertEquals(new BigInteger("100200300400500600700800900"), result3);
 
         byte[] mpiBytes4 = {0, 0};
         ByteArrayInputStream in4 = new ByteArrayInputStream(mpiBytes4);
-        BigInteger result4 = Util.readMPI(in4);
+        BigInteger result4 = Util.readMpi(in4);
         assertEquals(BigInteger.ZERO, result4);
 
         byte[] shortMpiBytes = {0, 2};
         ByteArrayInputStream shortIn = new ByteArrayInputStream(shortMpiBytes);
-        assertThrows(EOFException.class, () -> Util.readMPI(shortIn));
+        assertThrows(EOFException.class, () -> Util.readMpi(shortIn));
     }
 
 

@@ -54,8 +54,8 @@ public class ClientSskBlock extends ClientKeyBlock<NodeSsk, ClientSsk, NodeSskBl
 
     var clientKey = getClientKey();
 
-    assert clientKey.getCryptoKey() != null;
-    SecretKeySpec k = new SecretKeySpec(clientKey.getCryptoKey().getBytes(), "Rijndael");
+    assert clientKey.getDecryptionKey() != null;
+    SecretKeySpec k = new SecretKeySpec(clientKey.getDecryptionKey().getBytes(), "Rijndael");
     // ECB-encrypted E(H(docname)) serves as IV.
     var params = new IvParameterSpec(clientKey.getEhDocname());
 

@@ -2,11 +2,15 @@ package hyphanet.base;
 
 import java.util.List;
 import org.apache.commons.lang3.ArrayUtils;
+import org.jspecify.annotations.Nullable;
 
 public final class CommonUtil {
   private CommonUtil() {}
 
-  public static List<Byte> toByteList(byte[] bytes) {
+  public static List<Byte> toByteList(@Nullable byte[] bytes) {
+    if (bytes == null) {
+      return List.of();
+    }
     return List.of(ArrayUtils.toObject(bytes));
   }
 

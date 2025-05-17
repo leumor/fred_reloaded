@@ -9,8 +9,6 @@ import hyphanet.access.key.SubspaceKey;
 import hyphanet.access.key.node.NodeSsk;
 import hyphanet.crypt.Util;
 import hyphanet.crypt.hash.Sha256;
-import org.jspecify.annotations.Nullable;
-
 import java.net.MalformedURLException;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
@@ -18,6 +16,7 @@ import java.security.PublicKey;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 public class ClientSsk extends ClientKey<NodeSsk> implements SubspaceKey {
   public static final short EXTRA_LENGTH = 5;
@@ -45,6 +44,39 @@ public class ClientSsk extends ClientKey<NodeSsk> implements SubspaceKey {
       String docName,
       @Nullable PublicKey publicKey) {
     this(routingKey, cryptoKey, cryptoAlgorithm, List.of(docName), publicKey);
+  }
+
+  public ClientSsk(
+      RoutingKey routingKey,
+      DecryptionKey cryptoKey,
+      String docName,
+      byte[] extra,
+      @Nullable PublicKey publicKey)
+      throws MalformedURLException {
+
+    this(routingKey, cryptoKey, parseExtraData(extra).cryptoAlgorithm, List.of(docName), publicKey);
+  }
+
+  public ClientSsk(
+      RoutingKey routingKey, DecryptionKey cryptoKey, byte[] extra, List<String> metaStrings)
+      throws MalformedURLException {
+    this(routingKey, cryptoKey, parseExtraData(extra).cryptoAlgorithm, metaStrings, null);
+  }
+
+  public ClientSsk(Uri uri) throws MalformedURLException {
+    if (uri.getUriType() != KeyType.SSK) {
+      throw new MalformedURLException("Invalid URI type: " + uri.getUriType());
+    }
+
+    if (uri.getKeys().routingKey() == null) {
+      throw new MalformedURLException("Routing key missing");
+    }
+
+    this(
+        uri.getKeys().routingKey(),
+        uri.getKeys().decryptionKey(),
+        uri.getKeys().getExtraBytes(),
+        uri.getMetaStrings());
   }
 
   public ClientSsk(
@@ -84,19 +116,6 @@ public class ClientSsk extends ClientKey<NodeSsk> implements SubspaceKey {
     }
   }
 
-  public ClientSsk(
-      RoutingKey routingKey,
-      DecryptionKey cryptoKey,
-      String docName,
-      byte[] extra,
-      @Nullable PublicKey publicKey)
-      throws MalformedURLException {
-
-    var extraData = parseExtraData(extra);
-
-    this(routingKey, cryptoKey, extraData.cryptoAlgorithm, List.of(docName), publicKey);
-  }
-
   public PublicKey getPublicKey() {
     return publicKey;
   }
@@ -109,7 +128,7 @@ public class ClientSsk extends ClientKey<NodeSsk> implements SubspaceKey {
     return new Uri(
         KeyType.SSK,
         getRoutingKey(),
-        getCryptoKey(),
+        getDecryptionKey(),
         new ExtraData(getCryptoAlgorithm()).getExtraBytes(),
         getMetaStrings());
   }

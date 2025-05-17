@@ -76,7 +76,7 @@ public class Util {
     // Load All necessary JCA Providers
     try {
       Class.forName("hyphanet.crypt.JcaLoader", false, ClassLoader.getSystemClassLoader());
-    } catch (ClassNotFoundException e) {
+    } catch (ClassNotFoundException _) {
       throw new IllegalStateException("This should never happen");
     }
   }
@@ -124,7 +124,7 @@ public class Util {
    * @param num The BigInteger to convert
    * @return A byte array containing the MPI representation
    */
-  public static byte[] calcMPIBytes(BigInteger num) {
+  public static byte[] calcMpiBytes(BigInteger num) {
     int len = num.bitLength();
     byte[] bytes = new byte[2 + ((len + 7) >> 3)];
     byte[] numBytes = num.toByteArray();
@@ -148,8 +148,8 @@ public class Util {
    * @param out The output stream to write to
    * @throws IOException If there is an error writing to the stream
    */
-  public static void writeMPI(BigInteger num, OutputStream out) throws IOException {
-    out.write(calcMPIBytes(num));
+  public static void writeMpi(BigInteger num, OutputStream out) throws IOException {
+    out.write(calcMpiBytes(num));
   }
 
   /**
@@ -167,7 +167,7 @@ public class Util {
    * @throws IOException If there is an error reading from the stream
    * @throws EOFException If the stream ends prematurely
    */
-  public static BigInteger readMPI(InputStream in) throws IOException {
+  public static BigInteger readMpi(InputStream in) throws IOException {
     int b1 = in.read();
     int b2 = in.read();
     if ((b1 == -1) || (b2 == -1)) {
@@ -207,7 +207,7 @@ public class Util {
     MessageDigest tmpDigest = null;
     try {
       tmpDigest = MessageDigest.getInstance(algorithm.getAlgorithmName());
-    } catch (NoSuchAlgorithmException e) {
+    } catch (NoSuchAlgorithmException _) {
       throw new IllegalStateException("This should never happen");
     }
     tmpDigest.update(data, offset, length);
@@ -226,7 +226,7 @@ public class Util {
     MessageDigest tmpDigest = null;
     try {
       tmpDigest = MessageDigest.getInstance(algorithm.getAlgorithmName());
-    } catch (NoSuchAlgorithmException e) {
+    } catch (NoSuchAlgorithmException _) {
       throw new IllegalStateException("This should never happen");
     }
     tmpDigest.update(sbytes, 0, sbytes.length);
@@ -275,7 +275,7 @@ public class Util {
         offset += bytesToCopy;
         len -= bytesToCopy;
       }
-    } catch (NoSuchAlgorithmException e) {
+    } catch (NoSuchAlgorithmException _) {
       // impossible
       throw new IllegalStateException("This should never happen");
     } finally {
@@ -356,7 +356,6 @@ public class Util {
    * @return a random, non-negative BigInteger with exactly numBits bits
    * @throws IllegalArgumentException if numBits is negative
    * @see java.math.BigInteger
-   * @see org.apache.commons.rng.UniformRandomProvider
    */
   public static BigInteger generateRandomBigInteger(int numBits, RandomGenerator rng) {
     // Generate random bytes

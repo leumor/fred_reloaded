@@ -1,7 +1,12 @@
 package hyphanet.access;
 
+import hyphanet.access.key.AccessKey;
 import hyphanet.access.key.DecryptionKey;
 import hyphanet.access.key.RoutingKey;
+import hyphanet.access.key.Usk;
+import hyphanet.access.key.client.ClientChk;
+import hyphanet.access.key.client.ClientKsk;
+import hyphanet.access.key.client.ClientSsk;
 import hyphanet.base.Base64;
 import hyphanet.base.CommonUtil;
 import hyphanet.base.IllegalBase64Exception;
@@ -16,15 +21,14 @@ import org.jspecify.annotations.Nullable;
 
 public class Uri implements Serializable {
 
-  public record Keys(RoutingKey routingKey, DecryptionKey decryptionKey, List<Byte> extra) {
-    public Keys {
-      if (routingKey == null || decryptionKey == null || extra == null) {
-        throw new IllegalArgumentException(
-            "Routing key, crypto key and extra data must not be null");
-      }
-    }
+  public record Keys(
+      @Nullable RoutingKey routingKey, @Nullable DecryptionKey decryptionKey, List<Byte> extra)
+      implements Serializable {
 
-    public Keys(RoutingKey routingKey, DecryptionKey decryptionKey, byte[] extra) {
+    public Keys(
+        @Nullable RoutingKey routingKey,
+        @Nullable DecryptionKey decryptionKey,
+        @Nullable byte[] extra) {
       this(routingKey, decryptionKey, CommonUtil.toByteList(extra));
     }
 
@@ -82,7 +86,7 @@ public class Uri implements Serializable {
     atChar = uri.indexOf(URI_SEPARATOR);
     if (atChar == -1) {
       // No '/' found, it's possibly a KSK
-      keys = null;
+      keys = new Keys(null, null, List.of());
       uriPath = uri;
     } else {
       var keysStr = uri.substring(0, atChar);
@@ -123,11 +127,20 @@ public class Uri implements Serializable {
     return metaStrings;
   }
 
-  public @Nullable Keys getKeys() {
+  public Keys getKeys() {
     return keys;
   }
 
-  private @Nullable Keys parseKeysStr(String keysStr) throws MalformedURLException {
+  public AccessKey createAccessKey() throws MalformedURLException {
+    return switch (uriType) {
+      case USK -> new Usk(this);
+      case KSK -> ClientKsk.create(this);
+      case SSK -> new ClientSsk(this);
+      case CHK -> new ClientChk(this);
+    };
+  }
+
+  private Keys parseKeysStr(String keysStr) throws MalformedURLException {
     int commaPos;
     String routingKey = "";
     String cryptoKey = "";
@@ -157,12 +170,12 @@ public class Uri implements Serializable {
             RoutingKey.fromBase64(routingKey),
             DecryptionKey.fromBase64(cryptoKey),
             Base64.decode(extra));
-      } catch (IllegalArgumentException | IllegalBase64Exception e) {
+      } catch (IllegalArgumentException | IllegalBase64Exception _) {
         throw new MalformedURLException(
             "Invalid URI: invalid routing key, crypto key or extra data");
       }
     } else {
-      return null;
+      return new Keys(null, null, List.of());
     }
   }
 
@@ -211,5 +224,5 @@ public class Uri implements Serializable {
 
   private final KeyType uriType;
   private final List<String> metaStrings;
-  private final @Nullable Keys keys;
+  private final Keys keys;
 }

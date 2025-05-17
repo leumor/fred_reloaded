@@ -7,10 +7,11 @@ import hyphanet.access.key.CryptoAlgorithm;
 import hyphanet.access.key.DecryptionKey;
 import hyphanet.access.key.RoutingKey;
 import hyphanet.access.key.node.NodeChk;
+import org.jspecify.annotations.Nullable;
+
 import java.net.MalformedURLException;
 import java.util.NoSuchElementException;
 import java.util.Objects;
-import org.jspecify.annotations.Nullable;
 
 public class ClientChk extends ClientKey<NodeChk> {
 
@@ -36,18 +37,6 @@ public class ClientChk extends ClientKey<NodeChk> {
     this(routingKey, cryptoKey, cryptoAlgorithm, null, isControlDocument, compressionAlgorithm);
   }
 
-  public ClientChk(
-      RoutingKey routingKey,
-      @Nullable DecryptionKey cryptoKey,
-      CryptoAlgorithm cryptoAlgorithm,
-      @Nullable String fileName,
-      boolean isControlDocument,
-      CompressionAlgorithm compressionAlgorithm) {
-    super(routingKey, cryptoKey, cryptoAlgorithm, fileName);
-    this.isControlDocument = isControlDocument;
-    this.compressionAlgorithm = compressionAlgorithm;
-  }
-
   /**
    * Copy constructor.
    *
@@ -56,7 +45,7 @@ public class ClientChk extends ClientKey<NodeChk> {
   public ClientChk(ClientChk other) {
     this(
         other.getRoutingKey(),
-        other.getCryptoKey(),
+        other.getDecryptionKey(),
         other.getCryptoAlgorithm(),
         other.getFileName(),
         other.isControlDocument,
@@ -82,11 +71,11 @@ public class ClientChk extends ClientKey<NodeChk> {
   }
 
   public ClientChk(Uri uri) throws MalformedURLException {
-    if (uri.getUriType() != KeyType.CHK || uri.getKeys() == null) {
+    if (uri.getUriType() != KeyType.CHK || uri.getKeys().routingKey() == null) {
       throw new MalformedURLException("Invalid URI type: " + uri.getUriType());
     }
 
-    var extraData = parseExtraData(uri.getKeys().extra());
+    var extraData = parseExtraData(uri.getKeys().getExtraBytes());
 
     this(
         uri.getKeys().routingKey(),
@@ -97,13 +86,25 @@ public class ClientChk extends ClientKey<NodeChk> {
         extraData.compressionAlgorithm);
   }
 
+  public ClientChk(
+      RoutingKey routingKey,
+      @Nullable DecryptionKey cryptoKey,
+      CryptoAlgorithm cryptoAlgorithm,
+      @Nullable String fileName,
+      boolean isControlDocument,
+      CompressionAlgorithm compressionAlgorithm) {
+    super(routingKey, cryptoKey, cryptoAlgorithm, fileName);
+    this.isControlDocument = isControlDocument;
+    this.compressionAlgorithm = compressionAlgorithm;
+  }
+
   public boolean isControlDocument() {
     return isControlDocument;
   }
 
   @Override
   public Uri toUri() {
-    return new Uri(KeyType.CHK, getRoutingKey(), getCryptoKey(), getExtraBytes(), getMetaStrings());
+    return new Uri(KeyType.CHK, getRoutingKey(), getDecryptionKey(), getExtraBytes(), getMetaStrings());
   }
 
   @Override
@@ -147,13 +148,13 @@ public class ClientChk extends ClientKey<NodeChk> {
   }
 
   @Override
-  public NodeChk getNodeKey() {
-    return (NodeChk) super.getNodeKey();
+  public synchronized NodeChk getNodeKey() {
+    return super.getNodeKey();
   }
 
   @Override
-  public NodeChk getNodeKey(boolean cloneKey) {
-    return (NodeChk) super.getNodeKey(cloneKey);
+  public synchronized NodeChk getNodeKey(boolean cloneKey) {
+    return super.getNodeKey(cloneKey);
   }
 
   public boolean isCompressed() {
@@ -202,6 +203,4 @@ public class ClientChk extends ClientKey<NodeChk> {
   private final boolean isControlDocument;
 
   private final CompressionAlgorithm compressionAlgorithm;
-
-  private transient NodeChk nodeKey;
 }

@@ -13,28 +13,28 @@ public class Usk extends AccessKey implements SubspaceKey {
 
   public Usk(
       RoutingKey routingKey,
-      DecryptionKey cryptoKey,
+      DecryptionKey decryptionKey,
       CryptoAlgorithm cryptoAlgorithm,
       List<String> metaStrings) {
     if (metaStrings.isEmpty()) {
       throw new IllegalArgumentException("No meta strings / document name given");
     }
-    this.docName = metaStrings.removeFirst();
+    docName = metaStrings.removeFirst();
 
     if (metaStrings.isEmpty()) {
       throw new IllegalArgumentException("No suggested edition number");
     }
 
     try {
-      this.suggestedEdition = Long.parseLong(metaStrings.removeFirst());
+      suggestedEdition = Long.parseLong(metaStrings.removeFirst());
     } catch (NumberFormatException e) {
       throw new IllegalArgumentException("Invalid suggested edition number: " + e, e);
     }
 
-    super(routingKey, cryptoKey, cryptoAlgorithm, metaStrings);
+    super(routingKey, decryptionKey, cryptoAlgorithm, metaStrings);
   }
 
-  public Usk(RoutingKey routingKey, DecryptionKey cryptoKey, byte[] extra, List<String> metaStrings)
+  public Usk(RoutingKey routingKey, DecryptionKey decryptionKey, byte[] extra, List<String> metaStrings)
       throws MalformedURLException {
 
     if (metaStrings.isEmpty()) {
@@ -42,19 +42,20 @@ public class Usk extends AccessKey implements SubspaceKey {
     }
 
     // Verify extra bytes, get cryptoAlgorithm - FIXME this should be a static method or something?
-    var tmp = new ClientSsk(routingKey, cryptoKey, metaStrings.getFirst(), extra, null);
+    var tmp = new ClientSsk(routingKey, decryptionKey, metaStrings.getFirst(), extra, null);
 
-    this(routingKey, cryptoKey, tmp.getCryptoAlgorithm(), metaStrings);
+    this(routingKey, decryptionKey, tmp.getCryptoAlgorithm(), metaStrings);
   }
 
   public Usk(Uri uri) throws MalformedURLException {
     if (uri.getUriType() != KeyType.USK || uri.getKeys() == null) {
       throw new MalformedURLException("Invalid URI type: " + uri.getUriType());
     }
+
     this(
         uri.getKeys().routingKey(),
         uri.getKeys().decryptionKey(),
-        uri.getKeys().extra(),
+        uri.getKeys().getExtraBytes(),
         uri.getMetaStrings());
   }
 
@@ -66,7 +67,7 @@ public class Usk extends AccessKey implements SubspaceKey {
   public Usk(Usk other) {
     this(
         other.getRoutingKey(),
-        other.getCryptoKey(),
+        other.getDecryptionKey(),
         other.getCryptoAlgorithm(),
         other.getMetaStrings());
   }
@@ -80,7 +81,7 @@ public class Usk extends AccessKey implements SubspaceKey {
     return new Uri(
       KeyType.USK,
       getRoutingKey(),
-      getCryptoKey(),
+      getDecryptionKey(),
       new ClientSsk.ExtraData(getCryptoAlgorithm()).getExtraBytes(),
       fullMetaStrings);
   }
