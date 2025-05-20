@@ -16,6 +16,9 @@ public class Usk extends AccessKey implements SubspaceKey {
       DecryptionKey decryptionKey,
       CryptoAlgorithm cryptoAlgorithm,
       List<String> metaStrings) {
+
+    metaStrings = new ArrayList<>(metaStrings); // copy to avoid modifying the original list
+
     if (metaStrings.isEmpty()) {
       throw new IllegalArgumentException("No meta strings / document name given");
     }
@@ -75,7 +78,7 @@ public class Usk extends AccessKey implements SubspaceKey {
 
   @Override
   public Uri toUri() {
-    var uskMetaStrings = List.of(docName, Long.toString(suggestedEdition));
+    var uskMetaStrings = List.of(docName, String.valueOf(suggestedEdition));
     var fullMetaStrings =
         Stream.concat(uskMetaStrings.stream(), getMetaStrings().stream()).toList();
 

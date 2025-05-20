@@ -118,7 +118,7 @@ public class Uri implements Serializable {
   public Uri(KeyType uriType, Keys keys, List<String> metaStrings) {
     this.uriType = uriType;
     this.keys = keys;
-    this.metaStrings = metaStrings;
+    this.metaStrings = new ArrayList<>(metaStrings);
   }
 
   public KeyType getUriType() {

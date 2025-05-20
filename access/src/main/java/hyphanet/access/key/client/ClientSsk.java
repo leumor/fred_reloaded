@@ -87,6 +87,8 @@ public class ClientSsk extends ClientKey<NodeSsk> implements SubspaceKey {
       List<String> metaStrings,
       @Nullable PublicKey publicKey) {
 
+    metaStrings = new ArrayList<>(metaStrings); // copy to avoid modifying the original list
+
     if (metaStrings.isEmpty()) {
       throw new IllegalArgumentException("No meta strings / document name given");
     }
@@ -142,11 +144,6 @@ public class ClientSsk extends ClientKey<NodeSsk> implements SubspaceKey {
   @Override
   public Uri toRequestUri() {
     return toUri();
-  }
-
-  @Override
-  public NodeSsk getNodeKey() {
-    return super.getNodeKey();
   }
 
   @Override
