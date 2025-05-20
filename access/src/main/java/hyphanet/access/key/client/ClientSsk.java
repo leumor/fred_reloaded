@@ -2,10 +2,7 @@ package hyphanet.access.key.client;
 
 import hyphanet.access.KeyType;
 import hyphanet.access.Uri;
-import hyphanet.access.key.CryptoAlgorithm;
-import hyphanet.access.key.DecryptionKey;
-import hyphanet.access.key.RoutingKey;
-import hyphanet.access.key.SubspaceKey;
+import hyphanet.access.key.*;
 import hyphanet.access.key.node.NodeSsk;
 import hyphanet.crypt.Util;
 import hyphanet.crypt.hash.Sha256;
@@ -13,6 +10,7 @@ import java.net.MalformedURLException;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.PublicKey;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -54,7 +52,10 @@ public class ClientSsk extends ClientKey<NodeSsk> implements SubspaceKey {
       @Nullable PublicKey publicKey)
       throws MalformedURLException {
 
-    this(routingKey, cryptoKey, parseExtraData(extra).cryptoAlgorithm, List.of(docName), publicKey);
+    var metaStrings = new ArrayList<String>();
+    metaStrings.add(docName);
+
+    this(routingKey, cryptoKey, parseExtraData(extra).cryptoAlgorithm, metaStrings, publicKey);
   }
 
   public ClientSsk(
@@ -125,12 +126,17 @@ public class ClientSsk extends ClientKey<NodeSsk> implements SubspaceKey {
   }
 
   public Uri toUri() {
+
+    List<String> metaStrings = new ArrayList<>();
+    metaStrings.add(docName);
+    metaStrings.addAll(getMetaStrings());
+
     return new Uri(
         KeyType.SSK,
         getRoutingKey(),
         getDecryptionKey(),
         new ExtraData(getCryptoAlgorithm()).getExtraBytes(),
-        getMetaStrings());
+        metaStrings);
   }
 
   @Override
@@ -162,6 +168,24 @@ public class ClientSsk extends ClientKey<NodeSsk> implements SubspaceKey {
 
   public byte[] getEhDocname() {
     return ehDocname;
+  }
+
+  public Usk toUsk() {
+    var matcher = DOC_NAME_WITH_EDITION_PATTERN.matcher(docName);
+    if (!matcher.matches()) {
+      throw new IllegalStateException("Invalid document name format: " + docName);
+    }
+
+    int offset = matcher.start(1) - 1;
+    String siteName = docName.substring(0, offset);
+    long edition = Long.parseLong(docName.substring(offset + 1));
+
+    List<String> metaStrings = new ArrayList<>();
+    metaStrings.add(siteName);
+    metaStrings.add(String.valueOf(edition));
+    metaStrings.addAll(getMetaStrings());
+
+    return new Usk(getRoutingKey(), getDecryptionKey(), getCryptoAlgorithm(), metaStrings);
   }
 
   @Override

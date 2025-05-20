@@ -388,8 +388,8 @@ public class Util {
         | NoSuchPaddingException
         | InvalidAlgorithmParameterException
         | IllegalBlockSizeException
-        | BadPaddingException _) {
-      throw new IllegalStateException("This should never happen");
+        | BadPaddingException e) {
+      throw new IllegalStateException("This should never happen", e);
     }
   }
 }

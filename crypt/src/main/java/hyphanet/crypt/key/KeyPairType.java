@@ -20,6 +20,8 @@ import java.security.spec.ECGenParameterSpec;
  * @author unixninja92
  */
 public enum KeyPairType {
+  DSA(),
+
   /** NIST P-256 elliptic curve (secp256r1). Provides 128-bit security level. */
   ECP256("EC", "secp256r1", 91),
 

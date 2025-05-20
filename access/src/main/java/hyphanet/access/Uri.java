@@ -17,6 +17,7 @@ import java.io.Serializable;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.regex.Pattern;
 import org.jspecify.annotations.Nullable;
 
@@ -186,6 +187,21 @@ public class Uri implements Serializable {
     sb.append(metaStringsSb);
 
     return sb.toString();
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof Uri uri)) {
+      return false;
+    }
+    return uriType == uri.uriType
+        && Objects.equals(metaStrings, uri.metaStrings)
+        && Objects.equals(keys, uri.keys);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(uriType, metaStrings, keys);
   }
 
   private Keys parseKeysStr(String keysStr) throws MalformedURLException {

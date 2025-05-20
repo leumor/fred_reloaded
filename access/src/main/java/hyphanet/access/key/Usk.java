@@ -3,8 +3,8 @@ package hyphanet.access.key;
 import hyphanet.access.KeyType;
 import hyphanet.access.Uri;
 import hyphanet.access.key.client.ClientSsk;
-
 import java.net.MalformedURLException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
@@ -34,7 +34,8 @@ public class Usk extends AccessKey implements SubspaceKey {
     super(routingKey, decryptionKey, cryptoAlgorithm, metaStrings);
   }
 
-  public Usk(RoutingKey routingKey, DecryptionKey decryptionKey, byte[] extra, List<String> metaStrings)
+  public Usk(
+      RoutingKey routingKey, DecryptionKey decryptionKey, byte[] extra, List<String> metaStrings)
       throws MalformedURLException {
 
     if (metaStrings.isEmpty()) {
@@ -79,11 +80,11 @@ public class Usk extends AccessKey implements SubspaceKey {
         Stream.concat(uskMetaStrings.stream(), getMetaStrings().stream()).toList();
 
     return new Uri(
-      KeyType.USK,
-      getRoutingKey(),
-      getDecryptionKey(),
-      new ClientSsk.ExtraData(getCryptoAlgorithm()).getExtraBytes(),
-      fullMetaStrings);
+        KeyType.USK,
+        getRoutingKey(),
+        getDecryptionKey(),
+        new ClientSsk.ExtraData(getCryptoAlgorithm()).getExtraBytes(),
+        fullMetaStrings);
   }
 
   @Override
@@ -94,6 +95,28 @@ public class Usk extends AccessKey implements SubspaceKey {
   @Override
   public String getDocName() {
     return docName;
+  }
+
+  public ClientSsk toSsk() {
+
+    var edition = Math.abs(suggestedEdition);
+    if (edition == Long.MIN_VALUE) {
+      edition = Long.MAX_VALUE;
+    }
+
+    List<String> fullMetaStrings = new ArrayList<>();
+    fullMetaStrings.add(docName + "-" + edition);
+    fullMetaStrings.addAll(getMetaStrings());
+
+    try {
+      return new ClientSsk(
+          getRoutingKey(),
+          getDecryptionKey(),
+          new ClientSsk.ExtraData(getCryptoAlgorithm()).getExtraBytes(),
+          fullMetaStrings);
+    } catch (MalformedURLException e) {
+      throw new IllegalArgumentException(e);
+    }
   }
 
   @Override
