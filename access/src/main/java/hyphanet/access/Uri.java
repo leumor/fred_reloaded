@@ -12,6 +12,7 @@ import hyphanet.base.CommonUtil;
 import hyphanet.base.IllegalBase64Exception;
 import hyphanet.support.URLDecoder;
 import hyphanet.support.URLEncodedFormatException;
+import hyphanet.support.URLEncoder;
 import java.io.Serializable;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
@@ -59,7 +60,7 @@ public class Uri implements Serializable {
       // Encoded URL?
       try {
         uri = URLDecoder.decode(uri, false);
-      } catch (URLEncodedFormatException e) {
+      } catch (URLEncodedFormatException _) {
         throw new MalformedURLException(
             "Invalid URI: no @ or /, or @ or / is escaped but there are invalid " + "escapes");
       }
@@ -78,7 +79,7 @@ public class Uri implements Serializable {
 
     try {
       uriType = KeyType.valueOf(urlTypeStr);
-    } catch (IllegalArgumentException e) {
+    } catch (IllegalArgumentException _) {
       throw new MalformedURLException("Invalid key type: " + urlTypeStr);
     }
 
@@ -138,6 +139,53 @@ public class Uri implements Serializable {
       case SSK -> new ClientSsk(this);
       case CHK -> new ClientChk(this);
     };
+  }
+
+  public String toString() {
+    return toLongString(false, false);
+  }
+
+  public String toLongString(boolean prefix, boolean pureAscii) {
+    StringBuilder sb = new StringBuilder();
+
+    if (prefix) {
+      sb.append("freenet:");
+    }
+
+    sb.append(uriType.name()).append('@');
+
+    boolean hasKeys = false;
+
+    var routingKey = keys.routingKey();
+    if (routingKey != null) {
+      sb.append(routingKey.toBase64());
+      hasKeys = true;
+    }
+
+    var decryptionKey = keys.decryptionKey();
+    if (decryptionKey != null) {
+      sb.append(',').append(decryptionKey.toBase64());
+    }
+
+    if (!keys.extra().isEmpty()) {
+      sb.append(',').append(Base64.encode(keys.getExtraBytes()));
+    }
+
+    var metaStringsSb = new StringBuilder();
+    for (String metaString : metaStrings) {
+      metaStringsSb
+          .append(URI_SEPARATOR)
+          .append(URLEncoder.encode(metaString, String.valueOf(URI_SEPARATOR), pureAscii));
+    }
+
+    if (!hasKeys) {
+      // No keys, so we don't need to add the URI separator
+      metaStringsSb.deleteCharAt(0);
+    }
+
+    sb.append(metaStringsSb);
+
+    return sb.toString();
   }
 
   private Keys parseKeysStr(String keysStr) throws MalformedURLException {

@@ -29,6 +29,10 @@ public record RoutingKey(List<Byte> data) {
     }
   }
 
+  public String toBase64() {
+    return Base64.encode(CommonUtil.toByteArray(data));
+  }
+
   public byte[] getBytes() {
     return CommonUtil.toByteArray(data);
   }
