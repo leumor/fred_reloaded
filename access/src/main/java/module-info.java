@@ -7,4 +7,5 @@ module hyphanet.access {
   requires org.bouncycastle.provider;
   requires org.slf4j;
   requires java.logging;
+  requires org.apache.commons.lang3;
 }

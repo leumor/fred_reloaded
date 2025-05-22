@@ -18,21 +18,25 @@ import hyphanet.crypt.hash.Sha256;
 import hyphanet.support.compress.InvalidCompressionCodecException;
 import hyphanet.support.io.storage.bucket.Bucket;
 import hyphanet.support.io.storage.bucket.BucketFactory;
-import org.jspecify.annotations.Nullable;
-
+import java.io.IOException;
+import java.security.GeneralSecurityException;
+import java.security.MessageDigest;
+import java.util.Arrays;
 import javax.crypto.Cipher;
 import javax.crypto.Mac;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
-import java.io.IOException;
-import java.security.GeneralSecurityException;
-import java.security.MessageDigest;
-import java.util.Arrays;
+import org.apache.commons.lang3.ArrayUtils;
+import org.jspecify.annotations.Nullable;
 
 public class ClientChkBlock extends ClientKeyBlock<NodeChk, ClientChk, NodeChkBlock> {
   public static final int MAX_LENGTH_BEFORE_COMPRESSION = Integer.MAX_VALUE;
   public static final int DATA_LENGTH = 32768;
+
+  public ClientChkBlock(NodeChkBlock block, ClientChk clientChk) throws KeyVerifyException {
+    this(block.getRawData(), block.getRawHeaders(), clientChk, true);
+  }
 
   public ClientChkBlock(byte[] data, byte[] header, ClientChk clientChk, boolean verify)
       throws KeyVerifyException {
@@ -92,6 +96,13 @@ public class ClientChkBlock extends ClientKeyBlock<NodeChk, ClientChk, NodeChkBl
       hmac.update(data);
       hmac.update(tmpLen);
       byte[] hash = hmac.doFinal();
+
+      var iv =
+          switch (cryptoAlgorithm) {
+            case ALGO_AES_PCFB_256_SHA256 -> new IvParameterSpec(hash, 0, 32);
+            case ALGO_AES_CTR_256_SHA256 -> new IvParameterSpec(hash, 0, 16);
+          };
+
       byte[] header = new byte[hash.length + 2 + 2];
       if (blockHashAlgorithm == 0) blockHashAlgorithm = NodeKeyBlock.HASH_SHA256;
       if (blockHashAlgorithm != NodeKeyBlock.HASH_SHA256)
@@ -99,13 +110,15 @@ public class ClientChkBlock extends ClientKeyBlock<NodeChk, ClientChk, NodeChkBl
       header[0] = (byte) 0;
       header[1] = (byte) (blockHashAlgorithm & 0xff);
       System.arraycopy(hash, 0, header, 2, hash.length);
+
       SecretKey ckey = new SecretKeySpec(encKey.getBytes(), keyAgo);
       // CTR mode IV is only 16 bytes.
       // That's still plenty though. It will still be unique.
       Cipher cipher = Cipher.getInstance(transformation);
-      cipher.init(Cipher.ENCRYPT_MODE, ckey, new IvParameterSpec(hash, 0, 16));
+      cipher.init(Cipher.ENCRYPT_MODE, ckey, iv);
+
       byte[] cdata = new byte[data.length];
-      int moved = cipher.update(data, 0, data.length, cdata);
+      int moved = cipher.doFinal(data, 0, data.length, cdata);
       if (moved == data.length) {
         cipher.doFinal(tmpLen, 0, 2, header, hash.length + 2);
       } else {
@@ -135,6 +148,21 @@ public class ClientChkBlock extends ClientKeyBlock<NodeChk, ClientChk, NodeChkBl
     }
   }
 
+  /**
+   * Encode a Bucket of data to a CHKBlock.
+   *
+   * @param sourceData The bucket of data to encode. Can be arbitrarily large.
+   * @param asMetadata Is this a metadata key?
+   * @param dontCompress If set, don't even try to compress.
+   * @param precompressedAlgo If !dontCompress, and this is >=0, then the data is already
+   *     compressed, and this is the algorithm.
+   * @param compressorDescriptor
+   * @param cryptoAlgorithm
+   * @param cryptoKey
+   * @throws KeyEncodeException
+   * @throws IOException If there is an error reading from the Bucket.
+   * @throws InvalidCompressionCodecException
+   */
   public static ClientChkBlock encode(
       Bucket sourceData,
       boolean asMetadata,
@@ -143,8 +171,7 @@ public class ClientChkBlock extends ClientKeyBlock<NodeChk, ClientChk, NodeChkBl
       long sourceLength,
       String compressorDescriptor,
       @Nullable DecryptionKey cryptoKey,
-      CryptoAlgorithm cryptoAlgorithm,
-      boolean forceNoJCA)
+      CryptoAlgorithm cryptoAlgorithm)
       throws KeyEncodeException, IOException {
     byte[] finalData = null;
     byte[] data;
@@ -195,43 +222,6 @@ public class ClientChkBlock extends ClientKeyBlock<NodeChk, ClientChk, NodeChkBl
   }
 
   /**
-   * Encode a Bucket of data to a CHKBlock.
-   *
-   * @param sourceData The bucket of data to encode. Can be arbitrarily large.
-   * @param asMetadata Is this a metadata key?
-   * @param dontCompress If set, don't even try to compress.
-   * @param precompressedAlgo If !dontCompress, and this is >=0, then the data is already
-   *     compressed, and this is the algorithm.
-   * @param compressorDescriptor
-   * @param cryptoAlgorithm
-   * @param cryptoKey
-   * @throws KeyEncodeException
-   * @throws IOException If there is an error reading from the Bucket.
-   * @throws InvalidCompressionCodecException
-   */
-  public static ClientChkBlock encode(
-      Bucket sourceData,
-      boolean asMetadata,
-      boolean dontCompress,
-      CompressionAlgorithm precompressedAlgo,
-      long sourceLength,
-      String compressorDescriptor,
-      DecryptionKey cryptoKey,
-      CryptoAlgorithm cryptoAlgorithm)
-      throws KeyEncodeException, IOException {
-    return encode(
-        sourceData,
-        asMetadata,
-        dontCompress,
-        precompressedAlgo,
-        sourceLength,
-        compressorDescriptor,
-        cryptoKey,
-        cryptoAlgorithm,
-        false);
-  }
-
-  /**
    * Encode a splitfile block.
    *
    * @param data The data to encode. Must be exactly DATA_LENGTH bytes.
@@ -242,7 +232,8 @@ public class ClientChkBlock extends ClientKeyBlock<NodeChk, ClientChk, NodeChkBl
       byte[] data, DecryptionKey cryptoKey, CryptoAlgorithm cryptoAlgorithm)
       throws KeyEncodeException {
     if (data.length != DATA_LENGTH) throw new IllegalArgumentException();
-    if (cryptoKey != null && cryptoKey.getBytes().length != 32) throw new IllegalArgumentException();
+    if (cryptoKey != null && cryptoKey.getBytes().length != 32)
+      throw new IllegalArgumentException();
     MessageDigest md256 = Sha256.getMessageDigest();
     // No need to pad
     if (cryptoKey == null) {
@@ -285,19 +276,24 @@ public class ClientChkBlock extends ClientKeyBlock<NodeChk, ClientChk, NodeChkBl
     var hash = Arrays.copyOfRange(headers, 2, 2 + 32);
     var cryptoKeyBytes = cryptoKey.getBytes();
 
+    var iv =
+        switch (getClientKey().getCryptoAlgorithm()) {
+          case ALGO_AES_PCFB_256_SHA256 -> new IvParameterSpec(hash, 0, 32);
+          case ALGO_AES_CTR_256_SHA256 -> new IvParameterSpec(hash, 0, 16);
+        };
+
     try {
       Cipher cipher = Cipher.getInstance(transformation);
-      cipher.init(
-          Cipher.ENCRYPT_MODE,
-          new SecretKeySpec(cryptoKeyBytes, keyAgo),
-          new IvParameterSpec(hash, 0, 16));
-      byte[] plaintext = new byte[data.length + 2];
-      int moved = cipher.update(data, 0, data.length, plaintext);
-      cipher.doFinal(headers, hash.length + 2, 2, plaintext, moved);
-      int size = ((plaintext[data.length] & 0xff) << 8) + (plaintext[data.length + 1] & 0xff);
+      cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(cryptoKeyBytes, keyAgo), iv);
+      byte[] plaintext;
+      byte[] plainData = cipher.doFinal(data, 0, data.length);
+      byte[] plainHeader = cipher.doFinal(headers, hash.length + 2, 2);
+      int size = ((plainHeader[0] & 0xff) << 8) + (plainHeader[1] & 0xff);
       if (size > 32768) {
         throw new KeyDecodeException(KeyType.CHK, "Invalid size: " + size);
       }
+
+      plaintext = ArrayUtils.addAll(plainData, plainHeader[0], plainHeader[1]);
 
       // Check the hash.
       Mac hmac = Mac.getInstance("HmacSHA256");

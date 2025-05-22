@@ -9,7 +9,7 @@ import java.io.IOException;
 import java.util.Objects;
 
 public abstract class ClientKeyBlock<
-    N extends NodeKey<N>, C extends ClientKey<N>, B extends NodeKeyBlock<? extends NodeKey<N>>> {
+    N extends NodeKey<N>, C extends ClientKey<N>, B extends NodeKeyBlock<N>> {
 
   protected ClientKeyBlock(C clientKey, B block) {
     this.clientKey = clientKey;

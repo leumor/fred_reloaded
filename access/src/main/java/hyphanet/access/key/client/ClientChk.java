@@ -7,11 +7,10 @@ import hyphanet.access.key.CryptoAlgorithm;
 import hyphanet.access.key.DecryptionKey;
 import hyphanet.access.key.RoutingKey;
 import hyphanet.access.key.node.NodeChk;
-import org.jspecify.annotations.Nullable;
-
 import java.net.MalformedURLException;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 public class ClientChk extends ClientKey<NodeChk> {
 
@@ -34,7 +33,7 @@ public class ClientChk extends ClientKey<NodeChk> {
       boolean isControlDocument,
       CompressionAlgorithm compressionAlgorithm) {
 
-    this(routingKey, cryptoKey, cryptoAlgorithm, null, isControlDocument, compressionAlgorithm);
+    this(routingKey, cryptoKey, cryptoAlgorithm, "", isControlDocument, compressionAlgorithm);
   }
 
   /**
@@ -53,10 +52,7 @@ public class ClientChk extends ClientKey<NodeChk> {
   }
 
   public ClientChk(
-      RoutingKey routingKey,
-      @Nullable DecryptionKey cryptoKey,
-      byte[] extra,
-      @Nullable String fileName)
+      RoutingKey routingKey, @Nullable DecryptionKey cryptoKey, byte[] extra, String fileName)
       throws MalformedURLException {
 
     var extraData = parseExtraData(extra);
@@ -90,7 +86,7 @@ public class ClientChk extends ClientKey<NodeChk> {
       RoutingKey routingKey,
       @Nullable DecryptionKey cryptoKey,
       CryptoAlgorithm cryptoAlgorithm,
-      @Nullable String fileName,
+      String fileName,
       boolean isControlDocument,
       CompressionAlgorithm compressionAlgorithm) {
     super(routingKey, cryptoKey, cryptoAlgorithm, fileName);
@@ -104,7 +100,8 @@ public class ClientChk extends ClientKey<NodeChk> {
 
   @Override
   public Uri toUri() {
-    return new Uri(KeyType.CHK, getRoutingKey(), getDecryptionKey(), getExtraBytes(), getMetaStrings());
+    return new Uri(
+        KeyType.CHK, getRoutingKey(), getDecryptionKey(), getExtraBytes(), getMetaStrings());
   }
 
   @Override
@@ -112,11 +109,11 @@ public class ClientChk extends ClientKey<NodeChk> {
     return toUri();
   }
 
-  public @Nullable String getFileName() {
+  public String getFileName() {
     try {
       return getMetaStrings().getFirst();
-    } catch (NoSuchElementException e) {
-      return null;
+    } catch (NoSuchElementException _) {
+      return "";
     }
   }
 
