@@ -1,5 +1,7 @@
 package hyphanet.access.block.client;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+
 import hyphanet.access.block.node.NodeChkBlock;
 import hyphanet.access.key.CompressionAlgorithm;
 import hyphanet.access.key.CryptoAlgorithm;
@@ -107,7 +109,7 @@ class ClientChkBlockTest {
     var checkBlock = new ClientChkBlock(block, key);
     try (ArrayBucket checkData =
         (ArrayBucket) checkBlock.decode(new ArrayBucketFactory(), data.length, false)) {
-      assert (Arrays.equals(checkData.toByteArray(), data));
+      assertArrayEquals(checkData.toByteArray(), data);
     }
   }
 }

@@ -199,6 +199,7 @@ public class ClientChkBlock extends ClientKeyBlock<NodeChk, ClientChk, NodeChkBl
     if (finalData.length != DATA_LENGTH) {
       data = new byte[DATA_LENGTH];
       Global.SECURE_RANDOM.nextBytes(data);
+      System.arraycopy(finalData, 0, data, 0, finalData.length);
     } else {
       data = finalData;
     }
