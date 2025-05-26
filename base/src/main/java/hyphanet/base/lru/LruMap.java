@@ -7,13 +7,6 @@ import org.slf4j.LoggerFactory;
 
 /**
  * An LRU map from K to V. That is, when a mapping is added, it is pushed to the top of the queue,
- * even if it was already present, and pop/peek operate from the bottom of the queue i.e. the least
- * recently pushed. The caller must implement any size limit needed. FIXME most callers should be
- * switched to LinkedHashMap. Does not support null keys.
- *
- * @param <K> The key type.
- * @param <V> The value type.
- */
 /**
  * An LRU (Least Recently Used) map from keys of type {@code K} to values of type {@code V}.
  *
@@ -36,6 +29,10 @@ import org.slf4j.LoggerFactory;
  * @param <V> The type of values in this map.
  */
 public class LruMap<K, V> {
+  /**
+   * Logger for this class. Used for logging events such as adding items to the map.
+   * Currently, it logs when items are "pushed" (added or updated) via {@link #addRecent(Object, Object)}.
+   */
   private static final Logger logger = LoggerFactory.getLogger(LruMap.class);
 
   /**

@@ -16,12 +16,14 @@ import java.util.Comparator;
  *   <li>If the two {@link InetAddress} objects are the same instance, they are considered equal.
  *   <li>Otherwise, their hash codes are compared. If the hash codes differ, the comparison result
  *       is based on the hash codes.
- *   <li>If the hash codes are equal, the byte arrays of the IP addresses are compared:
+ *   <li>If the hash codes are equal, the byte arrays of the IP addresses are compared based on length
+ *       first, and then content:
  *       <ul>
- *         <li>If the lengths of the byte arrays differ, IPv6 addresses (16 bytes) are considered
- *             less than IPv4 addresses (4 bytes), effectively preferring IPv6 over IPv4 in the
- *             ordering.
- *         <li>If the lengths are the same, the byte arrays are compared lexicographically using
+ *         <li>Address length comparison: IPv4 addresses (4 bytes long) are ordered before IPv6
+ *             addresses (16 bytes long). This means if an IPv4 address and an IPv6 address have the
+ *             same hash code, the IPv4 address will be considered "less than" the IPv6 address.
+ *         <li>Byte array content comparison: If the addresses have the same length (i.e., both are
+ *             IPv4 or both are IPv6), their byte arrays are compared lexicographically using
  *             {@link Fields#compareBytes(byte[], byte[])}.
  *       </ul>
  * </ol>
@@ -47,12 +49,14 @@ public class InetAddressComparator implements Comparator<InetAddress> {
    * Compares two {@link InetAddress} objects based on the logic described in the class
    * documentation.
    *
-   * <p>This method first checks if the objects are identical. If not, it compares their hash codes
-   * for an efficient initial ordering, which is particularly fast for IPv4 addresses due to their
-   * shorter length and lower likelihood of hash collisions. If hash codes are equal, it compares
-   * the byte arrays: IPv6 addresses (16 bytes) are ordered before IPv4 addresses (4 bytes) by
-   * treating longer arrays as less than shorter ones; if lengths match, a lexicographical
-   * comparison is performed.
+   * <p>This method first checks if the objects are identical. If not, it compares their hash codes.
+   * If hash codes are equal, it then compares based on the address byte arrays:
+   * <ol>
+   *    <li>Shorter byte arrays (IPv4) are ordered before longer byte arrays (IPv6).</li>
+   *    <li>If lengths are equal, a lexicographical comparison of the byte arrays is performed
+   *        using {@link Fields#compareBytes(byte[], byte[])}.</li>
+   * </ol>
+   * This approach is chosen for efficiency, especially with IPv4 addresses.
    *
    * @param a the first {@link InetAddress} to compare
    * @param b the second {@link InetAddress} to compare
