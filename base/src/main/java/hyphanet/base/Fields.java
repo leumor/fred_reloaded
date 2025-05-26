@@ -19,61 +19,65 @@ import org.jspecify.annotations.Nullable;
 public final class Fields {
 
   /**
-   * An array of multipliers used for parsing and formatting numbers with units.
-   * Each element represents a power of 1000 (SI units) or 1024 (IEC/binary units).
-   * <p>
-   * The multipliers are ordered:
+   * An array of multipliers used for parsing and formatting numbers with units. Each element
+   * represents a power of 1000 (SI units) or 1024 (IEC/binary units).
+   *
+   * <p>The multipliers are ordered:
+   *
    * <ol>
-   *   <li>kilo (1000) / kibi (1024)</li>
-   *   <li>mega (1000^2) / mebi (1024^2)</li>
-   *   <li>giga (1000^3) / gibi (1024^3)</li>
-   *   <li>tera (1000^4) / tebi (1024^4)</li>
-   *   <li>peta (1000^5) / pebi (1024^5)</li>
-   *   <li>exa (1000^6) / exbi (1024^6)</li>
+   *   <li>kilo (1000) / kibi (1024)
+   *   <li>mega (1000^2) / mebi (1024^2)
+   *   <li>giga (1000^3) / gibi (1024^3)
+   *   <li>tera (1000^4) / tebi (1024^4)
+   *   <li>peta (1000^5) / pebi (1024^5)
+   *   <li>exa (1000^6) / exbi (1024^6)
    * </ol>
-   * This array is used in conjunction with {@link #MULTIPLES_2} where the index
-   * corresponds to the unit suffix.
+   *
+   * This array is used in conjunction with {@link #MULTIPLES_2} where the index corresponds to the
+   * unit suffix.
    *
    * @see #parseWithMultiplier(String)
    * @see #formatWithUnits(long, boolean)
    */
   private static final long[] MULTIPLES = {
-    1000,                           // k (kilo)
-    1L << 10,                       // K (kibi)
-    1000 * 1000,                    // m (mega)
-    1L << 20,                       // M (mebi)
-    1000L * 1000L * 1000L,          // g (giga)
-    1L << 30,                       // G (gibi)
-    1000L * 1000L * 1000L * 1000L,  // t (tera)
-    1L << 40,                       // T (tebi)
+    1000, // k (kilo)
+    1L << 10, // K (kibi)
+    1000 * 1000, // m (mega)
+    1L << 20, // M (mebi)
+    1000L * 1000L * 1000L, // g (giga)
+    1L << 30, // G (gibi)
+    1000L * 1000L * 1000L * 1000L, // t (tera)
+    1L << 40, // T (tebi)
     1000L * 1000L * 1000L * 1000L * 1000, // p (peta)
-    1L << 50,                       // P (pebi)
+    1L << 50, // P (pebi)
     1000L * 1000L * 1000L * 1000L * 1000L * 1000L, // e (exa)
-    1L << 60                        // E (exbi)
+    1L << 60 // E (exbi)
   };
 
   /**
-   * An array of unit suffixes corresponding to the {@link #MULTIPLES} array.
-   * These suffixes are used for parsing human-readable numbers with units (e.g., "10k", "2M")
-   * and for formatting numbers into human-readable strings.
-   * <p>
-   * The suffixes are:
+   * An array of unit suffixes corresponding to the {@link #MULTIPLES} array. These suffixes are
+   * used for parsing human-readable numbers with units (e.g., "10k", "2M") and for formatting
+   * numbers into human-readable strings.
+   *
+   * <p>The suffixes are:
+   *
    * <ul>
-   *   <li>"k": kilo (10^3)</li>
-   *   <li>"K": Kibi (2^10)</li>
-   *   <li>"m": mega (10^6)</li>
-   *   <li>"M": Mebi (2^20)</li>
-   *   <li>"g": giga (10^9)</li>
-   *   <li>"G": Gibi (2^30)</li>
-   *   <li>"t": tera (10^12)</li>
-   *   <li>"T": Tebi (2^40)</li>
-   *   <li>"p": peta (10^15)</li>
-   *   <li>"P": Pebi (2^50)</li>
-   *   <li>"e": exa (10^18)</li>
-   *   <li>"E": Exbi (2^60)</li>
+   *   <li>"k": kilo (10^3)
+   *   <li>"K": Kibi (2^10)
+   *   <li>"m": mega (10^6)
+   *   <li>"M": Mebi (2^20)
+   *   <li>"g": giga (10^9)
+   *   <li>"G": Gibi (2^30)
+   *   <li>"t": tera (10^12)
+   *   <li>"T": Tebi (2^40)
+   *   <li>"p": peta (10^15)
+   *   <li>"P": Pebi (2^50)
+   *   <li>"e": exa (10^18)
+   *   <li>"E": Exbi (2^60)
    * </ul>
-   * Lowercase letters typically represent SI (decimal) prefixes, while uppercase letters
-   * represent IEC (binary) prefixes.
+   *
+   * Lowercase letters typically represent SI (decimal) prefixes, while uppercase letters represent
+   * IEC (binary) prefixes.
    *
    * @see #parseWithMultiplier(String)
    * @see #formatWithUnits(long, boolean)
@@ -129,7 +133,7 @@ public final class Fields {
                 return digit;
               })
           .reduce(0L, (result, digit) -> (result << 4) | digit);
-    } catch (IllegalArgumentException e) {
+    } catch (IllegalArgumentException _) {
       throw new NumberFormatException("Invalid hex character in string: " + cleanHex);
     }
   }
@@ -298,8 +302,9 @@ public final class Fields {
    * @param ch the delimiter character to use between elements
    * @return a string containing all elements joined with the delimiter
    */
+  @SuppressWarnings("java:S2259")
   public static String textList(@Nullable String[] ls, char ch) {
-    if (ls.length == 0) {
+    if (ls == null || ls.length == 0) {
       return "";
     }
     // Convert char to string for String.join()
@@ -390,7 +395,7 @@ public final class Fields {
     }
 
     // If we get here, all bytes up to minLength are equal
-    // Compare array lengths to determine result
+    // to Compare array lengths to determine the result
     return Integer.compare(firstArray.length, secondArray.length);
   }
 
@@ -414,7 +419,7 @@ public final class Fields {
    *       <li>offset + length exceeds array bounds
    *     </ul>
    *
-   * @see java.security.MessageDigest#isEqual(byte[], byte[]) for timing-attack resistant comparison
+   * @see java.security.MessageDigest#isEqual(byte[], byte[]) for timing-attack-resistant comparison
    */
   public static boolean byteArrayEqual(byte[] a, byte[] b, int aoff, int boff, int len) {
     // Validate input parameters
@@ -541,7 +546,7 @@ public final class Fields {
    *
    * @param longs the array of long integers to convert. Must not be null.
    * @return a byte array containing the converted values in little-endian order
-   * @throws IllegalArgumentException if the input array length would cause integer overflow
+   * @throws IllegalArgumentException if the input array length causes integer overflow
    * @see java.nio.ByteBuffer
    * @see java.nio.ByteOrder
    * @since 1.0
@@ -722,25 +727,26 @@ public final class Fields {
   }
 
   /**
-   * Converts an array of bytes to a short integer using little-endian byte order.
-   * In little-endian order, the least significant byte is stored at the lower memory address (offset),
-   * and the most significant byte is at the higher address (offset + 1).
-   * <p>
-   * Example:
+   * Converts an array of bytes to a short integer using little-endian byte order. In little-endian
+   * order, the least significant byte is stored at the lower memory address (offset), and the most
+   * significant byte is at the higher address (offset + 1).
+   *
+   * <p>Example:
+   *
    * <pre>{@code
    * byte[] bytes = {0x34, 0x12}; // Represents 0x1234 in little-endian
    * short value = bytesToShort(bytes, 0); // value will be 0x1234 (4660 decimal)
    * }</pre>
    *
-   * @param buf the byte array to convert from. Must not be null and must have at least
-   *            {@code offset + 2} elements.
-   * @param offset the starting position in the array. Must be non-negative and less than
-   *               {@code buf.length - 1}.
+   * @param buf the byte array to convert from. Must not be null and must have at least {@code
+   *     offset + 2} elements.
+   * @param offset the starting position in the array. Must be non-negative and less than {@code
+   *     buf.length - 1}.
    * @return the short value represented by two bytes starting at the specified offset in
-   *         little-endian order.
+   *     little-endian order.
    * @throws IllegalArgumentException if the buffer is null, too small, or the offset is invalid.
-   * @throws NullPointerException if {@code buf} is null (though typically caught by length check first
-   *                              if offset is 0).
+   * @throws NullPointerException if {@code buf} is null (though typically caught by length check
+   *     first if offset is 0).
    */
   public static short bytesToShort(byte[] buf, int offset) {
     // Objects.requireNonNull(buf, "Input byte array must not be null"); // Added for robustness
@@ -1125,7 +1131,7 @@ public final class Fields {
    * Empty lines (containing only whitespace) are completely removed from the output. Each remaining
    * line is trimmed of leading and trailing whitespace.
    *
-   * @param str the input string to be processed. If null, returns an empty string.
+   * @param str the input string to be processed. If null, return an empty string.
    * @return a new string with empty lines removed and remaining lines trimmed. Each non-empty line
    *     is terminated with line separator '\n'.
    * @see String#trim()
@@ -1158,11 +1164,14 @@ public final class Fields {
    *     equal to, or greater than the second.
    */
   public static int compareVersion(String x, String y) {
-    int i = 0, j = 0;
+    int i = 0;
+    int j = 0;
     boolean wantDigits = false;
 
     while (i < x.length() || j < y.length()) {
-      int xStart = i, yStart = j; // Store start indices of current segment
+      // Store start indices of the current segment
+      int xStart = i;
+      int yStart = j;
 
       // Extract digits or non-digits
       i += getDigits(x, i, wantDigits);
@@ -1194,7 +1203,7 @@ public final class Fields {
               // considered
               // smaller (leading zeros)
             }
-          } catch (NumberFormatException e) {
+          } catch (NumberFormatException _) {
             // Handle cases where numeric parts are too large for long
             return xSegment.compareTo(ySegment);
           }
@@ -1277,10 +1286,10 @@ public final class Fields {
    * Compares two Date objects, handling null values gracefully. Null values are considered less
    * than any non-null Date.
    *
-   * @param a The first Date object (may be null).
-   * @param b The second Date object (may be null).
-   * @return A negative integer, zero, or a positive integer if a is less than, equal to, or greater
-   *     than b, respectively.
+   * @param a The first Date object (maybe null).
+   * @param b The second Date object (maybe null).
+   * @return A negative integer, zero, or a positive integer if {@code a} is less than, equal to, or
+   *     greater than {@code b}, respectively.
    * @see Objects#compare(Object, Object, java.util.Comparator)
    */
   public static int compare(@Nullable Date a, @Nullable Date b) {
@@ -1335,19 +1344,20 @@ public final class Fields {
   }
 
   /**
-   * Formats a numeric long value into a human-readable string with appropriate SI (decimal) or
+   * Formats a numeric long value into a human-readable string with the appropriate SI (decimal) or
    * IEC (binary) unit suffixes.
-   * <p>
-   * This method aims to represent the number in a compact form. For example, {@code 1024} with
+   *
+   * <p>This method aims to represent the number in a compact form. For example, {@code 1024} with
    * {@code isSize=true} might be formatted as "1KiB". If {@code isSize=false}, only decimal
    * multiples (powers of 1000) are used (e.g., "1k").
-   * <p>
-   * The method iterates through the {@link #MULTIPLES} and {@link #MULTIPLES_2} arrays to find the
-   * largest applicable unit such that the value is a whole multiple of that unit.
-   * If no such unit is found, or if the value is less than or equal to zero, the value is returned
-   * as a simple string.
-   * <p>
-   * Example:
+   *
+   * <p>The method iterates through the {@link #MULTIPLES} and {@link #MULTIPLES_2} arrays to find
+   * the largest applicable unit such that the value is a whole multiple of that unit. If no such
+   * unit is found, or if the value is less than or equal to zero, the value is returned as a simple
+   * string.
+   *
+   * <p>Example:
+   *
    * <pre>{@code
    * formatWithUnits(2048, true)  // returns "2KiB"
    * formatWithUnits(2000, true)  // returns "2k"
@@ -1358,9 +1368,10 @@ public final class Fields {
    *
    * @param value the numeric value to format.
    * @param isSize if {@code true}, both IEC (binary, e.g., KiB, MiB) and SI (decimal, e.g., k, M)
-   *               units are considered. The largest unit that {@code value} is a multiple of will be used.
-   *               If {@code false}, only SI (decimal) units (powers of 1000) are considered.
-   * @return a string representation of the value, potentially with a unit suffix (e.g., "10KiB", "5M", "123").
+   *     units are considered. The largest unit that {@code value} is a multiple of will be used. If
+   *     {@code false}, only SI (decimal) units (powers of 1000) are considered.
+   * @return a string representation of the value, potentially with a unit suffix (e.g., "10KiB",
+   *     "5M", "123").
    * @see #MULTIPLES
    * @see #MULTIPLES_2
    * @see #longToString(long, boolean)
@@ -1396,30 +1407,31 @@ public final class Fields {
 
   /**
    * Parses a string representation of a number, potentially with SI (k, m, g, t, p, e) or
-   * IEC/binary (K, M, G, T, P, E) multiplier suffixes, into a double value.
-   * The method also handles an optional trailing 'B' or 'iB' (for bytes), which is ignored.
-   * <p>
-   * Examples:
-   * <ul>
-   *   <li>"100"    -> 100.0</li>
-   *   <li>"10k"    -> 10000.0 (10 * 1000)</li>
-   *   <li>"2K"     -> 2048.0 (2 * 1024)</li>
-   *   <li>"1.5M"   -> 1572864.0 (1.5 * 1024^2)</li>
-   *   <li>"1MB"    -> 1048576.0 (1 * 1024^2, 'MB' suffix treated like 'M')</li>
-   *   <li>"1MiB"   -> 1048576.0 (1 * 1024^2)</li>
-   *   <li>"1gB"    -> 1000000000.0 (1 * 1000^3, 'gB' suffix treated like 'g')</li>
-   * </ul>
-   * The parsing of the numeric part is done using {@link Double#parseDouble(String)}.
-   * Multiplier characters are case-sensitive:
-   * 'k', 'm', 'g', 't', 'p', 'e' correspond to powers of 1000.
-   * 'K', 'M', 'G', 'T', 'P', 'E' correspond to powers of 1024.
+   * IEC/binary (K, M, G, T, P, E) multiplier suffixes, into a double value. The method also handles
+   * an optional trailing 'B' or 'iB' (for bytes), which is ignored.
    *
-   * @param s the string to parse. It should not be null or empty after stripping whitespace
-   *          and removing optional "B" or "iB" suffix.
+   * <p>Examples:
+   *
+   * <ul>
+   *   <li>"100" -> 100.0
+   *   <li>"10k" -> 10000.0 (10 * 1000)
+   *   <li>"2K" -> 2048.0 (2 * 1024)
+   *   <li>"1.5M" -> 1572864.0 (1.5 * 1024^2)
+   *   <li>"1MB" -> 1048576.0 (1 * 1024^2, 'MB' suffix treated like 'M')
+   *   <li>"1MiB" -> 1048576.0 (1 * 1024^2)
+   *   <li>"1gB" -> 1000000000.0 (1 * 1000^3, 'gB' suffix treated like 'g')
+   * </ul>
+   *
+   * The parsing of the numeric part is done using {@link Double#parseDouble(String)}. Multiplier
+   * characters are case-sensitive: 'k', 'm', 'g', 't', 'p', 'e' correspond to powers of 1000. 'K',
+   * 'M', 'G', 'T', 'P', 'E' correspond to the powers of 1024.
+   *
+   * @param s the string to parse. It should not be null or empty after stripping whitespace and
+   *     removing optional "B" or "iB" suffix.
    * @return the parsed numeric value as a double.
-   * @throws NumberFormatException if the input string {@code s} is empty after normalization,
-   *                               if the numeric part of the string is not a valid double,
-   *                               or if an arithmetic overflow occurs during multiplier calculation.
+   * @throws NumberFormatException if the input string {@code s} is empty after normalization, if
+   *     the numeric part of the string is not a valid double, or if an arithmetic overflow occurs
+   *     during multiplier calculation.
    * @see #MULTIPLES
    * @see #MULTIPLES_2
    * @see #parseLong(String)
@@ -1437,9 +1449,9 @@ public final class Fields {
     // Re-strip in case "B" or "iB" had leading spaces, e.g., "10 M iB"
     normalized = normalized.strip();
 
-
     if (normalized.isEmpty()) {
-      throw new NumberFormatException("Input string is empty after removing suffix and stripping whitespace");
+      throw new NumberFormatException(
+          "Input string is empty after removing suffix and stripping whitespace");
     }
 
     try {
@@ -1447,41 +1459,45 @@ public final class Fields {
       int numPartEndIndex = normalized.length(); // Assume no multiplier suffix initially
 
       // Check for a known multiplier suffix (k, K, m, M, etc.)
-      if (numPartEndIndex > 0) {
-        char lastChar = normalized.charAt(numPartEndIndex - 1);
-        int multiplierCharIndex = "kKmMgGtTpPeE".indexOf(lastChar); // Note: "pP" was missing in original code's string constant here.
+      char lastChar = normalized.charAt(numPartEndIndex - 1);
+      int multiplierCharIndex =
+          "kKmMgGtTpPeE"
+              .indexOf(
+                  lastChar); // Note: "pP" was missing in the original code's string constant here.
 
-        if (multiplierCharIndex != -1) {
-          // Found a multiplier character.
-          // The index in "kKmMgGtTpPeE" maps directly to MULTIPLES and MULTIPLES_2.
-          calculatedMultiplier = MULTIPLES[multiplierCharIndex];
-          numPartEndIndex--; // The numeric part ends before this suffix character.
-        }
+      if (multiplierCharIndex != -1) {
+        // Found a multiplier character.
+        // The index in "kKmMgGtTpPeE" maps directly to MULTIPLES and MULTIPLES_2.
+        calculatedMultiplier = MULTIPLES[multiplierCharIndex];
+        numPartEndIndex--; // The numeric part ends before this suffix character.
       }
 
       // Extract the numeric part of the string.
       String numericString = normalized.substring(0, numPartEndIndex).strip();
       if (numericString.isEmpty()) {
-          // This case occurs if the string was just a suffix, e.g., "K" or "MiB"
-          if (calculatedMultiplier != 1L) { // A suffix was indeed found
-              return (double) calculatedMultiplier; // Interpret "K" as 1K, "M" as 1M etc.
-          } else {
-              throw new NumberFormatException("Numeric part is empty: " + s);
-          }
+        // This case occurs if the string was just a suffix, e.g., "K" or "MiB"
+        if (calculatedMultiplier != 1L) { // A suffix was indeed found
+          return calculatedMultiplier; // Interpret "K" as 1K, "M" as 1M etc.
+        } else {
+          throw new NumberFormatException("Numeric part is empty: " + s);
+        }
       }
 
       double baseValue = Double.parseDouble(numericString);
-      // Apply the multiplier. Using double for multiplication to maintain precision if baseValue is fractional.
+      // Apply the multiplier. Using double for multiplication to maintain precision if baseValue is
+      // fractional.
       return baseValue * calculatedMultiplier;
 
     } catch (ArithmeticException e) {
       // This catch block might be from Math.multiplyExact if it were used,
-      // but current implementation uses long * double, less likely for ArithmeticException
+      //  but the current implementation uses long * double, less likely for ArithmeticException
       // unless `calculatedMultiplier` itself became an issue with many suffix chars (not typical).
-      throw new NumberFormatException("Arithmetic overflow during parsing: " + s + " (" + e.getMessage() + ")");
+      throw new NumberFormatException(
+          "Arithmetic overflow during parsing: " + s + " (" + e.getMessage() + ")");
     } catch (NumberFormatException e) {
       // Re-throw NumberFormatException from Double.parseDouble with more context.
-      throw new NumberFormatException("Invalid numeric value in string: " + s + " (" + e.getMessage() + ")");
+      throw new NumberFormatException(
+          "Invalid numeric value in string: " + s + " (" + e.getMessage() + ")");
     }
   }
 }

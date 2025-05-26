@@ -7,8 +7,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * An LRU map from K to V. That is, when a mapping is added, it is pushed to the top of the queue,
-/**
- * An LRU (Least Recently Used) map from keys of type {@code K} to values of type {@code V}.
+ * /** An LRU (Least Recently Used) map from keys of type {@code K} to values of type {@code V}.
  *
  * <p>This map maintains a queue of entries ordered by their last access time. When a key-value pair
  * is added using {@link #addRecent(K, V)}, it is considered the most recently used and placed at
@@ -30,8 +29,8 @@ import org.slf4j.LoggerFactory;
  */
 public class LruMap<K, V> {
   /**
-   * Logger for this class. Used for logging events such as adding items to the map.
-   * Currently, it logs when items are "pushed" (added or updated) via {@link #addRecent(Object, Object)}.
+   * Logger for this class. Used for logging events such as adding items to the map. Currently, it
+   * logs when items are "pushed" (added or updated) via {@link #addRecent(Object, Object)}.
    */
   private static final Logger logger = LoggerFactory.getLogger(LruMap.class);
 

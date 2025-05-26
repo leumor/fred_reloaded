@@ -45,21 +45,23 @@ public class InetAddressIpv6FirstComparator implements Comparator<InetAddress> {
       new InetAddressIpv6FirstComparator();
 
   /**
-   * A Least Recently Used (LRU) cache for storing the reachability status of {@link InetAddress} objects.
-   * This cache helps to avoid repeated and potentially time-consuming calls to
-   * {@link InetAddress#isReachable(int)}.
-   * <p>
-   * The cache has the following properties:
+   * A Least Recently Used (LRU) cache for storing the reachability status of {@link InetAddress}
+   * objects. This cache helps to avoid repeated and potentially time-consuming calls to {@link
+   * InetAddress#isReachable(int)}.
+   *
+   * <p>The cache has the following properties:
+   *
    * <ul>
    *   <li><b>Capacity:</b> It can store up to 1000 entries. When the cache exceeds this capacity,
-   *       the least recently used entry is evicted.</li>
-   *   <li><b>Expiration Policy:</b> Entries are automatically removed if they have been in the cache
-   *       for more than 300,000 milliseconds (5 minutes).</li>
-   *   <li><b>Key:</b> The hash code of the {@link InetAddress} (obtained via {@link InetAddress#hashCode()})
-   *       is used as the key.</li>
+   *       the least recently used entry is evicted.
+   *   <li><b>Expiration Policy:</b> Entries are automatically removed if they have been in the
+   *       cache for more than 300,000 milliseconds (5 minutes).
+   *   <li><b>Key:</b> The hash code of the {@link InetAddress} (obtained via {@link
+   *       InetAddress#hashCode()}) is used as the key.
    *   <li><b>Value:</b> A {@link Boolean} indicating whether the address was found to be reachable
-   *       ({@code true}) or not ({@code false}).</li>
+   *       ({@code true}) or not ({@code false}).
    * </ul>
+   *
    * The cache is utilized by the {@link #resolveReachability(InetAddress, int)} method.
    *
    * @see LruCache
@@ -179,7 +181,7 @@ public class InetAddressIpv6FirstComparator implements Comparator<InetAddress> {
     boolean reachable;
     try {
       reachable = address.isReachable((int) DEFAULT_MAX_PING_TIME);
-    } catch (IOException e) {
+    } catch (IOException _) {
       reachable = false;
     }
     REACHABILITY_CACHE.put(hash, reachable);

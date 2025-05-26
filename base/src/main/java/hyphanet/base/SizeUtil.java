@@ -10,22 +10,24 @@ package hyphanet.base;
 public final class SizeUtil {
 
   /**
-   * Defines the standard IEC (International Electrotechnical Commission) unit suffixes for binary multiples of bytes.
-   * These suffixes are used by the {@code formatSize} methods in this class to create human-readable
-   * representations of byte sizes.
-   * <p>
-   * The suffixes are:
+   * Defines the standard IEC (International Electrotechnical Commission) unit suffixes for binary
+   * multiples of bytes. These suffixes are used by the {@code formatSize} methods in this class to
+   * create human-readable representations of byte sizes.
+   *
+   * <p>The suffixes are:
+   *
    * <ul>
-   *   <li>{@code B} - Bytes</li>
-   *   <li>{@code KiB} - Kibibytes (2<sup>10</sup> bytes)</li>
-   *   <li>{@code MiB} - Mebibytes (2<sup>20</sup> bytes)</li>
-   *   <li>{@code GiB} - Gibibytes (2<sup>30</sup> bytes)</li>
-   *   <li>{@code TiB} - Tebibytes (2<sup>40</sup> bytes)</li>
-   *   <li>{@code PiB} - Pebibytes (2<sup>50</sup> bytes)</li>
-   *   <li>{@code EiB} - Exbibytes (2<sup>60</sup> bytes)</li>
-   *   <li>{@code ZiB} - Zebibytes (2<sup>70</sup> bytes)</li>
-   *   <li>{@code YiB} - Yobibytes (2<sup>80</sup> bytes)</li>
+   *   <li>{@code B} - Bytes
+   *   <li>{@code KiB} - Kibibytes (2<sup>10</sup> bytes)
+   *   <li>{@code MiB} - Mebibytes (2<sup>20</sup> bytes)
+   *   <li>{@code GiB} - Gibibytes (2<sup>30</sup> bytes)
+   *   <li>{@code TiB} - Tebibytes (2<sup>40</sup> bytes)
+   *   <li>{@code PiB} - Pebibytes (2<sup>50</sup> bytes)
+   *   <li>{@code EiB} - Exbibytes (2<sup>60</sup> bytes)
+   *   <li>{@code ZiB} - Zebibytes (2<sup>70</sup> bytes)
+   *   <li>{@code YiB} - Yobibytes (2<sup>80</sup> bytes)
    * </ul>
+   *
    * These units are based on powers of 1024, as per the IEC 60027-2 and IEC 80000-13 standards.
    *
    * @see #getFormattedSizeParts(long)
@@ -75,8 +77,8 @@ public final class SizeUtil {
    * <p>A non-breaking space ({@code u00a0}) can be used to prevent line breaks between the number
    * and the unit, which can improve readability in some contexts.
    *
-   * <p>Internally, this method uses {@link #getFormattedSizeParts(long)} to obtain the numerical
-   * part and the unit suffix, and then combines them with the specified space character.
+   * <p>Internally, this method uses {@link #getFormattedSizeParts(long)} to get the numerical part
+   * and the unit suffix, and then combines them with the specified space character.
    *
    * @param bytes The byte size to format.
    * @param useNonBreakingSpace {@code true} to use a non-breaking space, {@code false} to use a
@@ -95,7 +97,7 @@ public final class SizeUtil {
    *
    * <p>This method is the core of the size formatting logic. It determines the appropriate unit
    * suffix (KiB, MiB, etc.) based on the magnitude of the input byte size and formats the numerical
-   * value to a reasonable precision.
+   * value to reasonable precision.
    *
    * <p><b>Implementation Details:</b>
    *
