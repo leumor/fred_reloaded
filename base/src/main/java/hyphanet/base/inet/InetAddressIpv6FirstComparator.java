@@ -45,8 +45,26 @@ public class InetAddressIpv6FirstComparator implements Comparator<InetAddress> {
       new InetAddressIpv6FirstComparator();
 
   /**
-   * Cache for storing reachability results of addresses to avoid repeated checks. The cache has a
-   * maximum size of 1000 entries and a time-to-live of 300,000 milliseconds (5 minutes).
+   * A Least Recently Used (LRU) cache for storing the reachability status of {@link InetAddress} objects.
+   * This cache helps to avoid repeated and potentially time-consuming calls to
+   * {@link InetAddress#isReachable(int)}.
+   * <p>
+   * The cache has the following properties:
+   * <ul>
+   *   <li><b>Capacity:</b> It can store up to 1000 entries. When the cache exceeds this capacity,
+   *       the least recently used entry is evicted.</li>
+   *   <li><b>Expiration Policy:</b> Entries are automatically removed if they have been in the cache
+   *       for more than 300,000 milliseconds (5 minutes).</li>
+   *   <li><b>Key:</b> The hash code of the {@link InetAddress} (obtained via {@link InetAddress#hashCode()})
+   *       is used as the key.</li>
+   *   <li><b>Value:</b> A {@link Boolean} indicating whether the address was found to be reachable
+   *       ({@code true}) or not ({@code false}).</li>
+   * </ul>
+   * The cache is utilized by the {@link #resolveReachability(InetAddress, int)} method.
+   *
+   * @see LruCache
+   * @see #resolveReachability(InetAddress, int)
+   * @see InetAddress#isReachable(int)
    */
   private static final LruCache<Integer, Boolean> REACHABILITY_CACHE = new LruCache<>(1000, 300000);
 

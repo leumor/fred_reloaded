@@ -28,6 +28,9 @@ import java.util.BitSet;
  * @author syoung
  */
 public class HexUtil {
+    /**
+     * Logger for this class. Used for debugging purposes, particularly in bit manipulation methods.
+     */
     private static final Logger logger = LoggerFactory.getLogger(HexUtil.class);
 
     /**
@@ -105,18 +108,34 @@ public class HexUtil {
     }
 
     /**
-     * Converts a hexadecimal string to a byte array with an offset.
+     * Converts a hexadecimal string to a byte array, storing the result at a specified offset
+     * within the output array.
+     * <p>
+     * If the input hexadecimal string {@code s} has an odd number of characters, a leading '0' is
+     * implicitly prepended to it before conversion. For example, "ABC" would be treated as "0ABC".
+     * Each pair of hexadecimal characters is converted into a single byte.
+     * </p>
+     * <p>
+     * The output byte array {@code bs} will be allocated with a size of {@code off + (1 + s.length()) / 2}.
+     * The converted bytes from the hexadecimal string will be placed starting at {@code bs[off]}.
+     * </p>
      *
-     * @param s   the hexadecimal string to convert
-     * @param off the offset in the resulting byte array
-     *
-     * @return the byte array containing the converted values
-     *
-     * @throws NumberFormatException if the string contains invalid hex characters
+     * @param s   the hexadecimal string to convert. Can be of odd or even length.
+     *            Allowed characters are '0'-'9', 'a'-'f', 'A'-'F'.
+     * @param off the starting offset in the resulting byte array where the converted bytes will be stored.
+     *            This offset determines the number of leading zero bytes or pre-existing data before
+     *            the converted hex data.
+     * @return a new byte array of size {@code off + (s.length()+1)/2}, containing the converted
+     *         hexadecimal values starting at the specified offset.
+     * @throws NumberFormatException if the string {@code s} contains any characters other than valid
+     *                               hexadecimal digits.
+     * @see #hexToBytes(String, byte[], int)
      */
     public static byte[] hexToBytes(String s, int off) {
-        byte[] bs = new byte[off + (1 + s.length()) / 2];
-        hexToBytes(s, bs, off);
+        // Calculate needed length: `off` for prefix, `(s.length()+1)/2` for hex data.
+        // (s.length()+1)/2 correctly handles both odd and even s.length().
+        byte[] bs = new byte[off + (s.length() + 1) / 2];
+        hexToBytes(s, bs, off); // hexToBytes(String, byte[], int) handles odd length by prepending '0'
         return bs;
     }
 
@@ -244,59 +263,108 @@ public class HexUtil {
     }
 
     /**
-     * Reads bits from a byte array into a BitSet.
+     * Reads bits from a byte array and sets them in a {@link BitSet}.
+     * Bits are read from the first byte in the array, proceeding from the least significant bit (LSB)
+     * to the most significant bit (MSB) within each byte, and then moving to the next byte.
      *
-     * @param b       the byte array to read from
-     * @param ba      the BitSet to write to
-     * @param maxSize the maximum number of bits to read
+     * <p>For example, if {@code b = {0x01, 0x02}} and {@code numBitsToRead = 10}:
+     * <ul>
+     *   <li>Byte 0 (0x01 = 00000001 in binary):
+     *     <ul>
+     *       <li>BitSet index 0 gets bit 0 of byte 0 (1)</li>
+     *       <li>BitSet index 1 gets bit 1 of byte 0 (0)</li>
+     *       <li>...</li>
+     *       <li>BitSet index 7 gets bit 7 of byte 0 (0)</li>
+     *     </ul>
+     *   </li>
+     *   <li>Byte 1 (0x02 = 00000010 in binary):
+     *     <ul>
+     *       <li>BitSet index 8 gets bit 0 of byte 1 (0)</li>
+     *       <li>BitSet index 9 gets bit 1 of byte 1 (1)</li>
+     *     </ul>
+     *   </li>
+     * </ul>
+     * Only {@code numBitsToRead} bits will be set in the {@code BitSet}. If the byte array
+     * {@code b} contains fewer than {@code numBitsToRead} bits, all available bits from {@code b}
+     * will be read and set.
+     *
+     * @param b              the byte array to read from.
+     * @param bitSetTarget   the {@link BitSet} to write the bits to. Any existing bits may be overwritten.
+     * @param numBitsToRead  the total number of bits to read from the byte array and set in the
+     *                       {@code BitSet}. Bits will be set in {@code bitSetTarget} from index 0
+     *                       up to {@code numBitsToRead - 1}.
      */
-    public static void bytesToBits(byte[] b, BitSet ba, int maxSize) {
-        logger.debug("bytesToBits({},ba,{})", bytesToHex(b), maxSize);
+    public static void bytesToBits(byte[] b, BitSet bitSetTarget, int numBitsToRead) {
+        if (logger.isDebugEnabled()) {
+            logger.debug("bytesToBits(bytesToHex(b)={}, bitSetTarget, numBitsToRead={})", bytesToHex(b), numBitsToRead);
+        }
 
-        int x = 0;
-        for (byte bi : b) {
-            for (int j = 0; j < 8; j++) {
-                if (x > maxSize) {
-                    break;
+        int bitSetIndex = 0;
+        for (byte currentByte : b) {
+            for (int bitInByteIndex = 0; bitInByteIndex < 8; bitInByteIndex++) {
+                if (bitSetIndex >= numBitsToRead) {
+                    // All requested bits have been read.
+                    return;
                 }
-                int mask = 1 << j;
-                boolean value = (mask & bi) != 0;
-                ba.set(x, value);
-                x++;
+                int mask = 1 << bitInByteIndex;
+                boolean value = (mask & currentByte) != 0;
+                bitSetTarget.set(bitSetIndex, value);
+                bitSetIndex++;
             }
         }
     }
 
     /**
-     * Converts a hexadecimal string to bits and stores them in a BitSet.
+     * Converts a hexadecimal string to a {@link BitSet}.
+     * The hexadecimal string is first converted to a byte array, and then {@link #bytesToBits(byte[], BitSet, int)}
+     * is used to populate the {@code BitSet}.
      *
-     * @param s      hexadecimal string of the stored bits
-     * @param ba     the BitSet to store the bits in
-     * @param length the maximum number of bits to store
+     * @param hexString      the hexadecimal string representing the bits. If the string has an odd length,
+     *                       a leading '0' is implicitly prepended.
+     * @param bitSetTarget   the {@link BitSet} to store the converted bits in.
+     * @param numBitsToSet   the total number of bits to take from the converted hex string and set in the
+     *                       {@code BitSet}. Bits will be set in {@code bitSetTarget} from index 0
+     *                       up to {@code numBitsToSet - 1}. If the hex string represents fewer
+     *                       bits than {@code numBitsToSet}, all bits from the hex string will be set.
+     * @throws NumberFormatException if {@code hexString} contains non-hexadecimal characters.
+     * @see #hexToBytes(String)
+     * @see #bytesToBits(byte[], BitSet, int)
      */
-    public static void hexToBits(String s, BitSet ba, int length) {
-        byte[] b = hexToBytes(s);
-        bytesToBits(b, ba, length);
+    public static void hexToBits(String hexString, BitSet bitSetTarget, int numBitsToSet) {
+        byte[] b = hexToBytes(hexString); // Handles odd length strings by padding.
+        bytesToBits(b, bitSetTarget, numBitsToSet);
     }
 
     /**
-     * Writes a BigInteger to a DataOutputStream.
+     * Writes a non-negative {@link BigInteger} to a {@link DataOutputStream}.
+     * The format used is:
+     * <ol>
+     *   <li>The length of the BigInteger's byte array representation (obtained from
+     *       {@link BigInteger#toByteArray()}) is written as a {@code short} (2 bytes).</li>
+     *   <li>The byte array itself is then written to the stream.</li>
+     * </ol>
+     * This method is suitable for serializing non-negative BigIntegers. The maximum size of the
+     * BigInteger (in terms of its byte array representation) is limited by {@link Short#MAX_VALUE}.
      *
-     * @param integer the BigInteger to write
-     * @param out     the stream to write to
-     *
-     * @throws IOException           if an I/O error occurs
-     * @throws IllegalStateException if the BigInteger is negative or too long
+     * @param integer the {@link BigInteger} to write. Must be non-negative.
+     * @param out     the {@link DataOutputStream} to write to.
+     * @throws IOException           if an I/O error occurs while writing to the stream.
+     * @throws IllegalStateException if the {@code integer} is negative, or if its byte array
+     *                               representation is longer than {@link Short#MAX_VALUE}.
+     * @see BigInteger#toByteArray()
+     * @see #readBigInteger(DataInputStream)
      */
     public static void writeBigInteger(BigInteger integer, DataOutputStream out)
         throws IOException {
         if (integer.signum() == -1) {
-            throw new IllegalStateException("Negative BigInteger not allowed");
+            throw new IllegalStateException("Negative BigInteger not allowed. Value: " + integer);
         }
 
-        byte[] buf = integer.toByteArray();
+        byte[] buf = integer.toByteArray(); // Minimal two's-complement representation.
         if (buf.length > Short.MAX_VALUE) {
-            throw new IllegalStateException("BigInteger too long: " + buf.length + " bytes");
+            throw new IllegalStateException(
+                String.format("BigInteger too long: %d bytes. Maximum allowed is %d.",
+                              buf.length, Short.MAX_VALUE));
         }
 
         out.writeShort((short) buf.length);
@@ -304,22 +372,48 @@ public class HexUtil {
     }
 
     /**
-     * Reads a BigInteger from a DataInputStream.
+     * Reads a {@link BigInteger} from a {@link DataInputStream} that was written using the
+     * format defined in {@link #writeBigInteger(BigInteger, DataOutputStream)}.
+     * <p>
+     * The format expected is:
+     * <ol>
+     *   <li>A {@code short} indicating the length of the byte array for the BigInteger.</li>
+     *   <li>The byte array itself.</li>
+     * </ol>
+     * The method reconstructs the {@link BigInteger} assuming it represents a positive value
+     * (using {@code new BigInteger(1, buf)}). This is consistent with
+     * {@link #writeBigInteger(BigInteger, DataOutputStream)} which only allows non-negative integers.
      *
-     * @param dis the stream to read from
-     *
-     * @return the read BigInteger
-     *
-     * @throws IOException if an I/O error occurs or the input is invalid
+     * @param dis the {@link DataInputStream} to read from.
+     * @return the {@link BigInteger} read from the stream.
+     * @throws IOException if an I/O error occurs, if the end of stream is reached prematurely,
+     *                     or if the encoded length is negative (which might indicate data corruption
+     *                     or an incompatible format).
+     * @see #writeBigInteger(BigInteger, DataOutputStream)
      */
     public static BigInteger readBigInteger(DataInputStream dis) throws IOException {
         short length = dis.readShort();
         if (length < 0) {
-            throw new IOException("Invalid BigInteger length: " + length);
+            // A negative length is invalid for array allocation and indicates a format issue
+            // or data corruption.
+            throw new IOException(
+                String.format("Invalid BigInteger length read from stream: %d. Length must be non-negative.",
+                              length));
         }
 
+        // Check against a reasonable maximum to prevent OutOfMemoryError with corrupted data
+        // Short.MAX_VALUE is the theoretical max, but could still be very large.
+        // For now, trust the length if it's valid short.
+        if (length > Short.MAX_VALUE) { // Should not happen if length is short, but as sanity check
+             throw new IOException(
+                String.format("BigInteger length %d exceeds maximum of %d", length, Short.MAX_VALUE));
+        }
+
+
         byte[] buf = new byte[length];
-        dis.readFully(buf);
+        dis.readFully(buf); // Throws EOFException if stream ends before all bytes are read.
+        // Constructing with signum=1 ensures the BigInteger is positive,
+        // matching the writeBigInteger constraint.
         return new BigInteger(1, buf);
     }
 

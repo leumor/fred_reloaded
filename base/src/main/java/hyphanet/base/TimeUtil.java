@@ -167,9 +167,12 @@ public final class TimeUtil {
    * to represent a negative time interval.
    *
    * @param timeInterval The time interval string to parse, e.g., "1w2d3h", "4m5s", "-10s", "0.5s".
+   *                     The string is case-sensitive regarding units (must be lowercase).
    * @return The parsed time interval in milliseconds.
-   * @throws IllegalArgumentException if the input string contains an unknown time unit or is
-   *     malformed.
+   * @throws IllegalArgumentException if the input string contains an unknown time unit (e.g., "1y").
+   * @throws NumberFormatException if the numeric part of a term is malformed or cannot be parsed
+   *                               (e.g., "1.2.3s", "abcw"). This is a subclass of
+   *                               {@code IllegalArgumentException}.
    */
   public static long toMillis(String timeInterval) {
     boolean isNegative = timeInterval.startsWith("-");

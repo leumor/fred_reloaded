@@ -10,10 +10,27 @@ package hyphanet.base;
 public final class SizeUtil {
 
   /**
-   * Array of IEC suffixes used for size formatting.
+   * Defines the standard IEC (International Electrotechnical Commission) unit suffixes for binary multiples of bytes.
+   * These suffixes are used by the {@code formatSize} methods in this class to create human-readable
+   * representations of byte sizes.
+   * <p>
+   * The suffixes are:
+   * <ul>
+   *   <li>{@code B} - Bytes</li>
+   *   <li>{@code KiB} - Kibibytes (2<sup>10</sup> bytes)</li>
+   *   <li>{@code MiB} - Mebibytes (2<sup>20</sup> bytes)</li>
+   *   <li>{@code GiB} - Gibibytes (2<sup>30</sup> bytes)</li>
+   *   <li>{@code TiB} - Tebibytes (2<sup>40</sup> bytes)</li>
+   *   <li>{@code PiB} - Pebibytes (2<sup>50</sup> bytes)</li>
+   *   <li>{@code EiB} - Exbibytes (2<sup>60</sup> bytes)</li>
+   *   <li>{@code ZiB} - Zebibytes (2<sup>70</sup> bytes)</li>
+   *   <li>{@code YiB} - Yobibytes (2<sup>80</sup> bytes)</li>
+   * </ul>
+   * These units are based on powers of 1024, as per the IEC 60027-2 and IEC 80000-13 standards.
    *
-   * <p>The suffixes are in ascending order of magnitude, starting from bytes (B) up to yotta bytes
-   * (YiB).
+   * @see #getFormattedSizeParts(long)
+   * @see #formatSize(long)
+   * @see #formatSize(long, boolean)
    */
   private static final String[] SUFFIXES = {
     "B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"
